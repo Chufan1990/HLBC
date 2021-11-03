@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package autoagric.localization;
+
+import "hlbc/proto/pose.proto";
+import "hlbc/proto/header.proto";
+
+message LocalizationEstimate {
+    autoagric.common.Header header = 1;
+    autoagric.localization.Pose pose = 2;
+    //  Uncertainty uncertainty = 3;
+  
+    // // The time of pose measurement, seconds since 1970-1-1 (UNIX time).
+    optional double measurement_time = 4;  // In seconds.
+  
+    // // Future trajectory actually driven by the drivers
+    // repeated apollo.common.TrajectoryPoint trajectory_point = 5;
+  
+    // // msf status
+    //  MsfStatus msf_status = 6;
+    // // msf quality
+    //  MsfSensorMsgStatus sensor_status = 7;
+  }

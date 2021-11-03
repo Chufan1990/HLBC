@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package autoagric.control;
+
+import "hlbc/proto/chassis.proto";
+import "hlbc/proto/header.proto";
+import "hlbc/proto/localization.proto";
+import "hlbc/proto/planning.proto";
+
+message LocalView {
+  autoagric.common.Header header = 1;
+  autoagric.canbus.Chassis chassis = 2;
+  autoagric.planning.ADCTrajectory trajectory = 3;
+  autoagric.localization.LocalizationEstimate localization = 4;
+  //    PadMessage pad_msg = 5;
+}
