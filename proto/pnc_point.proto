@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+// Defined Point types that are commonly used in PnC (Planning and Control)
+// modules.
+
+package autoagric.common;
+
+message SLPoint{
+  double l = 1;
+  double s = 2;
+}
+
+message PathPoint {
+  // coordinates
+  double x = 1;
+  double y = 2;
+  double z = 3;
+
+  // direction on the x-y plane
+  double theta = 4;
+  // curvature on the x-y planning
+  double kappa = 5;
+  // accumulated distance from beginning of the path
+  double s = 6;
+
+  // derivative of kappa w.r.t s.
+  double dkappa = 7;
+  // derivative of derivative of kappa w.r.t s.
+  double ddkappa = 8;
+  // The lane ID where the path point is on
+  string lane_id = 9;
+
+  // derivative of x and y w.r.t parametric parameter t in CosThetareferenceline
+  double x_derivative = 10;
+  double y_derivative = 11;
+}
+
+message TrajectoryPoint {
+  // path point
+  PathPoint path_point = 1;
+  // linear velocity
+  double v = 2; // in [m/s]
+                // linear acceleration
+  double a = 3;
+  // relative time from beginning of the trajectory
+  double relative_time = 4;
+  // longitudinal jerk
+  double da = 5;
+  // The angle between vehicle front wheel and vehicle longitudinal axis
+  double steer = 6;
+
+  // Gaussian probability information
+  GaussianInfo gaussian_info = 7;
+}
+
+message Trajectory {
+  string name = 1;
+  repeated TrajectoryPoint trajectory_point = 2;
+}
+
+message GaussianInfo {
+  // Information of gaussian distribution
+  double sigma_x = 1;
+  double sigma_y = 2;
+  double correlation = 3;
+  // Information of representative uncertainty area
+  double area_probability = 4;
+  double ellipse_a = 5;
+  double ellipse_b = 6;
+  double theta_a = 7;
+}

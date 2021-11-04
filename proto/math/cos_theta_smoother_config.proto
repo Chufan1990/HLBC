@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package autoagric.planning;
+
+message CosThetaSmootherConfig {
+  double weight_cos_included_angle = 1;
+  double weight_anchor_points = 2;
+  double weight_length = 3;
+
+  // ipopt settings
+  int32 print_level = 4;
+  int32 max_num_of_iterations = 5;
+  int32 acceptable_num_of_iterations = 6;
+  double tol = 7;
+  double acceptable_tol = 8;
+  bool ipopt_use_automatic_differentiation = 9;
+}

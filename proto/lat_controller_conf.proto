@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package autoagric.control;
+
+import "hlbc/proto/gain_scheduler_conf.proto";
+// import "modules/control/proto/leadlag_conf.proto";
+import "hlbc/proto/mrac_conf.proto";
+
+// simple optimal steer control param
+message LatControllerConf {
+  double ts = 1;  // sample time (dt) 0.01 now, configurable
+                  // preview window n, preview time = preview window * ts
+  int32 preview_window = 2;
+  double cf = 3;
+  double cr = 4;  // N/rad
+  int32 mass_fl = 5;
+  int32 mass_fr = 6;
+  int32 mass_rl = 7;
+  int32 mass_rr = 8;
+  double eps = 9;                 // converge threshold for lqr solver
+  repeated double matrix_q = 10;  // matrix_q size = 4 + preview_window
+  // matrix_q size = 4 + preview_window for reverse gear
+  repeated double reverse_matrix_q = 11;
+  int32 cutoff_freq = 12;              // cutoff frequency
+  int32 mean_filter_window_size = 13;  // window size of mean filter
+  // for a normal car, it should be in range[16, 18]
+  int32 max_iteration = 14;              // maximum iteration for lqr solve
+  double max_lateral_acceleration = 15;  // limit aggressive steering
+  autoagric.control.GainScheduler lat_err_gain_scheduler = 16;
+  autoagric.control.GainScheduler heading_err_gain_scheduler = 17;
+  // LeadlagConf reverse_leadlag_conf = 18;
+  bool enable_reverse_leadlag_compensation = 19;
+  bool enable_look_ahead_back_control = 20;
+  double lookahead_station = 21;
+  double lookback_station = 22;
+  MracConf steer_mrac_conf = 23;
+  bool enable_steer_mrac_control = 24;
+  double lookahead_station_high_speed = 25;
+  double lookback_station_high_speed = 26;
+}

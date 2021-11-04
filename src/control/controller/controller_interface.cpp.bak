@@ -1,0 +1,41 @@
+#include "controller/controller_interface.h"
+
+#include "common/msg_to_proto.h"
+
+namespace autoagric {
+namespace control {
+
+template <typename L, typename C, typename T, typename F>
+bool ControllerInterface<L, C, T, F>::Init() {
+  agent_ = std::unique_ptr<ControllerAgent>(new ControllerAgent());
+
+  if (!agent_->Init().ok()) return false;
+  return true;
+}
+
+template <typename L, typename C, typename T, typename F>
+bool ControllerInterface<L, C, T, F>::ComputeControlCommand(
+    const L& localization, const C& chassis, const T& trajectory,
+    const F& feedback, double& ret) {
+  GetProtoFromMsg(trajectory, local_view_.mutable_trajectory());
+
+  GetProtoFromMsg(localization, chassis, local_view_.mutable_localization());
+
+  UpdateTrajectoryPoint(local_view_.localization(), local_view_.mutable_trajectory());
+
+  GetProtoFromMsg(feedback, local_view_.mutable_chassis());
+
+  if (agent_
+          ->ComputeControlCommand(&local_view_.localization(),
+                                  &local_view_.chassis(),
+                                  &local_view_.trajectory(), &cmd_)
+          .ok()) {
+    ret = cmd_.steering_target();
+    return true;
+  }
+
+  return false;
+}
+
+}  // namespace control
+}  // namespace autoagric

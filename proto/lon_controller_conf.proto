@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package autoagric.control;
+
+// controller param
+message LonControllerConf {
+//    double ts = 1;  // longitudinal controller sampling time
+//    double brake_minimum_action = 2;
+//    double throttle_minimum_action = 3;
+//    double speed_controller_input_limit = 4;
+//    double station_error_limit = 5;
+//    double preview_window = 6;
+//    double standstill_acceleration = 7;
+
+//    PidConf station_pid_conf = 8;
+//    PidConf low_speed_pid_conf = 9;
+//    PidConf high_speed_pid_conf = 10;
+   double switch_speed = 11;  // low/high speed controller switch speed
+//    PidConf reverse_station_pid_conf = 12;
+//    PidConf reverse_speed_pid_conf = 13;
+//    FilterConf pitch_angle_filter_conf = 14;
+//    LeadlagConf reverse_station_leadlag_conf = 15;
+//    LeadlagConf reverse_speed_leadlag_conf = 16;
+
+//    calibrationtable.ControlCalibrationTable calibration_table = 17;
+
+//    bool enable_reverse_leadlag_compensation = 18 [default = false];
+
+//   // low/high speed switch transition-window
+//    double switch_speed_window = 19 [default = 0.0];
+}

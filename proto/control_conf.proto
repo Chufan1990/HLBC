@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package autoagric.control;
+
+import "hlbc/proto/chassis.proto";
+import "hlbc/proto/lat_controller_conf.proto";
+import "hlbc/proto/lon_controller_conf.proto";
+
+
+message ControlConf {
+  enum ControllerType {
+    LAT_CONTROLLER = 0;
+    LON_CONTROLLER = 1;
+    MPC_CONTROLLER = 2;
+  };
+
+  // configs from gflags
+  double control_test_duration = 1;
+  bool enable_csv_debug = 2;
+  bool enable_speed_station_preview = 3;
+  bool is_control_test_mode = 4;
+  bool use_preview_speed_for_table = 5;
+  bool enable_input_timestamp_check = 6;
+  int32 max_localization_miss_num = 7;
+  int32 max_chassis_miss_num = 8;
+  int32 max_planning_miss_num = 9;
+  double max_acceleration_when_stopped = 10;
+  double steer_angle_rate = 11;
+  bool enable_gain_scheduler = 12;
+  bool set_steer_limit = 13;
+  bool enable_slope_offset = 14;
+  double lock_steer_speed = 15;
+  bool enable_navigation_mode_error_filter = 16;
+  bool enable_navigation_mode_position_update = 17;
+  bool enable_persistent_estop = 18;
+
+  // original config
+  double control_period = 19;
+  double max_planning_interval_sec = 20;
+  double max_planning_delay_threshold = 21;
+  // 0 - manual; 1 - auto_drive; 2 - speed_only; 3 - steer_only
+  autoagric.canbus.Chassis.DrivingMode driving_mode = 22;
+  // 0: stop, at first should stop, then receive pad msg to start
+  // autoagric.control.DrivingAction action = 23;
+  double soft_estop_brake = 24;
+  repeated ControllerType active_controllers = 25;
+  int32 max_steering_percentage_allowed = 26;
+  double max_status_interval_sec = 27;
+
+  autoagric.control.LatControllerConf lat_controller_conf = 28;
+  autoagric.control.LonControllerConf lon_controller_conf = 29;
+
+  double trajectory_period = 30;
+  double chassis_period = 31;
+  double localization_period = 32;
+
+  double minimum_speed_resolution = 33;
+
+  double query_relative_time = 35;
+  double minimum_speed_protection = 36;
+
+  double max_path_remain_when_stopped = 37;
+}

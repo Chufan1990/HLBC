@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package autoagric.common;
+
+import "hlbc/proto/chassis.proto";
+import "hlbc/proto/pose.proto";
+
+message VehicleState {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+  double timestamp = 4;
+  double roll = 5;
+  double pitch = 6;
+  double yaw = 7;
+  double heading = 8;
+  double kappa = 9;
+  double linear_velocity = 10;
+  double angular_velocity = 11;
+  double linear_acceleration = 12;
+  autoagric.canbus.Chassis.GearPosition gear = 13;
+  autoagric.canbus.Chassis.DrivingMode driving_mode = 14;
+  autoagric.localization.Pose pose = 15;
+  double steering_percentage = 16;
+}
