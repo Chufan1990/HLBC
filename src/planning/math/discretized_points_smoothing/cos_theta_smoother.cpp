@@ -44,6 +44,15 @@ bool CosThetaSmoother::Solve(
   CHECK(smoother->get_starting_point(n, x));
   CHECK(smoother->get_bounds_info(n, x_l, x_u, m, g_l, g_u));
 
+
+  option += "Integer print_level " + std::to_string(print_level) + "\n";
+  option += "Integer max_iter " + std::to_string(max_num_of_iterations) + "\n";
+  option += "Integer print_level " + std::to_string(print_level) + "\n";
+  option += "Integer print_level " + std::to_string(print_level) + "\n";
+  option += "Integer print_level " + std::to_string(print_level) + "\n";
+  option += "Integer print_level " + std::to_string(print_level) + "\n";
+
+
   return true;
 }
 
