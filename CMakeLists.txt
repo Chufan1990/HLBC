@@ -1,7 +1,14 @@
+<<<<<<< HEAD
 cmake_minimum_required(VERSION 3.10.0)
 project(hlbc)
 
 set(${PROJECT}}_VERSION 0.0.1)
+=======
+cmake_minimum_required(VERSION 3.0.2)
+project(hlbc)
+
+set(${PROJECT}}_VERSION 1.0.0)
+>>>>>>> 846ad047043c0e8dc10835ad992b5cf44a4d3835
 # Compile as C++11, supported in ROS Kinetic and newer
 set(CMAKE_CXX_FLAGS
     "-std=c++14 -march=native -pipe -Wextra -fopenmp -fPIC -pthread -Wall")
@@ -23,6 +30,7 @@ find_package(
              message_generation
              autoware_msgs)
 
+<<<<<<< HEAD
 set(Protobuf_DIR "/home/chufankong/test")
 
 list(APPEND CMAKE_PREFIX_PATH ${Protobuf_DIR})
@@ -54,6 +62,9 @@ else()
       "Protobuf package not found -> specify search path via PROTOBUF_ROOT variable"
   )
 endif()
+=======
+find_package(Protobuf 3.19 REQUIRED)
+>>>>>>> 846ad047043c0e8dc10835ad992b5cf44a4d3835
 
 find_package(gflags REQUIRED)
 
@@ -61,10 +72,19 @@ find_package(glog REQUIRED)
 
 find_package(Eigen3 REQUIRED)
 # message(WARNING "Protobuf_LIBRARIES=${Protobuf_LIBRARIES}") message(WARNING
+<<<<<<< HEAD
 # "PROTOBUF_INCLUDE_DIRS=${PROTOBUF_INCLUDE_DIRS}") if(Eigen3_FOUND)
 # message(WARNING "EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}") message(WARNING
 # "Eigen3_LIBRARIES=${Eigen3_LIBRARIES}") endif() message(WARNING
 # "gflags_LIBRARIES=${gflags_LIBRARIES}") message(WARNING
+=======
+# "PROTOBUF_INCLUDE_DIRS=${PROTOBUF_INCLUDE_DIRS}")
+
+# message(WARNING "EIGEN3_INCLUDE_DIR=${EIGEN3_INCLUDE_DIR}") message(WARNING
+# "EIGEN3_LIBRARIES=${EIGEN3_LIBRARIES}")
+
+# message(WARNING "gflags_LIBRARIES=${gflags_LIBRARIES}") message(WARNING
+>>>>>>> 846ad047043c0e8dc10835ad992b5cf44a4d3835
 # "gflags_INCLUDE_DIR=${gflags_INCLUDE_DIR}")
 
 # message(WARNING "glog_LIBRARIES=${glog_LIBRARIES}") message(WARNING
@@ -174,12 +194,19 @@ catkin_package(
   INCLUDE_DIRS
   include
   ${PROTO_META_BASE_DIR}
+<<<<<<< HEAD
   ${Protobuf_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   LIBRARIES
   ${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${Protobuf_LIBRARIES}
+=======
+  LIBRARIES
+  ${PROJECT_NAME}
+  ${catkin_LIBRARIES}
+  ${PROTOBUF_LIBRARIES}
+>>>>>>> 846ad047043c0e8dc10835ad992b5cf44a4d3835
   gflags
   glog
   CATKIN_DEPENDS
@@ -201,7 +228,11 @@ catkin_package(
 # listed before other locations
 include_directories(
   include ${CMAKE_CURRENT_BINARY_DIR} ${catkin_INCLUDE_DIRS}
+<<<<<<< HEAD
   ${Protobuf_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PROTO_META_BASE_DIR})
+=======
+  ${PROTOBUF_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PROTO_META_BASE_DIR})
+>>>>>>> 846ad047043c0e8dc10835ad992b5cf44a4d3835
 
 # Declare a C++ library add_library(${PROJECT_NAME} src/${PROJECT_NAME}/hlbc.cpp
 # )
@@ -210,11 +241,33 @@ include_directories(
 # get_target_property(TARGET_LIBRARIES Project LINK_LIBRARIES)
 # message("Libraries at start") message(${TARGET_LIBRARIES})
 
+<<<<<<< HEAD
+=======
+# find_library( ${PROJECT_NAME}_PROTO_LIBRARIES_FOUND NAMES
+# ${PROJECT_NAME}_PROTO_LIBRARIES PATHS ${CMAKE_PREFIX_PATH})
+
+# message(WARNING "${${PROJECT_NAME}_PROTO_LIBRARIES_FOUND}")
+
+# if(NOT "${${PROJECT_NAME}_PROTO_LIBRARIES_FOUND}" STREQUAL
+# "${PROJECT_NAME}_PROTO_LIBRARIES_FOUND-NOTFOUND")
+
+# message(WARNING "Removing ${${PROJECT_NAME}_PROTO_LIBRARIES_FOUND}")
+
+# file(REMOVE ${PROJECT_NAME}_PROTO_LIBRARIES_FOUND)
+
+# endif()
+
+# add_library(${PROJECT_NAME}_PROTO_LIBRARIES ${PROTO_SRCS} ${PROTO_HDRS})
+
+# target_link_libraries(${PROJECT_NAME}_PROTO_LIBRARIES ${PROTOBUF_LIBRARIES})
+
+>>>>>>> 846ad047043c0e8dc10835ad992b5cf44a4d3835
 file(GLOB_RECURSE ${PROJECT_NAME}_SOURCE_FILES src/common/*.cpp
      src/control/*.cpp)
 file(GLOB_RECURSE ${PROJECT_NAME}_PROTO_SOURCE_FILES
      ${CMAKE_CURRENT_BINARY_DIR}/*.cc)
 
+<<<<<<< HEAD
 # use, i.e. don't skip the full RPATH for the build tree
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 
@@ -233,6 +286,11 @@ add_library(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCE_FILES}
 target_link_libraries(${PROJECT_NAME} ${Protobuf_LIBRARIES} ${catkin_LIBRARIES}
                       gflags_shared glog::glog)
 
+=======
+add_library(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCE_FILES}
+                            ${${PROJECT_NAME}_PROTO_SOURCE_FILES})
+
+>>>>>>> 846ad047043c0e8dc10835ad992b5cf44a4d3835
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS}
                  ${catkin_EXPORTED_TARGETS})
 
@@ -241,7 +299,18 @@ add_executable(${PROJECT_NAME}_node src/nodes/control_node.cpp)
 add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS}
                  ${catkin_EXPORTED_TARGETS})
 
+<<<<<<< HEAD
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
+=======
+target_link_libraries(
+  ${PROJECT_NAME}_node
+  ${PROJECT_NAME}
+  ${Protobuf_LIBRARIES}
+  ${EIGEN3_LIBRARIES}
+  ${catkin_LIBRARIES}
+  gflags
+  glog)
+>>>>>>> 846ad047043c0e8dc10835ad992b5cf44a4d3835
 # ##############################################################################
 # Install ##
 # ##############################################################################
@@ -296,6 +365,33 @@ install(
   DIRECTORY data/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/data
   PATTERN ".svn" EXCLUDE)
+<<<<<<< HEAD
+=======
+# install( EXPORT ${PROJECT_NAME}Targets FILE ${PROJECT_NAME}Targets.cmake
+# NAMESPACE ${PROJECT_NAME}:: DESTINATION
+# ${CATKIN_PACKAGE_LIB_DESTINATION}/cmake/${PROJECT_NAME})
+
+# include(CMakePackageConfigHelpers) write_basic_package_version_file(
+# "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}ConfigVersion.cmake"
+# VERSION ${PROJECT}_VERSION COMPATIBILITY AnyNewerVersion)
+
+# export( EXPORT ${PROJECT_NAME}Targets FILE
+# "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}Targets.cmake"
+# NAMESPACE ${PROJECT_NAME}::)
+
+# configure_file( cmake/${PROJECT_NAME}Config.cmake
+# "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}Config.cmake"
+# COPYONLY)
+
+# set(ConfigPackageLocation lib/cmake/${PROJECT_NAME})
+
+# install( EXPORT ${PROJECT_NAME}Targets FILE ${PROJECT_NAME}Targets.cmake
+# NAMESPACE ${PROJECT_NAME}:: DESTINATION ${ConfigPackageLocation})
+
+# install( FILES cmake/${PROJECT_NAME}Config.cmake
+# "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}ConfigVersion.cmake"
+# DESTINATION ${ConfigPackageLocation} COMPONENT Devel)
+>>>>>>> 846ad047043c0e8dc10835ad992b5cf44a4d3835
 
 # Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES # myfile1 # myfile2 DESTINATION
