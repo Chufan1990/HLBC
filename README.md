@@ -1,2 +1,4 @@
-# HLC
-Hierarchical Lyapunov-based Control
+# HLBC
+
+Hierarchical Lyapunov-based Controller
+
