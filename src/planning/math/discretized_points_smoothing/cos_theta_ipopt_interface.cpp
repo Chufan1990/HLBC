@@ -1,5 +1,6 @@
 #include "planning/math/discretized_points_smoothing/cos_theta_ipopt_interface.h"
 
+#include <cppad/cppad.hpp>
 #include <random>
 
 #include "glog/logging.h"
@@ -8,10 +9,11 @@ namespace autoagric {
 namespace planning {
 
 using Dvector = CPPAD_TESTVECTOR(double);
-using ADvector = CPPDA_TESTVECTOR(CppAD::AD(double));
+using ADvector = CPPAD_TESTVECTOR(CppAD::AD<double>);
 
 CosThetaIpoptInterface::CosThetaIpoptInterface(
-    std::vector<std::pair<double, double>> point, std::vector<double> bounds) {
+    const std::vector<std::pair<double, double>>& points,
+    const std::vector<double>& bounds) {
   CHECK_GT(points.size(), 1U);
   CHECK_GT(bounds.size(), 1U);
   bounds_ = std::move(bounds);
@@ -19,12 +21,10 @@ CosThetaIpoptInterface::CosThetaIpoptInterface(
   num_of_points_ = ref_points_.size();
 
   // number of variables
-  n = static_cast<int>(num_of_points_ << 1);
-  num_of_variables_ = n;
+  num_of_variables_ = static_cast<int>(num_of_points_ << 1);
 
   // number of constraints
-  m = static_cast<int>(num_of_points_ << 1);
-  num_of_constraints_ = m;
+  num_of_constraints_ = static_cast<int>(num_of_points_ << 1);
 }
 
 void CosThetaIpoptInterface::set_weight_cos_included_angle(
@@ -104,8 +104,8 @@ bool CosThetaIpoptInterface::get_starting_point(int n, Dvector& x) {
   return true;
 }
 
-void CosThetaIpoptInterface::operator()(ADvector& fg, const ADvetor& x) {
-  CHECK_EQ(fg.size(), num_of_variables_ + num_of_constraints_ + 1);
+void CosThetaIpoptInterface::operator()(ADvector& fg, const ADvector& x) {
+  CHECK_EQ(fg.size(), num_of_constraints_ + 1);
   CHECK_EQ(x.size(), num_of_variables_);
 
   CHECK(eval_obj<ADvector>(x, fg));
@@ -125,7 +125,7 @@ bool CosThetaIpoptInterface::eval_constraints(const T& x, T& g) {
 }
 
 template <class T>
-bool CosThetaIpoptInterface::eval_obj(int n, const T& x, T& obj_value) {
+bool CosThetaIpoptInterface::eval_obj(const T& x, T& obj_value) {
   obj_value[0] = 0.0;
   for (size_t i = 0; i < num_of_points_; ++i) {
     size_t index = i << 1;

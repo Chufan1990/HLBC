@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <Eigen/Core>
+#include "Eigen/Core"
 #include <memory>
 #include <string>
 

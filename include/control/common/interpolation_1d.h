@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Eigen/Core>
+#include "Eigen/Core"
 #include <memory>
 #include <unsupported/Eigen/Splines>
 #include <utility>

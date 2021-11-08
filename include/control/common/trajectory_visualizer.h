@@ -6,6 +6,9 @@
 
 #include "autoware_msgs/Lane.h"
 #include "visualization_msgs/MarkerArray.h"
+#include "geometry_msgs/Vector3.h"
+#include "std_msgs/ColorRGBA.h"
+
 
 namespace autoagric {
 namespace control {
@@ -23,6 +26,10 @@ class TrajectoryVisualizer {
   void Init();
 
   void Proc(const autoware_msgs::LaneConstPtr& lane);
+
+
+  static MarkerType LaneToMarkerArray(const autoware_msgs::Lane& lane, const geometry_msgs::Vector3& scale,
+      const std_msgs::ColorRGBA& color);
 
  private:
   MarkerType LaneToMarkerArray(const autoware_msgs::LaneConstPtr& lane);

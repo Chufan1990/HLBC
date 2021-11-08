@@ -14,7 +14,7 @@ namespace planning {
 class CosThetaIpoptInterface {
  public:
   typedef CPPAD_TESTVECTOR(double) Dvector;
-  typedef CPPAD_TESTVECTOR(CppAD::AD(double)) ADVector;
+  typedef CPPAD_TESTVECTOR(CppAD::AD<double>) ADvector;
 
   CosThetaIpoptInterface(const std::vector<std::pair<double, double>>& point,
                          const std::vector<double>& bounds);
@@ -28,14 +28,14 @@ class CosThetaIpoptInterface {
   void set_weight_length(const double weight_length);
 
   void get_optimization_results(std::vector<double>* ptr_x,
-                                std::vector<double>* ptr_y);
+                                std::vector<double>* ptr_y) const;
 
   bool get_bounds_info(int n, Dvector& x_l, Dvector& x_u, int m, Dvector& g_l,
                        Dvector& g_u);
 
   bool get_starting_point(int n, Dvector& x);
 
-  void operator()(ADvector& fg, const ADvetor& x);
+  void operator()(ADvector& fg, const ADvector& x);
 
  private:
   template <class T>

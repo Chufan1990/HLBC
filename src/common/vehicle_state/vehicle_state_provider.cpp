@@ -16,7 +16,7 @@
 
 #include "common/vehicle_state/vehicle_state_provider.h"
 
-#include <Eigen/Core>
+#include "Eigen/Core"
 #include <cmath>
 #include <sstream>
 

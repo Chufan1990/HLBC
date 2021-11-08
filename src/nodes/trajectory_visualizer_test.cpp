@@ -1,6 +1,6 @@
-#include "nodes/control_node.h"
-
 #include <ros/ros.h>
+
+#include "control/common/trajectory_visualizer.h"
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "hlbc");

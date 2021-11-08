@@ -61,6 +61,15 @@ find_package(gflags REQUIRED)
 find_package(glog REQUIRED)
 
 find_package(Eigen3 REQUIRED)
+
+find_library(Ipopt_LIBRARIES ipopt PATHS /usr/local/lib /usr/lib)
+
+if("${Ipopt_LIBRARIES}" STREQUAL "Ipopt_LIBRARIES-NOTFOUND")
+  message(WARNING ${Ipopt_LIBRARIES})
+else()
+  message(WARNING "Ipopt libraries : ${Ipopt_LIBRARIES}")
+endif()
+
 # message(WARNING "Protobuf_LIBRARIES=${Protobuf_LIBRARIES}") message(WARNING
 
 # "PROTOBUF_INCLUDE_DIRS=${PROTOBUF_INCLUDE_DIRS}") if(Eigen3_FOUND)
@@ -183,6 +192,7 @@ catkin_package(
   ${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${Protobuf_LIBRARIES}
+  ${Ipopt_LIBRARIES}
   gflags
   glog
   CATKIN_DEPENDS
@@ -214,7 +224,7 @@ include_directories(
 # message("Libraries at start") message(${TARGET_LIBRARIES})
 
 file(GLOB_RECURSE ${PROJECT_NAME}_SOURCE_FILES src/common/*.cpp
-     src/control/*.cpp)
+     src/control/*.cpp src/planning/*.cpp)
 file(GLOB_RECURSE ${PROJECT_NAME}_PROTO_SOURCE_FILES
      ${CMAKE_CURRENT_BINARY_DIR}/*.cc)
 
@@ -234,17 +244,26 @@ add_library(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCE_FILES}
                             ${${PROJECT_NAME}_PROTO_SOURCE_FILES})
 
 target_link_libraries(${PROJECT_NAME} ${Protobuf_LIBRARIES} ${catkin_LIBRARIES}
-                      gflags_shared glog::glog)
+                      ${Ipopt_LIBRARIES} gflags_shared glog::glog)
 
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS}
                  ${catkin_EXPORTED_TARGETS})
 
-add_executable(${PROJECT_NAME}_node src/nodes/control_node.cpp)
+add_executable(trajectory_visualizer_test
+               src/nodes/trajectory_visualizer_test.cpp)
 
-add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS}
+add_dependencies(trajectory_visualizer_test ${${PROJECT_NAME}_EXPORTED_TARGETS}
                  ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
+target_link_libraries(trajectory_visualizer_test ${PROJECT_NAME})
+
+add_executable(discrete_points_trajectory_smoother_test
+               src/nodes/discrete_points_trajectory_smoother_test.cpp)
+
+add_dependencies(discrete_points_trajectory_smoother_test
+                 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(discrete_points_trajectory_smoother_test ${PROJECT_NAME})
 
 # ##############################################################################
 # Install ##
@@ -275,7 +294,8 @@ target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
 # PATTERN ".svn" EXCLUDE )
 
 install(
-  TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
+  TARGETS ${PROJECT_NAME} trajectory_visualizer_test
+          discrete_points_trajectory_smoother_test
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
@@ -300,7 +320,6 @@ install(
   DIRECTORY data/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/data
   PATTERN ".svn" EXCLUDE)
-
 
 # Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES # myfile1 # myfile2 DESTINATION

@@ -24,11 +24,10 @@ bool DiscretePointsTrajectorySmoother::Smooth(
   for (const auto& anchor_point : anchor_points_) {
     raw_point2d.emplace_back(anchor_point.path_point.x(),
                              anchor_point.path_point.y());
-    anchorpoints_lateralbound.emplace_back(anchor_point.lateral_bound);
-  }
 
-  anchorpoints_lateralbound.front() = 0.0;
-  anchorpoints_lateralbound.back() = 0.0;
+    anchorpoints_lateralbound.emplace_back(
+        anchor_point.enforced ? 0.0 : anchor_point.lateral_bound);
+  }
 
   NormalizePoints(&raw_point2d);
 
@@ -182,6 +181,7 @@ bool DiscretePointsTrajectorySmoother::GenerateTrajectoryPointProfile(
     point.mutable_path_point()->set_theta(headings[i]);
     point.mutable_path_point()->set_kappa(kappas[i]);
     point.mutable_path_point()->set_dkappa(dkappas[i]);
+    trajectory_points->emplace_back(point);
   }
   return true;
 }
