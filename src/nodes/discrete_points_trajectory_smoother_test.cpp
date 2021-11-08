@@ -55,13 +55,13 @@ class DiscretePointTrajectorySmootherTest {
 
     std::random_device rd;
     std::default_random_engine gen = std::default_random_engine(rd());
-    std::normal_distribution<> dis{0, 0.0};
+    std::normal_distribution<> dis{0, 0.005};
 
     double dt = 1.0;
 
     size_t num_of_points = 20;
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 0; ++i) {
       auto trajectory_point = ref_points.add_trajectory_point();
 
       trajectory_point->mutable_path_point()->set_x((i - 5) / 10.0 * dt +
@@ -85,7 +85,7 @@ class DiscretePointTrajectorySmootherTest {
       anchor_points_.push_back(anchor_point);
     }
 
-    for (size_t i = 0; i < 15; ++i) {
+    for (size_t i = 0; i < 20; ++i) {
       auto trajectory_point = ref_points.add_trajectory_point();
 
       trajectory_point->mutable_path_point()->set_x(sin(i * M_PI / 45.0) * dt +
@@ -107,8 +107,8 @@ class DiscretePointTrajectorySmootherTest {
       anchor_point.path_point.CopyFrom(trajectory_point->path_point());
       anchor_point.lateral_bound = config_.max_lateral_boundary_bound();
       anchor_point.longitudinal_bound = config_.longitudinal_boundary_bound();
-      anchor_point.enforced = (i + 5) == 0                   ? true
-                              : (i + 5) == num_of_points - 1 ? true
+      anchor_point.enforced = (i + 0) == 0                   ? true
+                              : (i + 0) == num_of_points - 1 ? true
                                                              : false;
       anchor_points_.push_back(anchor_point);
     }
