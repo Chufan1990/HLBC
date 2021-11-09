@@ -16,11 +16,12 @@
 
 #include "common/vehicle_state/vehicle_state_provider.h"
 
-#include "Eigen/Core"
 #include <cmath>
 #include <sstream>
 
+#include "Eigen/Core"
 #include "common/configs/config_gflags.h"
+#include "common/configs/vehicle_config_helper.h"
 #include "common/macro.h"
 #include "common/math/euler_angles_zxy.h"
 #include "common/math/quaternion.h"
@@ -109,12 +110,17 @@ bool VehicleStateProvider::ConstructExceptLinearVelocity(
 
   const auto &orientation = localization.pose().orientation();
 
+  const auto &vehicle_param =
+      common::VehicleConfigHelper::Instance()->GetConfig().vehicle_param();
+
   if (localization.pose().has_heading()) {
-    vehicle_state_.set_heading(localization.pose().heading());
+    vehicle_state_.set_heading(localization.pose().heading() +
+                               vehicle_param.steer_offset());
   } else {
     vehicle_state_.set_heading(
         math::QuaternionToHeading(orientation.qw(), orientation.qx(),
-                                  orientation.qy(), orientation.qz()));
+                                  orientation.qy(), orientation.qz()) +
+        vehicle_param.steer_offset());
   }
 
   if (FLAGS_enable_map_reference_unify) {

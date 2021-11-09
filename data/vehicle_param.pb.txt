@@ -22,6 +22,7 @@ vehicle_param {
   max_abs_speed_when_stopped: 0.2
   brake_deadzone: 14.5
   throttle_deadzone: 15.4
+  steer_offset: -0.08
   steering_latency_param
   {
       dead_time: 0.1

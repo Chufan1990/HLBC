@@ -38,7 +38,7 @@ void GetProtoFromMsg(const autoware_msgs::LaneConstPtr& msg,
   trajectory->mutable_header()->set_sequence_num(msg->header.seq);
   trajectory->mutable_header()->set_frame_id(msg->header.frame_id);
 
-  for (size_t i = 0; i < std::min(msg->waypoints.size(), size_t(20)); i++) {
+  for (size_t i = 1; i < std::min(msg->waypoints.size(), size_t(21)); i++) {
     auto& waypoint = msg->waypoints[i];
     auto&& trajectory_point = trajectory->add_trajectory_point();
     trajectory_point->mutable_path_point()->set_x(
@@ -110,64 +110,56 @@ void GetProtoFromMsg(const autoware_msgs::ControlCommandStampedConstPtr& msg,
   chassis->mutable_header()->set_sequence_num(msg->header.seq);
 }
 
-void UpdateTrajectoryPoint(const LocalizationEstimate* localization,
-                           ADCTrajectory* trajectory) {
-  std::vector<std::pair<double, double>> xy;
+// void UpdateTrajectoryPoint(const LocalizationEstimate* localization,
+//                            ADCTrajectory* trajectory) {
+//   std::vector<std::pair<double, double>> xy;
 
-  auto p0 = trajectory->trajectory_point(1);
+//   auto p0 = trajectory->trajectory_point(1);
 
-  double init_time = 0.0;
-  double init_s = 0.0;
+//   double init_time = 0.0;
+//   double init_s = 0.0;
 
-  for (int i = 2; i < trajectory->trajectory_point_size(); i++) {
-    auto&& mutable_p = trajectory->mutable_trajectory_point(i);
-    auto& p1 = trajectory->trajectory_point(i);
+//   for (int i = 2; i < trajectory->trajectory_point_size(); i++) {
+//     auto&& mutable_p = trajectory->mutable_trajectory_point(i);
+//     auto& p1 = trajectory->trajectory_point(i);
 
-    /**
-     * @note estimate longitudinal distance (station) by Euclidean distance
-     * between two consecutive points, i.e, s = sqrt((x0 - x1)^2 + (y0 - y1)^2)
-     */
-    const double dist_between_2_points = std::sqrt(
-        PointDistanceSquare(p1, p0.path_point().x(), p0.path_point().y()));
+//     /**
+//      * @note estimate longitudinal distance (station) by Euclidean distance
+//      * between two consecutive points, i.e, s = sqrt((x0 - x1)^2 + (y0 -
+//      y1)^2)
+//      */
+//     const double dist_between_2_points = std::sqrt(
+//         PointDistanceSquare(p1, p0.path_point().x(), p0.path_point().y()));
 
-    /**
-     * @note estimate relative time (station) by Euclidean distance dividing
-     * linear speed of former point, i.e, relative_time = s / v
-     */
-    const double relative_time_between_2_points =
-        dist_between_2_points / p0.v();
+//     /**
+//      * @note estimate relative time (station) by Euclidean distance dividing
+//      * linear speed of former point, i.e, relative_time = s / v
+//      */
+//     const double relative_time_between_2_points =
+//         dist_between_2_points / p0.v();
 
-    const double heading_diff =
-        p1.path_point().theta() - p0.path_point().theta();
+//     const double heading_diff =
+//         p1.path_point().theta() - p0.path_point().theta();
 
-    init_s += dist_between_2_points;
-    init_time += relative_time_between_2_points;
+//     init_s += dist_between_2_points;
+//     init_time += relative_time_between_2_points;
 
-    // ADEBUG("", "dist_between_2_points: " << dist_between_2_points
-    //                                      << " init_s: " << init_s);
-    // ADEBUG("",
-    //        "relative_time_between_2_points: " <<
-    //        relative_time_between_2_points
-    //                                           << " init_time: " <<
-    //                                           init_time);
+//     mutable_p->mutable_path_point()->set_s(init_s);
 
-    mutable_p->mutable_path_point()->set_s(init_s);
+//     mutable_p->set_relative_time(init_time);
 
-    mutable_p->set_relative_time(init_time);
+//     mutable_p->mutable_path_point()->set_kappa(heading_diff /
+//                                                dist_between_2_points);
 
-    mutable_p->mutable_path_point()->set_kappa(heading_diff /
-                                               dist_between_2_points);
+//     p0 = p1;
+//   }
 
-    p0 = p1;
-  }
-
-  trajectory->mutable_trajectory_point(1)->mutable_path_point()->set_s(.00);
-  trajectory->mutable_trajectory_point(1)->set_relative_time(0.0);
-  trajectory->mutable_trajectory_point(1)->mutable_path_point()->set_kappa(
-      trajectory->trajectory_point(2).path_point().kappa());
-  //   ADEBUG("", "trajectory->trajectory_point(): " <<
-  //   trajectory->DebugString());
-}
+//   trajectory->mutable_trajectory_point(1)->mutable_path_point()->set_s(.00);
+//   trajectory->mutable_trajectory_point(1)->set_relative_time(0.0);
+//   trajectory->mutable_trajectory_point(1)->mutable_path_point()->set_kappa(
+//       trajectory->trajectory_point(2).path_point().kappa());
+//   ADEBUG("", "updated trajectory: " << trajectory->DebugString());
+// }
 
 }  // namespace control
 }  // namespace autoagric

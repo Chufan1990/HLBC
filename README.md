@@ -1,6 +1,6 @@
 # HLBC
 
-Hierarchical Lyapunov-based Controller ~~名字我瞎比起的~~ 目前和Apollo的lat_controller的结构相同，原因是LQR是非常成熟~~能追述到Apollo登月了, 80多年了~~的控制算法，是控制问题优化解法的入门。Apollo的代码架构和规范都十分成熟，没有必要重复造轮子。但既然叫*Hierarchical*(结构化)，之后会对算法做结构上的拓展(常见的做法是分为upper和lower controller，同时在上下级中添加增益补偿控制，例如MRAC)，也会不断的扩充不同的控制算法(例如MPC)。
+Hierarchical Lyapunov-based Controller ~~名字我瞎比起的~~ 目前和Apollo的lat_controller的结构相同，原因是LQR是非常成熟~~能追述到Apollo登月, 已经有80多年历史~~的控制算法，是控制问题优化解法的一种基本形式。Apollo的代码架构和规范都十分成熟，没有必要重复造轮子。但既然叫*Hierarchical*(结构化)，之后会对算法做结构上的拓展(常见的做法是分为upper和lower controller，同时在上下级中添加增益补偿控制，例如MRAC)，也会不断的扩充不同的控制算法(例如MPC)。
 
 ### Introduction
 - **input**

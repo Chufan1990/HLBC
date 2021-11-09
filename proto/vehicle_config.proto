@@ -96,6 +96,8 @@ message VehicleParam {
   LatencyParam steering_latency_param = 22;
   LatencyParam throttle_latency_param = 23;
   LatencyParam brake_latency_param = 24;
+  // I really dont like this
+  double steer_offset = 25;
 }
 
 message VehicleConfig {

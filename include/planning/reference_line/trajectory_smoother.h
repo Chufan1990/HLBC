@@ -23,6 +23,15 @@ struct AnchorPoint {
   double longitudinal_bound = 0.0;
   // enforce smoother to strictly follow this reference point
   bool enforced = false;
+
+  AnchorPoint(const common::PathPoint& point, const double lat_bound = 0.0,
+              const double lon_bound = 0.0, const bool en = false)
+      : path_point(point),
+        lateral_bound(lat_bound),
+        longitudinal_bound(lon_bound),
+        enforced(en) {}
+
+  AnchorPoint() = default;
 };
 
 class TrajectorySmoother {

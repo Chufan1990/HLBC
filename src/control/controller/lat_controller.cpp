@@ -395,8 +395,8 @@ Status LatController::ComputeControlCommand(
                                   &matrix_k_);
   }
 
-  ADEBUG("", "matrix_k_: \n" << matrix_k_);
-  ADEBUG("", "matrix_state_: \n" << matrix_state_);
+  // ADEBUG("", "matrix_k_: \n" << matrix_k_);
+  // ADEBUG("", "matrix_state_: \n" << matrix_state_);
 
   // feedback = - K * state
   // Convert vehicle steer angle from rad to degree and then to steer degree
@@ -574,9 +574,9 @@ void LatController::UpdateState(SimpleLateralDebug* debug) {
         trajectory_analyzer_, debug);
   } else {
     const auto& com = vehicle_state->ComputeCOMPosition(lr_);
-    ADEBUG("controller/lat_controller.cpp, LatController::ComputeLateralErrors",
-           "com.x(): " << com.x() << " com.y(): " << com.y()
-                       << " driving_orientation: " << driving_orientation_);
+    // ADEBUG("controller/lat_controller.cpp, LatController::ComputeLateralErrors",
+    //        "com.x(): " << com.x() << " com.y(): " << com.y()
+    //                    << " driving_orientation: " << driving_orientation_);
     ComputeLateralErrors(
         com.x(), com.y(), driving_orientation_,
         vehicle_state->linear_velocity(), vehicle_state->angular_velocity(),
@@ -657,10 +657,10 @@ void LatController::ComputeLateralErrors(
   heading_ = driving_orientation_;
   target_point_ = target_point.path_point();
 
-  ADEBUG("controller/lat_controller.cpp, LatController::ComputeLateralErrors ",
-         "x point: " << x << " y point: " << y);
-  ADEBUG("controller/lat_controller.cpp, LatController::ComputeLateralErrors",
-         "match point information : " << target_point.ShortDebugString());
+  // ADEBUG("controller/lat_controller.cpp, LatController::ComputeLateralErrors ",
+  //        "x point: " << x << " y point: " << y);
+  // ADEBUG("controller/lat_controller.cpp, LatController::ComputeLateralErrors",
+  //        "match point information : " << target_point.ShortDebugString());
 
   const double cos_target_heading = std::cos(target_point.path_point().theta());
   const double sin_target_heading = std::sin(target_point.path_point().theta());

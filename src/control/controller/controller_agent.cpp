@@ -109,7 +109,7 @@ Status ControllerAgent::ComputeControlCommand(
   auto status = controller_->ComputeControlCommand(localization, chassis,
                                                    trajectory, cmd);
   double end_timestamp = ros::Time::now().toNSec();
-  const double time_diff_ms = (end_timestamp - start_timestamp) * 1000;
+  const double time_diff_ms = (end_timestamp - start_timestamp) / 1e6;
 
   ADEBUG(
       "controller/controller_agent.cpp, ControllerAgent::ComputeControlCommand",

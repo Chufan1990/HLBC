@@ -81,7 +81,7 @@ bool CosThetaSmoother::Solve(
   // maximum amount of random pertubation; e.g.,
   // when evaluation finite diff
   options += "Numeric point_perturbation_radius " + std::to_string(0.05) + "\n";
-  options += "String check_derivatives_for_naninf yes\n";
+  options += "String check_derivatives_for_naninf no\n";
 
   // place to return solution
   CppAD::ipopt::solve_result<Dvector> solution;
@@ -96,15 +96,15 @@ bool CosThetaSmoother::Solve(
 
   bool ok = solution.status == CppAD::ipopt::solve_result<Dvector>::success;
 
-  ADEBUG("", "Solution Status: " << solution.status);
+  ADEBUG("", "found optimal solution: " << (solution.status == 1));
 
   if (ok) {
     for (size_t i = 0; i < raw_point2d.size(); i++) {
       size_t index = i << 1;
       opt_x->push_back(solution.x[index]);
       opt_y->push_back(solution.x[index + 1]);
-      ADEBUG("", "new point " << i << " (" << opt_x->back() << ", "
-                              << opt_y->back() << ")");
+    //   ADEBUG("", "new point " << i << " (" << opt_x->back() << ", "
+    //                           << opt_y->back() << ")");
     }
   }
 

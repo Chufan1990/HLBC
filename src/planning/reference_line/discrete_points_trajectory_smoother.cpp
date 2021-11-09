@@ -76,6 +76,8 @@ bool DiscretePointsTrajectorySmoother::Smooth(
 
   ADCTrajectory smoothed_trajectory;
 
+  smoothed_trajectory.mutable_header()->CopyFrom(raw_trajectory.header());
+
   for (std::size_t i = 0; i < ref_points.size(); i++)
     smoothed_trajectory.add_trajectory_point()->CopyFrom(ref_points[i]);
 
@@ -181,6 +183,10 @@ bool DiscretePointsTrajectorySmoother::GenerateTrajectoryPointProfile(
     point.mutable_path_point()->set_theta(headings[i]);
     point.mutable_path_point()->set_kappa(kappas[i]);
     point.mutable_path_point()->set_dkappa(dkappas[i]);
+    point.mutable_path_point()->set_s(accumulated_s[i]);
+    point.set_v(raw_trajectory.trajectory_point(i).v());
+    point.set_relative_time(raw_trajectory.trajectory_point(i).relative_time());
+    ADEBUG("", point.DebugString());
     trajectory_points->emplace_back(point);
   }
   return true;

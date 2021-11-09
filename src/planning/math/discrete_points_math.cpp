@@ -5,6 +5,8 @@
 #include "glog/logging.h"
 #include "planning/math/curve_math.h"
 
+#include "common/macro.h"
+
 namespace autoagric {
 namespace planning {
 
@@ -69,8 +71,9 @@ bool DiscretePointsMath::ComputePathPofile(
     nx = xy_points[i].first;
     ny = xy_points[i].second;
     distance += std::hypot(fx - nx, fy - ny);
+    // ADEBUG("", i << " " << distance << " " << nx << " " << ny << " " << fx << " " << fy);
     accumulated_s->push_back(distance);
-    fx = ny;
+    fx = nx;
     fy = ny;
   }
 
@@ -83,7 +86,7 @@ bool DiscretePointsMath::ComputePathPofile(
     if (i == 0) {
       xds = (xy_points[i + 1].first - xy_points[i].first) /
             (accumulated_s->at(i + 1) - accumulated_s->at(i));
-      yds = (xy_points[i + 1].first - xy_points[i].second) /
+      yds = (xy_points[i + 1].second - xy_points[i].second) /
             (accumulated_s->at(i + 1) - accumulated_s->at(i));
     } else if (i == points_size - 1) {
       xds = (xy_points[i].first - xy_points[i - 1].first) /
@@ -93,7 +96,7 @@ bool DiscretePointsMath::ComputePathPofile(
     } else {
       xds = (xy_points[i + 1].first - xy_points[i - 1].first) /
             (accumulated_s->at(i + 1) - accumulated_s->at(i - 1));
-      yds = (xy_points[i + 1].first - xy_points[i - 1].second) /
+      yds = (xy_points[i + 1].second - xy_points[i - 1].second) /
             (accumulated_s->at(i + 1) - accumulated_s->at(i - 1));
     }
 
@@ -125,7 +128,7 @@ bool DiscretePointsMath::ComputePathPofile(
               x_over_s_first_derivatives[i - 1]) /
              (accumulated_s->at(i + 1) - accumulated_s->at(i - 1));
       ydds = (y_over_s_first_derivatives[i + 1] -
-              x_over_s_first_derivatives[i - 1]) /
+              y_over_s_first_derivatives[i - 1]) /
              (accumulated_s->at(i + 1) - accumulated_s->at(i - 1));
     }
     x_over_s_second_derivatives.push_back(xdds);
@@ -138,6 +141,7 @@ bool DiscretePointsMath::ComputePathPofile(
     double xdds = x_over_s_second_derivatives[i];
     double ydds = y_over_s_second_derivatives[i];
 
+    ADEBUG("", i << " " << xds << " " << yds << " " << xdds << " " << ydds << " " << CurveMath::ComputeCurvature(xds, xdds, yds, ydds));
     kappas->push_back(CurveMath::ComputeCurvature(xds, xdds, yds, ydds));
   }
 
