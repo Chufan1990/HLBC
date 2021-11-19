@@ -185,8 +185,17 @@ bool DiscretePointsTrajectorySmoother::GenerateTrajectoryPointProfile(
     point.mutable_path_point()->set_dkappa(dkappas[i]);
     point.mutable_path_point()->set_s(accumulated_s[i]);
     point.set_v(raw_trajectory.trajectory_point(i).v());
-    point.set_relative_time(raw_trajectory.trajectory_point(i).relative_time());
-    ADEBUG("", point.DebugString());
+
+    if (i == 0)
+      point.set_relative_time(0.0);
+    else
+      point.set_relative_time((point.path_point().s() -
+                               trajectory_points->back().path_point().s()) *
+                                  2.0 /
+                                  (point.v() + trajectory_points->back().v()) +
+                              trajectory_points->back().relative_time());
+
+    // ADEBUG("", point.DebugString());
     trajectory_points->emplace_back(point);
   }
   return true;

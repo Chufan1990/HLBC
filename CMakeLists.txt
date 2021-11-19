@@ -15,18 +15,11 @@ set(CMAKE_CXX_FLAGS_RELEASE
 # Find catkin macros and libraries if COMPONENTS list like find_package(catkin
 # REQUIRED COMPONENTS xyz) is used, also find other catkin packages
 find_package(
-  catkin REQUIRED
-  COMPONENTS geometry_msgs
-             visualization_msgs
-             roscpp
-             rospy
-             std_msgs
-             message_generation
-             autoware_msgs)
+  catkin REQUIRED COMPONENTS geometry_msgs visualization_msgs roscpp std_msgs
+                             message_generation autoware_msgs)
 
-set(Protobuf_DIR "/home/chufankong/test")
-
-list(APPEND CMAKE_PREFIX_PATH ${Protobuf_DIR})
+set(THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
+set(Protobuf_DIR "${THIRDPARTY_DIR}/protobuf")
 
 # message(WARNING "CMAKE_SYSTEM_PREFIX_PATH: ${CMAKE_SYSTEM_PREFIX_PATH}")
 # message(WARNING "CMAKE_SYSTEM_FRAMEWORK_PATH: ${CMAKE_SYSTEM_FRAMEWORK_PATH}")
@@ -40,20 +33,38 @@ list(APPEND CMAKE_PREFIX_PATH ${Protobuf_DIR})
 
 # message(WARNING "PATH: ${PATH}")
 
-# message(WARNING "CMAKE_SYSTEM_PREFIX_PATH: ${CMAKE_SYSTEM_PREFIX_PATH}")
+# list(APPEND CMAKE_PREFIX_PATH "${Protobuf_DIR}")
 
-find_package(Protobuf 3.16.0 EXACT MODULE REQUIRED)
+# message(WARNING "Protobuf_DIR: ${Protobuf_DIR}")
 
-find_package(Protobuf REQUIRED)
-if(Protobuf_FOUND)
+# find_package(Protobuf 3.19.0 EXACT MODULE REQUIRED) message(WARNING
+# "THIRDPARTY_DIR: ${THIRDPARTY_DIR}")
+
+find_library(
+  Protobuf_LIBRARIES protobuf
+  PATHS ${Protobuf_DIR}
+  PATH_SUFFIXES lib
+  NO_DEFAULT_PATH)
+
+find_program(
+  PROTOBUF_PROTOC_EXECUTABLE protoc
+  PATHS ${Protobuf_DIR}
+  PATH_SUFFIXES bin
+  NO_DEFAULT_PATH)
+
+find_path(
+  Protobuf_INCLUDE_DIRS google
+  PATHS ${Protobuf_DIR}
+  PATH_SUFFIXES include
+  NO_DEFAULT_PATH)
+
+
+if("${Protobuf_LIBRARIES}" STREQUAL "Protobuf_LIBRARIES-NOTFOUND")
+  message(WARNING "Protobuf package not found")
+else()
   message(WARNING "Protobuf version : ${Protobuf_VERSION}")
   message(WARNING "Protobuf include path : ${Protobuf_INCLUDE_DIRS}")
   message(WARNING "Protobuf libraries : ${Protobuf_LIBRARIES}")
-else()
-  message(
-    WARNING
-      "Protobuf package not found -> specify search path via PROTOBUF_ROOT variable"
-  )
 endif()
 
 find_package(gflags REQUIRED)
@@ -79,8 +90,7 @@ endif()
 
 # "gflags_INCLUDE_DIR=${gflags_INCLUDE_DIR}")
 
-# message(WARNING "glog_LIBRARIES=${glog_LIBRARIES}") message(WARNING
-# "glog_INCLUDE_DIR=${glog_INCLUDE_DIR}")
+# message(WARNING "GFLAGS_LIBRARIES=${GFLAGS_LIBRARIES}")
 
 # System dependencies are found with CMake's conventions find_package(Boost
 # REQUIRED COMPONENTS system)
@@ -156,6 +166,11 @@ foreach(FIL ${PROTO_FILES})
                           --cpp_out=${PROTO_META_BASE_DIR} ${FILE_PATH})
 endforeach()
 
+# message(WARNING "GFLAGS_INCLUDE_DIR=${GFLAGS_INCLUDE_DIR}") message(WARNING
+# "GFLAGS_LIBRARIES=${GFLAGS_LIBRARIES}") message(WARNING
+# "GLOG_INCLUDE_DIR=${GLOG_INCLUDE_DIR}") message(WARNING
+# "GLOG_LIBRARIES=${GLOG_LIBRARIES}")
+
 # message(WARNING "PROTO_SRCS=${PROTO_SRCS}") message(WARNING
 # "PROTO_HDRS=${PROTO_HDRS}")
 
@@ -182,29 +197,30 @@ endforeach()
 # that dependent projects also need CATKIN_DEPENDS: catkin_packages dependent
 # projects also need DEPENDS: system dependencies of this project that dependent
 # projects also need
+# message(WARNING "PROTO_META_BASE_DIR=${PROTO_META_BASE_DIR}")
 catkin_package(
   INCLUDE_DIRS
   include
-  ${PROTO_META_BASE_DIR}
-  ${Protobuf_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
+  ${${CMAKE_CURRENT_BINARY_DIR}/proto}
   LIBRARIES
   ${PROJECT_NAME}
-  ${catkin_LIBRARIES}
   ${Protobuf_LIBRARIES}
   ${Ipopt_LIBRARIES}
-  gflags
-  glog
   CATKIN_DEPENDS
   geometry_msgs
   visualization_msgs
   roscpp
-  rospy
   std_msgs
   message_runtime
   autoware_msgs
-  # DEPENDS system_lib
-)
+  DEPENDS
+  GFLAGS
+  EIGEN3)
+# ${Protobuf_INCLUDE_DIRS} ${PROTO_META_BASE_DIR} ${EIGEN3_INCLUDE_DIR}
+# LIBRARIES ${PROJECT_NAME} ${catkin_LIBRARIES} ${Protobuf_LIBRARIES}
+# ${Ipopt_LIBRARIES} gflags_shared glog::glog CATKIN_DEPENDS geometry_msgs
+# visualization_msgs roscpp rospy std_msgs message_runtime autoware_msgs DEPENDS
+# gflags glog Eigen3)
 
 # ##############################################################################
 # Build ##
@@ -213,8 +229,13 @@ catkin_package(
 # Specify additional locations of header files Your package locations should be
 # listed before other locations
 include_directories(
-  include ${CMAKE_CURRENT_BINARY_DIR} ${catkin_INCLUDE_DIRS}
-  ${Protobuf_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR} ${PROTO_META_BASE_DIR})
+  include
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${catkin_INCLUDE_DIRS}
+  ${GFLAGS_INCLUDE_DIR}
+  ${Protobuf_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
+  ${PROTO_META_BASE_DIR})
 
 # Declare a C++ library add_library(${PROJECT_NAME} src/${PROJECT_NAME}/hlbc.cpp
 # )
@@ -226,44 +247,75 @@ include_directories(
 file(GLOB_RECURSE ${PROJECT_NAME}_SOURCE_FILES src/common/*.cpp
      src/control/*.cpp src/planning/*.cpp)
 file(GLOB_RECURSE ${PROJECT_NAME}_PROTO_SOURCE_FILES
-     ${CMAKE_CURRENT_BINARY_DIR}/*.cc)
+     ${CMAKE_CURRENT_BINARY_DIR}/proto/*.cc)
 
 # use, i.e. don't skip the full RPATH for the build tree
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
+# set(CMAKE_SKIP_BUILD_RPATH FALSE)
 
 # when building, don't use the install RPATH already (but later on when
-# installing)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-set(CMAKE_INSTALL_RPATH ${Protobuf_DIR})
+# installing) set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) set(CMAKE_INSTALL_RPATH
+# "${Protobuf_DIR}/lib")
 
 # add the automatically determined parts of the RPATH which point to directories
 # outside the build tree to the install RPATH
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# ##############################################################################
+# PROTOBUF ##
+# ##############################################################################
+# add_library(protobuf::protobuf SHARED IMPORTED) set_property(TARGET
+# protobuf::protobuf PROPERTY IMPORTED_LOCATION ${Protobuf_LIBRARIES})
+# set_target_properties( protobuf::protobuf PROPERTIES
+# INTERFACE_INCLUDE_DIRECTORIES ${Protobuf_INCLUDE_DIRS})
+
+# ##############################################################################
+# HLBC ##
+# ##############################################################################
 
 add_library(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCE_FILES}
                             ${${PROJECT_NAME}_PROTO_SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} ${Protobuf_LIBRARIES} ${catkin_LIBRARIES}
-                      ${Ipopt_LIBRARIES} gflags_shared glog::glog)
+# message(WARNING "LIBRARY_OUTPUT_DIRECTORY=${LIBRARY_OUTPUT_DIRECTORY}")
 
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS}
-                 ${catkin_EXPORTED_TARGETS})
+# set(LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+
+# message(WARNING "LIBRARY_OUTPUT_DIRECTORY=${LIBRARY_OUTPUT_DIRECTORY}")
+
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 0.0.1 SOVERSION 1)
+
+target_link_libraries(${PROJECT_NAME} glog::glog)
+
+# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS}
+# ${catkin_EXPORTED_TARGETS})
 
 add_executable(trajectory_visualizer_test
                src/nodes/trajectory_visualizer_test.cpp)
 
-add_dependencies(trajectory_visualizer_test ${${PROJECT_NAME}_EXPORTED_TARGETS}
-                 ${catkin_EXPORTED_TARGETS})
+add_dependencies(trajectory_visualizer_test ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(trajectory_visualizer_test ${PROJECT_NAME})
+target_link_libraries(
+  trajectory_visualizer_test
+  ${PROJECT_NAME}
+  ${Protobuf_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${Ipopt_LIBRARIES}
+  ${GFLAGS_LIBRARIES}
+  glog::glog)
 
 add_executable(discrete_points_trajectory_smoother_test
                src/nodes/discrete_points_trajectory_smoother_test.cpp)
 
 add_dependencies(discrete_points_trajectory_smoother_test
-                 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+                 ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(discrete_points_trajectory_smoother_test ${PROJECT_NAME})
+target_link_libraries(
+  discrete_points_trajectory_smoother_test
+  ${PROJECT_NAME}
+  ${Protobuf_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${Ipopt_LIBRARIES}
+  ${GFLAGS_LIBRARIES}
+  glog::glog)
 
 # ##############################################################################
 # Install ##
@@ -299,8 +351,28 @@ install(
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
 # Install project namespaced headers
+
+install(
+  DIRECTORY third_party/protobuf/include/
+  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+  PATTERN "*.cc" EXCLUDE
+  PATTERN "*.cpp" EXCLUDE)
+
+install(
+  DIRECTORY third_party/protobuf/lib/
+  DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  PATTERN ".svn" EXCLUDE)
+
+# install( DIRECTORY ThirdParty/protobuf/bin/ DESTINATION
+# ${CATKIN_PACKAGE_BIN_DESTINATION} PATTERN ".svn" EXCLUDE)
+
+install(
+  DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/proto
+  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}/${PROJECT_NAME}
+  PATTERN "*.cc" EXCLUDE
+  PATTERN "*.cpp" EXCLUDE)
+
 install(
   DIRECTORY include/
   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}

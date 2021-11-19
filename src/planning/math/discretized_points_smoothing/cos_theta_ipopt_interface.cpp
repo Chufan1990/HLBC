@@ -95,7 +95,7 @@ bool CosThetaIpoptInterface::get_starting_point(int n, Dvector& x) {
 
   std::random_device rd;
   std::default_random_engine gen = std::default_random_engine(rd());
-  std::normal_distribution<> dis{0, 0.05};
+  std::normal_distribution<> dis{0, 0.005};
   for (size_t i = 0; i < num_of_points_; ++i) {
     size_t index = i << 1;
     x[index] = ref_points_[i].first + dis(gen);
