@@ -7,9 +7,9 @@
 #include <utility>
 #include <vector>
 
-#include "hlbc/proto/planning.pb.h"
-#include "hlbc/proto/pnc_point.pb.h"
-#include "hlbc/proto/reference_line_smoother_config.pb.h"
+#include "autoagric/common/pnc_point.pb.h"
+#include "autoagric/planning/planning.pb.h"
+#include "autoagric/planning/reference_line_smoother_config.pb.h"
 #include "planning/reference_line/trajectory_smoother.h"
 
 /**

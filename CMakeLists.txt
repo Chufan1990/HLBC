@@ -58,7 +58,6 @@ find_path(
   PATH_SUFFIXES include
   NO_DEFAULT_PATH)
 
-
 if("${Protobuf_LIBRARIES}" STREQUAL "Protobuf_LIBRARIES-NOTFOUND")
   message(WARNING "Protobuf package not found")
 else()
@@ -132,26 +131,22 @@ endif()
 # generate_messages( DEPENDENCIES std_msgs  # Or other packages containing msgs
 # )
 
-# Generate protobuf in the 'proto' folder
-file(
-  GLOB_RECURSE PROTO_FILES
-  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-  *.proto)
+# Generate protobuf in the 'proto' folder file( GLOB_RECURSE PROTO_FILES
+# RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/proto/" *.proto)
 
-get_filename_component(PARENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
-get_filename_component(PARENT_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} DIRECTORY)
+# get_filename_component(PARENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+# DIRECTORY)
 
-# message(WARNING "PARENT_BINARY_DIR=${PARENT_BINARY_DIR}")
+add_subdirectory(proto)
 
-set(PROTO_META_BASE_DIR ${PARENT_BINARY_DIR})
-list(APPEND PROTO_FLAGS -I${PARENT_SOURCE_DIR})
-
-# message(WARNING "PROTO_FLAGS=${PROTO_FLAGS}")
+get_filename_component(PROTO_META_BASE_DIR ${CMAKE_CURRENT_BINARY_DIR}
+                       DIRECTORY)
+list(APPEND PROTO_FLAGS -I${PROTO_INCLUDE_DIRS})
 
 foreach(FIL ${PROTO_FILES})
-  get_filename_component(FILE_NAME ${FIL} NAME_WE)
-  get_filename_component(FILE_DIR ${FIL} DIRECTORY)
-  get_filename_component(FILE_PATH ${FIL} ABSOLUTE)
+  # get_filename_component(FILE_NAME ${FIL} NAME_WE)
+  # get_filename_component(FILE_DIR ${FIL} DIRECTORY)
+  # get_filename_component(FILE_PATH ${FIL} ABSOLUTE)
 
   # file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/${FILE_DIR}/${FILE_NAME}.pb.cc"
   # "${CMAKE_CURRENT_BINARY_DIR}/${FILE_DIR}/${FILE_NAME}.pb.h")
@@ -162,9 +157,14 @@ foreach(FIL ${PROTO_FILES})
 
   # message(WARNING "FILE_PATH=${FILE_PATH}")
 
-  execute_process(COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} ${PROTO_FLAGS}
-                          --cpp_out=${PROTO_META_BASE_DIR} ${FILE_PATH})
+  execute_process(
+    COMMAND
+      ${PROTOBUF_PROTOC_EXECUTABLE} ${PROTO_FLAGS}
+      --cpp_out=${PROTO_META_BASE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/proto/${FIL})
 endforeach()
+
+
+add_subdirectory(third_party)
 
 # message(WARNING "GFLAGS_INCLUDE_DIR=${GFLAGS_INCLUDE_DIR}") message(WARNING
 # "GFLAGS_LIBRARIES=${GFLAGS_LIBRARIES}") message(WARNING
@@ -196,12 +196,12 @@ endforeach()
 # package contains header files LIBRARIES: libraries you create in this project
 # that dependent projects also need CATKIN_DEPENDS: catkin_packages dependent
 # projects also need DEPENDS: system dependencies of this project that dependent
-# projects also need
-# message(WARNING "PROTO_META_BASE_DIR=${PROTO_META_BASE_DIR}")
+# projects also need 
+
 catkin_package(
   INCLUDE_DIRS
   include
-  ${${CMAKE_CURRENT_BINARY_DIR}/proto}
+  ${PROTO_META_BASE_DIR}
   LIBRARIES
   ${PROJECT_NAME}
   ${Protobuf_LIBRARIES}
@@ -216,11 +216,6 @@ catkin_package(
   DEPENDS
   GFLAGS
   EIGEN3)
-# ${Protobuf_INCLUDE_DIRS} ${PROTO_META_BASE_DIR} ${EIGEN3_INCLUDE_DIR}
-# LIBRARIES ${PROJECT_NAME} ${catkin_LIBRARIES} ${Protobuf_LIBRARIES}
-# ${Ipopt_LIBRARIES} gflags_shared glog::glog CATKIN_DEPENDS geometry_msgs
-# visualization_msgs roscpp rospy std_msgs message_runtime autoware_msgs DEPENDS
-# gflags glog Eigen3)
 
 # ##############################################################################
 # Build ##
@@ -247,7 +242,7 @@ include_directories(
 file(GLOB_RECURSE ${PROJECT_NAME}_SOURCE_FILES src/common/*.cpp
      src/control/*.cpp src/planning/*.cpp)
 file(GLOB_RECURSE ${PROJECT_NAME}_PROTO_SOURCE_FILES
-     ${CMAKE_CURRENT_BINARY_DIR}/proto/*.cc)
+     ${PROTO_META_BASE_DIR}/autoagric/*.cc)
 
 # use, i.e. don't skip the full RPATH for the build tree
 # set(CMAKE_SKIP_BUILD_RPATH FALSE)
@@ -368,8 +363,8 @@ install(
 # ${CATKIN_PACKAGE_BIN_DESTINATION} PATTERN ".svn" EXCLUDE)
 
 install(
-  DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/proto
-  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}/${PROJECT_NAME}
+  DIRECTORY ${PROTO_META_BASE_DIR}/autoagric
+  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   PATTERN "*.cc" EXCLUDE
   PATTERN "*.cpp" EXCLUDE)
 

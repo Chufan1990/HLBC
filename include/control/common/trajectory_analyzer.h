@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "common/math/vec2d.h"
-#include "hlbc/proto/planning.pb.h"
-#include "hlbc/proto/pnc_point.pb.h"
+#include "autoagric/planning/planning.pb.h"
+#include "autoagric/common/pnc_point.pb.h"
 
 /**
  * @namespace autoargic::control

@@ -2,12 +2,12 @@
 
 #include <memory>
 
+#include "autoagric/planning/reference_line_smoother_config.pb.h"
 #include "common/configs/vehicle_config_helper.h"
 #include "common/macro.h"
-#include "control/controller/controller_agent.h"
-#include "hlbc/proto/reference_line_smoother_config.pb.h"
-#include "planning/reference_line/trajectory_smoother.h"
 #include "control/common/msg_to_proto.h"
+#include "control/controller/controller_agent.h"
+#include "planning/reference_line/trajectory_smoother.h"
 
 /**
  * @namespace autoagric::control
@@ -17,7 +17,6 @@ namespace autoagric {
 namespace control {
 
 class ControllerInterface {
-  
  public:
   ControllerInterface() = default;
 
@@ -87,7 +86,7 @@ class ControllerInterface {
   }
 
   planning::ADCTrajectory trajectory() const {
-    return local_view_  .trajectory();
+    return local_view_.trajectory();
   }
 
  private:

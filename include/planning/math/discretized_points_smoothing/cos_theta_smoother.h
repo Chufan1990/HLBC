@@ -3,7 +3,7 @@
 #include <utility>
 #include <vector>
 
-#include "hlbc/proto/math/cos_theta_smoother_config.pb.h"
+#include "autoagric/planning/math/cos_theta_smoother_config.pb.h"
 
 namespace autoagric {
 namespace planning {

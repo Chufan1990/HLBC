@@ -1,13 +1,13 @@
 # HLBC
 
-Hierarchical Lyapunov-based Controller ~~名字我瞎比起的~~ 目前和Apollo的lat_controller的结构相同，原因是LQR是非常成熟~~能追述到Apollo登月, 已经有80多年历史~~的控制算法，是控制问题优化解法的一种基本形式。Apollo的代码架构和规范都十分成熟，没有必要重复造轮子。但既然叫*Hierarchical*(结构化)，之后会对算法做结构上的拓展(常见的做法是分为upper和lower controller，同时在上下级中添加增益补偿控制，例如MRAC)，也会不断的扩充不同的控制算法(例如MPC)。
+Hierarchical Lyapunov-based Controller ~~名字我瞎比起的~~ 目前和Apollo的lat_controller的结构相同，原因是LQR是非常成熟~~能追述到Apollo登月, 已经有80多年历史~~的控制算法，是控制问题优化解法的一种基本形式。Apollo的代码架构和规范都十分成熟，没有必要重复造轮子。但既然叫*Hierarchical*(结构化)，之后会对算法做结构上的拓展(常见的做法是分为upper和lower controller，同时在上下级中添加增益补偿控制，例如MRAC)，也会不断的扩充不同的控制算法, 例如 Model Predictive Control(MPC), Model Predictive Path Integral(MPPI), Imitation Learning(IL), etc。
 
 ### Introduction
 - **input**
-    - Chassis *vehicle state info, i.e, linear velocity, angular velocity, linear acceleration, angular acceleration, geer position, etc.*
+    - **Chassis** *vehicle state info, i.e, linear velocity, angular velocity, linear acceleration, angular acceleration, geer position, etc.*
       - speed_mps *车辆行驶速度，由轮速计提供*
       - gear_location *当前车辆档位 (前进/后退)*
-    - LocalizationEstimation *vehicle localization info, i.e, vehicle x/y/z coordination in map frame, vehicle euclidean angular velocity in map frame, vehicle euclidean linear velocity in map frame, etc.*
+    - **LocalizationEstimation** *vehicle localization info, i.e, vehicle x/y/z coordination in map frame, vehicle euclidean angular velocity in map frame, vehicle euclidean linear velocity in map frame, etc.*
       - pose *车辆位姿信息*
         - position *x,y,z坐标 (地图坐标系)*
         - orientation *车辆朝向 (地图坐标系,四元数)*
@@ -33,7 +33,7 @@ Hierarchical Lyapunov-based Controller ~~名字我瞎比起的~~ 目前和Apollo
       - relative_time *相对时间 (相对于第一个轨迹点)*
 
 - **Ouput**:
-    - ControlCommand *For LQR, only steering angle in percentage/degree/rad*
+    - **ControlCommand** *For LQR, only steering angle in percentage/degree/rad*
 
 #### Structure:
     - conf
@@ -307,9 +307,9 @@ LQR是线性凸优化(二次规划)的一个基本形式，离散的控制问题
 - 代价函数 *cost function*:  $min_{u} \sum_{0}^{\inf} x_{k}^{T}Qx_{k} + u^{T}Ru$
 - 等式约束 *equality constraints*:  $x_{k+1} = A_{k}x_{k} + B_{k}u$ 
 
-**x_{k}** 和 **u**分别代表运动控制中，被控车辆*k*时刻状态*state*和控制指令*u*, **Q** 和 **R** 为权重矩阵。由于运动过程中的，车辆追踪的目标并不总是*0*,即$x_{ref} = 0$, 因此常用状态误差 $e = x_{ref} - x$作为状态量。因此代价函数是状态误差和控制量的加权平均。直观的理解，LQR的目标函数是使误差量和控制量的综合尽可能的小，以此来达到消除偏差的同时，尽可能少的使用大幅度的控制量(对于横向控制来说，就是大角度的转向)。
+$x_{k}$ 和 $u$ 分别代表运动控制中，被控车辆*k*时刻状态*state*和控制指令*u*, **Q** 和 **R** 为权重矩阵。由于运动过程中的，车辆追踪的目标并不总是*0*,即$x_{ref} = 0$, 因此常用误差向量 $e = x_{ref} - x$作为状态量。因此代价函数是状态误差和控制量的加权平均。直观的理解，LQR的目标函数是使误差量和控制量的综合尽可能的小，以此来达到消除偏差的同时，尽可能少的使用大幅度的控制量(对于横向控制来说，就是大角度的转向)。
 
-同时，在动力学方程中，状态误差**e**还包括了横向偏差的变化率`lateral_error_rate`和车辆朝向的变化率`heading_error_rate`。通过调节权重矩阵**Q**的值，可以在代价函数中加入对状态变化率的cost，使得LQR求解时会同时考虑状态的变化快慢，增加车辆运动的平滑性。
+同时，在动力学方程中，误差向量**e**还包括了横向偏差的变化率`lateral_error_rate`和车辆朝向的变化率`heading_error_rate`。通过调节权重矩阵**Q**的值，可以在代价函数中加入对状态变化率的cost，使得LQR求解时会同时考虑状态的变化快慢，增加车辆运动的平滑性。
 
 前馈控制增益的计算主要依赖于轨迹点的曲率*curvature*，具体的计算为$ff = arctan(L \cdot K)$，其中**L**为轮距`wheel_base`，**K**为对应轨迹点的曲率`kappa`.
 

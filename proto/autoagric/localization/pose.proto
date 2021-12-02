@@ -18,7 +18,7 @@ syntax = "proto3";
 
 package autoagric.localization;
 
-import "hlbc/proto/geometry.proto";
+import "autoagric/common/geometry.proto";
 
 message Pose {
   // Position of the vehicle reference point (VRP) in the map reference frame.

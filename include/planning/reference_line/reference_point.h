@@ -5,7 +5,7 @@
 
 #include <string>
 
-#include "hlbc/proto/pnc_point.pb.h"
+#include "autoagric/common/pnc_point.pb.h"
 
 namespace autoagric {
 namespace planning {

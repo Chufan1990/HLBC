@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package autoagric.localization;
 
-import "hlbc/proto/pose.proto";
-import "hlbc/proto/header.proto";
+import "autoagric/localization/pose.proto";
+import "autoagric/common/header.proto";
 
 message LocalizationEstimate {
     autoagric.common.Header header = 1;

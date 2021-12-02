@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package autoagric.control;
 
-import "hlbc/proto/gain_scheduler_conf.proto";
+import "autoagric/control/gain_scheduler_conf.proto";
 // import "modules/control/proto/leadlag_conf.proto";
-import "hlbc/proto/mrac_conf.proto";
+import "autoagric/control/mrac_conf.proto";
 
 // simple optimal steer control param
 message LatControllerConf {

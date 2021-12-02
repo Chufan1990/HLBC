@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package autoagric.control;
 
-import "hlbc/proto/chassis.proto";
-import "hlbc/proto/header.proto";
-import "hlbc/proto/localization.proto";
-import "hlbc/proto/planning.proto";
+import "autoagric/canbus/chassis.proto";
+import "autoagric/common/header.proto";
+import "autoagric/localization/localization.proto";
+import "autoagric/planning/planning.proto";
 
 message LocalView {
   autoagric.common.Header header = 1;

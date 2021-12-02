@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package autoagric.common;
 
-import "hlbc/proto/chassis.proto";
-import "hlbc/proto/pose.proto";
+import "autoagric/canbus/chassis.proto";
+import "autoagric/localization/pose.proto";
 
 message VehicleState {
   double x = 1;

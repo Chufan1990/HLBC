@@ -5,10 +5,10 @@
 #include <memory>
 #include <utility>
 
+#include "autoagric/common/error_code.pb.h"
 #include "common/macro.h"
 #include "control/common/control_gflags.h"
 #include "control/controller/lat_controller.h"
-#include "hlbc/proto/error_code.pb.h"
 
 namespace autoagric {
 namespace control {

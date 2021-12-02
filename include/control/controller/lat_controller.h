@@ -5,14 +5,14 @@
 
 #pragma once
 
-#include "Eigen/Core"
 #include <memory>
 #include <string>
 
+#include "Eigen/Core"
+#include "autoagric/common/vehicle_config.pb.h"
 #include "control/common/interpolation_1d.h"
 #include "control/common/trajectory_analyzer.h"
 #include "control/controller/controller.h"
-#include "hlbc/proto/vehicle_config.pb.h"
 /**
  * @namespace autoagric::control
  * @brief autoagric::control

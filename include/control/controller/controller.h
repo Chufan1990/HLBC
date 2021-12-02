@@ -8,13 +8,13 @@
 #include <memory>
 #include <string>
 
+#include "autoagric/canbus/chassis.pb.h"
+#include "autoagric/control/control_cmd.pb.h"
+#include "autoagric/control/control_conf.pb.h"
+#include "autoagric/localization/localization.pb.h"
+#include "autoagric/planning/planning.pb.h"
 #include "common/status/status.h"
 #include "control/common/dependency_injector.h"
-#include "hlbc/proto/chassis.pb.h"
-#include "hlbc/proto/control_cmd.pb.h"
-#include "hlbc/proto/control_conf.pb.h"
-#include "hlbc/proto/localization.pb.h"
-#include "hlbc/proto/planning.pb.h"
 
 /**
  * @namespace autoagric::control

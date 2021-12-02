@@ -25,6 +25,9 @@
 
 #include <random>
 
+#include "autoagric/common/pnc_point.pb.h"
+#include "autoagric/planning/planning.pb.h"
+#include "autoagric/planning/reference_line_smoother_config.pb.h"
 #include "autoware_msgs/Lane.h"
 #include "autoware_msgs/Waypoint.h"
 #include "common/macro.h"
@@ -32,9 +35,6 @@
 #include "common/util/file.h"
 #include "control/common/trajectory_visualizer.h"
 #include "geometry_msgs/Vector3.h"
-#include "hlbc/proto/planning.pb.h"
-#include "hlbc/proto/pnc_point.pb.h"
-#include "hlbc/proto/reference_line_smoother_config.pb.h"
 #include "planning/common/planning_gflags.h"
 #include "planning/reference_line/trajectory_smoother.h"
 #include "std_msgs/ColorRGBA.h"

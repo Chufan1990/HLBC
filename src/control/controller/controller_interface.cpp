@@ -1,8 +1,8 @@
 #include "control/controller/controller_interface.h"
 
+#include "autoagric/common/error_code.pb.h"
 #include "common/util/file.h"
 #include "control/common/control_gflags.h"
-#include "hlbc/proto/error_code.pb.h"
 #include "planning/common/planning_gflags.h"
 #include "planning/reference_line/discrete_points_trajectory_smoother.h"
 

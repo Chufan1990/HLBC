@@ -4,13 +4,11 @@
 
 #include <utility>
 
+#include "autoagric/planning/planning.pb.h"
 #include "autoware_msgs/Lane.h"
-#include "visualization_msgs/MarkerArray.h"
 #include "geometry_msgs/Vector3.h"
 #include "std_msgs/ColorRGBA.h"
-#include "hlbc/proto/planning.pb.h"
-
-
+#include "visualization_msgs/MarkerArray.h"
 
 namespace autoagric {
 namespace control {
@@ -29,14 +27,13 @@ class TrajectoryVisualizer {
 
   void Proc(const autoware_msgs::LaneConstPtr& lane);
 
-
-  static MarkerType LaneToMarkerArray(const autoware_msgs::Lane& lane, const geometry_msgs::Vector3& scale,
-      const std_msgs::ColorRGBA& color);
-
+  static MarkerType LaneToMarkerArray(const autoware_msgs::Lane& lane,
+                                      const geometry_msgs::Vector3& scale,
+                                      const std_msgs::ColorRGBA& color);
 
   static MarkerType ADCTrajectoryToMarkerArray(
-    const planning::ADCTrajectory& trajectory, const geometry_msgs::Vector3& scale,
-    const std_msgs::ColorRGBA& color);
+      const planning::ADCTrajectory& trajectory,
+      const geometry_msgs::Vector3& scale, const std_msgs::ColorRGBA& color);
 
  private:
   MarkerType LaneToMarkerArray(const autoware_msgs::LaneConstPtr& lane);

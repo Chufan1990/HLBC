@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package autoagric.canbus;
 
-import "hlbc/proto/header.proto";
+import "autoagric/common/header.proto";
 
 message Chassis {
   enum DrivingMode {

@@ -31,7 +31,7 @@
 
 #include "common/math/euler_angles_zxy.h"
 #include "common/math/math_utils.h"
-#include "hlbc/proto/geometry.pb.h"
+#include "autoagric/common/geometry.pb.h"
 
 /**
  * @namespace namespace autoagric {

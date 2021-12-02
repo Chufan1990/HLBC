@@ -7,8 +7,8 @@
 #include <string>
 
 #include "common/macro.h"
-#include "hlbc/proto/pnc_point.pb.h"
-#include "hlbc/proto/vehicle_config.pb.h"
+#include "autoagric/common/pnc_point.pb.h"
+#include "autoagric/common/vehicle_config.pb.h"
 // #include "modules/common/math/box2d.h"
 
 /**
