@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package autoagric.common;
 
-import "hlbc/proto/header.proto";
-import "hlbc/proto/geometry.proto";
+import "autoagric/common/header.proto";
+import "autoagric/common/geometry.proto";
 
 message Transform {
   bytes source_frame = 1; // Also known as "frame_id."

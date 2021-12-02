@@ -8,9 +8,9 @@
 #include <memory>
 #include <vector>
 
+#include "autoagric/control/local_view.pb.h"
 #include "control/common/dependency_injector.h"
 #include "control/controller/controller.h"
-#include "hlbc/proto/local_view.pb.h"
 
 /**
  * @namespace autoagric::control

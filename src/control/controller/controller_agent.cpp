@@ -5,10 +5,11 @@
 #include <memory>
 #include <utility>
 
+#include "autoagric/common/error_code.pb.h"
 #include "common/macro.h"
 #include "control/common/control_gflags.h"
 #include "control/controller/lat_controller.h"
-#include "hlbc/proto/error_code.pb.h"
+#include "control/controller/mpc_controller.h"
 
 namespace autoagric {
 namespace control {
@@ -84,9 +85,9 @@ Status ControllerAgent::Init(std::shared_ptr<DependencyInjector> injector,
          "Failed to initialize config.");
 
   /**
-   * @note declare controller. Will be replaced by factory shortly
+   * @todo(chufan) add controller factory
    */
-  controller_ = std::unique_ptr<LatController>(new LatController());
+  controller_ = std::unique_ptr<MPCController>(new MPCController());
 
   if (!FLAGS_use_control_submodules &&
       !controller_->Init(injector_, control_conf_).ok()) {

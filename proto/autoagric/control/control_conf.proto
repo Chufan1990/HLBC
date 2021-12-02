@@ -2,10 +2,10 @@ syntax = "proto3";
 
 package autoagric.control;
 
-import "hlbc/proto/chassis.proto";
-import "hlbc/proto/lat_controller_conf.proto";
-import "hlbc/proto/lon_controller_conf.proto";
-
+import "autoagric/canbus/chassis.proto";
+import "autoagric/control/lat_controller_conf.proto";
+import "autoagric/control/lon_controller_conf.proto";
+import "autoagric/control/mpc_controller_conf.proto";
 
 message ControlConf {
   enum ControllerType {
@@ -60,4 +60,12 @@ message ControlConf {
   double minimum_speed_protection = 36;
 
   double max_path_remain_when_stopped = 37;
+
+  double maximum_forward_speed = 38;
+  double maximum_backward_speed = 39;
+
+  double maximum_driving_acceleration = 40;
+  double maximum_driving_deceleration = 41;
+
+  autoagric.control.MPCControllerConf mpc_controller_conf = 42;
 }

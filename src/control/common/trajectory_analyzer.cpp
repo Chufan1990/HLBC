@@ -2,12 +2,12 @@
 
 #include <memory>
 
-#include "control/common/control_gflags.h"
-#include "control/common/interpolation_1d.h"
 #include "common/macro.h"
 #include "common/math/linear_interpolation.h"
 #include "common/math/math_utils.h"
 #include "common/math/search.h"
+#include "control/common/control_gflags.h"
+#include "control/common/interpolation_1d.h"
 
 namespace autoagric {
 namespace control {
@@ -243,6 +243,59 @@ common::math::Vec2d TrajectoryAnalyzer::ComputeCOMPosition(
   Eigen::Vector3d com_pos_3d = v + pos_vec;
   // Return transfromed x and y
   return common::math::Vec2d(com_pos_3d[0], com_pos_3d[1]);
+}
+
+void TrajectoryAnalyzer::SampleByRelativeTime(
+    const double start_time, const double dt, const size_t trajectory_size,
+    std::vector<common::TrajectoryPoint> &resampled_trajectory) const {
+  if (resampled_trajectory.size() != trajectory_size)
+    resampled_trajectory.resize(trajectory_size);
+
+  auto func_comp = [](const TrajectoryPoint &point,
+                      const double relative_time) {
+    return point.relative_time() < relative_time;
+  };
+
+  auto p0 = trajectory_points_.begin();
+  auto p1 = p0;
+
+  double t = start_time;
+
+  for (auto &p : resampled_trajectory) {
+    p0 = std::lower_bound(p0, trajectory_points_.end(), t, func_comp);
+    p1 = p0 + 1;
+
+    if (p0 == trajectory_points_.end()) {
+      p1 = trajectory_points_.end();
+    }
+
+    p.mutable_path_point()->set_s(
+        common::math::lerp(p0->path_point().s(), p0->relative_time(),
+                           p1->path_point().s(), p1->relative_time(), t));
+    p.mutable_path_point()->set_x(
+        common::math::lerp(p0->path_point().x(), p0->relative_time(),
+                           p1->path_point().x(), p1->relative_time(), t));
+    p.mutable_path_point()->set_y(
+        common::math::lerp(p0->path_point().y(), p0->relative_time(),
+                           p1->path_point().y(), p1->relative_time(), t));
+    p.mutable_path_point()->set_theta(
+        common::math::slerp(p0->path_point().theta(), p0->relative_time(),
+                            p1->path_point().theta(), p1->relative_time(), t));
+    // approximate the curvature at the intermediate point
+    p.mutable_path_point()->set_kappa(
+        common::math::lerp(p0->path_point().kappa(), p0->relative_time(),
+                           p1->path_point().kappa(), p1->relative_time(), t));
+
+    p.set_a(common::math::lerp(p0->a(), p0->relative_time(), p1->a(),
+                               p1->relative_time(), t));
+
+    p.set_v(common::math::lerp(p0->v(), p0->relative_time(), p1->v(),
+                               p1->relative_time(), t));
+
+    p.set_relative_time(t - start_time);
+
+    t += dt;
+  }
 }
 
 }  // namespace control

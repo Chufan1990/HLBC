@@ -7,9 +7,9 @@
 
 #include "autoware_msgs/ControlCommandStamped.h"
 #include "autoware_msgs/Lane.h"
-#include "hlbc/proto/chassis.pb.h"
-#include "hlbc/proto/localization.pb.h"
-#include "hlbc/proto/planning.pb.h"
+#include "autoagric/canbus/chassis.pb.h"
+#include "autoagric/localization/localization.pb.h"
+#include "autoagric/planning/planning.pb.h"
 /**
  * @namespace autoagric::control
  * @brief autoagric::control

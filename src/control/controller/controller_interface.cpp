@@ -1,8 +1,8 @@
 #include "control/controller/controller_interface.h"
 
+#include "autoagric/common/error_code.pb.h"
 #include "common/util/file.h"
 #include "control/common/control_gflags.h"
-#include "hlbc/proto/error_code.pb.h"
 #include "planning/common/planning_gflags.h"
 #include "planning/reference_line/discrete_points_trajectory_smoother.h"
 
@@ -115,6 +115,14 @@ Status ControllerInterface::CheckTimestamp(const LocalView& local_view) {
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR, "trajectory msg timeout");
   }
   return Status::OK();
+}
+
+Status ControllerInterface::ComputeControlCommand(
+    const localization::LocalizationEstimate* localization,
+    const canbus::Chassis* chassis, const planning::ADCTrajectory* trajectory,
+    control::ControlCommand* control_command) {
+  return controller_agent_.ComputeControlCommand(localization, chassis,
+                                                 trajectory, control_command);
 }
 
 }  // namespace control

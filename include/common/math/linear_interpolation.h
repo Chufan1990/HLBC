@@ -5,7 +5,7 @@
 #include <cmath>
 
 #include "common/macro.h"
-#include "hlbc/proto/pnc_point.pb.h"
+#include "autoagric/common/pnc_point.pb.h"
 
 namespace autoagric {
 namespace common {

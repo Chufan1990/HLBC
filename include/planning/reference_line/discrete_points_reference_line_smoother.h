@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include "hlbc/proto/reference_line_smoother_config.pb.h"
+#include "autoagric/planning/reference_line_smoother_config.pb.h"
 #include "planning/reference_line/reference_line.h"
 #include "planning/reference_line/reference_line_smoother.h"
 #include "planning/reference_line/reference_point.h"

@@ -8,7 +8,7 @@
 
 // #include "common/future.h"
 #include "google/protobuf/descriptor.h"
-#include "hlbc/proto/error_code.pb.h"
+#include "autoagric/common/error_code.pb.h"
 
 /**
  * @namespace autoagric::common

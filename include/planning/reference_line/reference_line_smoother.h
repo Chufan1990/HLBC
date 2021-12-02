@@ -6,8 +6,8 @@
 
 #include <vector>
 
-#include "hlbc/proto/pnc_point.pb.h"
-#include "hlbc/proto/reference_line_smoother_config.pb.h"
+#include "autoagric/common/pnc_point.pb.h"
+#include "autoagric/planning/reference_line_smoother_config.pb.h"
 #include "planning/reference_line/reference_line.h"
 
 /**

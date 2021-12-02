@@ -2,8 +2,8 @@ syntax = "proto3";
 
 package autoagric.planning;
 
-import "hlbc/proto/math/cos_theta_smoother_config.proto";
-import "hlbc/proto/math/fem_pos_deviation_smoother_config.proto";
+import "autoagric/planning/math/cos_theta_smoother_config.proto";
+import "autoagric/planning/math/fem_pos_deviation_smoother_config.proto";
 
 message QpSplineSmootherConfig {
   uint32 spline_order = 1;

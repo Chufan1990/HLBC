@@ -23,12 +23,12 @@
 #include <memory>
 #include <string>
 
+#include "autoagric/canbus/chassis.pb.h"
+#include "autoagric/common/vehicle_state.pb.h"
+#include "autoagric/localization/localization.pb.h"
+#include "autoagric/localization/pose.pb.h"
 #include "common/math/vec2d.h"
 #include "common/status/status.h"
-#include "hlbc/proto/chassis.pb.h"
-#include "hlbc/proto/localization.pb.h"
-#include "hlbc/proto/pose.pb.h"
-#include "hlbc/proto/vehicle_state.pb.h"
 
 /**
  * @namespace autoagric::common

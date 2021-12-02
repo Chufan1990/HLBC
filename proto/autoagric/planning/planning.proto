@@ -4,8 +4,8 @@ syntax = "proto3";
 package autoagric.planning;
 
 // import "hlbc/proto/geometry.proto";
-import "hlbc/proto/header.proto";
-import "hlbc/proto/pnc_point.proto";
+import "autoagric/common/header.proto";
+import "autoagric/common/pnc_point.proto";
 
 message ADCTrajectory {
   autoagric.common.Header header = 1;

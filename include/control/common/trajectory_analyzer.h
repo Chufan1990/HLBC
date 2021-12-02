@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Eigen/Core"
 #include <deque>
 #include <memory>
 #include <vector>
 
+#include "Eigen/Core"
+#include "autoagric/common/pnc_point.pb.h"
+#include "autoagric/planning/planning.pb.h"
 #include "common/math/vec2d.h"
-#include "hlbc/proto/planning.pb.h"
-#include "hlbc/proto/pnc_point.pb.h"
 
 /**
  * @namespace autoargic::control
@@ -155,15 +155,15 @@ class TrajectoryAnalyzer {
 
   /**
    * @brief re-sample trajectory points on relative time
-   * @param trajectory original trajectory that sampled on isometric
-   * longitudinal distance
+   * @param start_time sampling starting time
    * @param dt sampling time step
-   * @param t sampling starting time
+   * @param resampled_trajectory result trajectory that sampled on isometric
+   * time step
    * @note deprecate for lat_controller
    */
-  // void SampleOnRelativeTime(
-  //     const std::shared_ptr<std::deque<robot::geometry::PathPoint>>&
-  //     trajectory, const double dt, const double t);
+  void SampleByRelativeTime(
+      const double start_time, const double dt, const size_t trajectory_size,
+      std::vector<common::TrajectoryPoint>& resampled_trajectory) const;
 
  private:
   common::PathPoint FindMinDistancePoint(const common::TrajectoryPoint& p0,

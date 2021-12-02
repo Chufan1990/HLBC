@@ -22,11 +22,6 @@ using Matrix = Eigen::MatrixXd;
 using autoagric::common::PathPoint;
 using autoagric::common::TrajectoryPoint;
 
-double LatController::x_;
-double LatController::y_;
-double LatController::heading_;
-common::PathPoint LatController::target_point_;
-
 LatController::LatController() : name_("LQR-based Lateral Controller") {
   AINFO("controller/lat_controller, LatController::LatController",
         "Using " << name_);
@@ -408,7 +403,7 @@ Status LatController::ComputeControlCommand(
 
   const double steer_angle_feedforward = ComputeFeedForward(debug->curvature());
   ADEBUG("", "steer_angle_feedback: " << steer_angle_feedback << "%\n");
-  ADEBUG("", "steer_angle_feedforward: " << steer_angle_feedforward<< "%\n");
+  ADEBUG("", "steer_angle_feedforward: " << steer_angle_feedforward << "%\n");
   double steer_angle = 0.0;
   double steer_angle_feedback_augment = 0.0;
 
@@ -574,7 +569,8 @@ void LatController::UpdateState(SimpleLateralDebug* debug) {
         trajectory_analyzer_, debug);
   } else {
     const auto& com = vehicle_state->ComputeCOMPosition(lr_);
-    // ADEBUG("controller/lat_controller.cpp, LatController::ComputeLateralErrors",
+    // ADEBUG("controller/lat_controller.cpp,
+    // LatController::ComputeLateralErrors",
     //        "com.x(): " << com.x() << " com.y(): " << com.y()
     //                    << " driving_orientation: " << driving_orientation_);
     ComputeLateralErrors(
@@ -649,17 +645,12 @@ void LatController::ComputeLateralErrors(
       target_point.path_point().x());
   debug->mutable_current_target_point()->mutable_path_point()->set_y(
       target_point.path_point().y());
-  /**
-   * @note debug
-   */
-  x_ = x;
-  y_ = y;
-  heading_ = driving_orientation_;
-  target_point_ = target_point.path_point();
 
-  // ADEBUG("controller/lat_controller.cpp, LatController::ComputeLateralErrors ",
+  // ADEBUG("controller/lat_controller.cpp, LatController::ComputeLateralErrors
+  // ",
   //        "x point: " << x << " y point: " << y);
-  // ADEBUG("controller/lat_controller.cpp, LatController::ComputeLateralErrors",
+  // ADEBUG("controller/lat_controller.cpp,
+  // LatController::ComputeLateralErrors",
   //        "match point information : " << target_point.ShortDebugString());
 
   const double cos_target_heading = std::cos(target_point.path_point().theta());

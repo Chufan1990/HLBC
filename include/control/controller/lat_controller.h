@@ -5,14 +5,14 @@
 
 #pragma once
 
-#include "Eigen/Core"
 #include <memory>
 #include <string>
 
+#include "Eigen/Core"
+#include "autoagric/common/vehicle_config.pb.h"
 #include "control/common/interpolation_1d.h"
 #include "control/common/trajectory_analyzer.h"
 #include "control/controller/controller.h"
-#include "hlbc/proto/vehicle_config.pb.h"
 /**
  * @namespace autoagric::control
  * @brief autoagric::control
@@ -24,15 +24,8 @@ namespace control {
  * @class LatController
  * @brief LQR-based lateral controller, to compute steering target
  */
-class LatController : public Controller {
+class LatController final : public Controller {
  public:
-  static double x_;
-
-  static double y_;
-
-  static double heading_;
-
-  static autoagric::common::PathPoint target_point_;
   /**
    * @brief constructor
    */
