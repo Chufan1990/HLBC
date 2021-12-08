@@ -29,6 +29,7 @@ class TrajectoryVisualizer {
 
   void Init();
 
+
   void Proc(const MarkerType& markers);
 
   static MarkerType LaneToMarkerArray(const autoware_msgs::Lane& lane,
@@ -89,6 +90,7 @@ class TrajectoryVisualizer {
 
     return std::make_pair(arrows, points_and_line);
   }
+
 
  private:
   MarkerType LaneToMarkerArray(const autoware_msgs::LaneConstPtr& lane);

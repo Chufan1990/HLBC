@@ -7,6 +7,7 @@ import "autoagric/control/lat_controller_conf.proto";
 import "autoagric/control/lon_controller_conf.proto";
 import "autoagric/control/mpc_controller_conf.proto";
 
+
 message ControlConf {
   enum ControllerType {
     LAT_CONTROLLER = 0;

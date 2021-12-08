@@ -163,6 +163,9 @@ foreach(FIL ${PROTO_FILES})
       --cpp_out=${PROTO_META_BASE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/proto/${FIL})
 endforeach()
 
+
+add_subdirectory(third_party)
+
 # message(WARNING "GFLAGS_INCLUDE_DIR=${GFLAGS_INCLUDE_DIR}") message(WARNING
 # "GFLAGS_LIBRARIES=${GFLAGS_LIBRARIES}") message(WARNING
 # "GLOG_INCLUDE_DIR=${GLOG_INCLUDE_DIR}") message(WARNING
@@ -193,9 +196,6 @@ endforeach()
 # package contains header files LIBRARIES: libraries you create in this project
 # that dependent projects also need CATKIN_DEPENDS: catkin_packages dependent
 # projects also need DEPENDS: system dependencies of this project that dependent
-# projects also need
-
-add_subdirectory(third_party)
 
 catkin_package(
   INCLUDE_DIRS
