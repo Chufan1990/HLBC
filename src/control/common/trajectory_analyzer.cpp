@@ -114,14 +114,14 @@ void TrajectoryAnalyzer::ToTrajectoryFrame(const double x, const double y,
 
   double one_minus_kappa_r_d = 1 - ref_point.kappa() * (*ptr_d);
   if (one_minus_kappa_r_d <= 0.0) {
-    AERROR("trajectory_analyzer.cpp, TrajectoryAnalyzer::ToTrajectoryFrame",
-           "TrajectoryAnalyzer::ToTrajectoryFrame "
-           "found fatal reference and actual difference. "
-           "Control output might be unstable:"
-               << " ref_point.kappa:" << ref_point.kappa() << " ref_point.x:"
-               << ref_point.x() << " ref_point.y:" << ref_point.y()
-               << " car x:" << x << " car y:" << y << " *ptr_d:" << *ptr_d
-               << " one_minus_kappa_r_d:" << one_minus_kappa_r_d);
+    AERROR(
+        "TrajectoryAnalyzer::ToTrajectoryFrame "
+        "found fatal reference and actual difference. "
+        "Control output might be unstable:"
+        << " ref_point.kappa:" << ref_point.kappa()
+        << " ref_point.x:" << ref_point.x() << " ref_point.y:" << ref_point.y()
+        << " car x:" << x << " car y:" << y << " *ptr_d:" << *ptr_d
+        << " one_minus_kappa_r_d:" << one_minus_kappa_r_d);
     // currently set to a small value to avoid control crash.
     one_minus_kappa_r_d = 0.01;
   }
@@ -247,7 +247,10 @@ common::math::Vec2d TrajectoryAnalyzer::ComputeCOMPosition(
 
 void TrajectoryAnalyzer::SampleByRelativeTime(
     const double start_time, const double dt, const size_t trajectory_size,
-    std::vector<common::TrajectoryPoint> &resampled_trajectory) const {
+    std::vector<autoagric::common::TrajectoryPoint> &resampled_trajectory)
+    const {
+  AERROR_IF(trajectory_points_.size() == 0, "Empty original trajectory");
+
   if (resampled_trajectory.size() != trajectory_size)
     resampled_trajectory.resize(trajectory_size);
 
@@ -264,7 +267,7 @@ void TrajectoryAnalyzer::SampleByRelativeTime(
   for (auto &p : resampled_trajectory) {
     p0 = std::lower_bound(p0, trajectory_points_.end(), t, func_comp);
     p1 = p0 + 1;
-
+    ADEBUG("??");
     if (p0 == trajectory_points_.end()) {
       p1 = trajectory_points_.end();
     }

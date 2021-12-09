@@ -34,16 +34,15 @@ void SolveLQRProblem(const Matrix &A, const Matrix &B, const Matrix &Q,
   if (A.rows() != A.cols() || B.rows() != A.rows() || Q.rows() != Q.cols() ||
       Q.rows() != A.rows() || R.rows() != R.cols() || R.rows() != B.cols() ||
       M.rows() != Q.rows() || M.cols() != R.cols()) {
-    AERROR("common/math/linear_quadratic_regulator.cpp, SolveLQRProblem",
-           "LQR solver: one or more matrices have incompatible dimensions.");
+    AERROR("LQR solver: one or more matrices have incompatible dimensions.");
     return;
   }
 
-  // ADEBUG("", "\nA: \n" << A);
-  // ADEBUG("", "\nB: \n" << B);
-  // ADEBUG("", "\nQ: \n" << Q);
-  // ADEBUG("", "\nR: \n" << R);
-  // ADEBUG("", "\nM: \n" << M);
+  // ADEBUG("\nA: \n" << A);
+  // ADEBUG("\nB: \n" << B);
+  // ADEBUG("\nQ: \n" << Q);
+  // ADEBUG("\nR: \n" << R);
+  // ADEBUG("\nM: \n" << M);
 
   Matrix AT = A.transpose();
   Matrix BT = B.transpose();
@@ -63,18 +62,17 @@ void SolveLQRProblem(const Matrix &A, const Matrix &B, const Matrix &Q,
     P = P_next;
   }
 
-  // ADEBUG("", "\nP: \n" << P);
-  // ADEBUG("", "\nnum_iteration: \n" << num_iteration);
+  // ADEBUG("\nP: \n" << P);
+  // ADEBUG("\nnum_iteration: \n" << num_iteration);
 
   if (num_iteration >= max_num_iteration) {
-    ADEBUG("common/math/linear_quadratic_regulator.cpp, SolveLQRProblem",
-           "LQR solver cannot converge to a solution, "
-           "last consecutive result diff is: "
-               << diff);
+    ADEBUG(
+        "LQR solver cannot converge to a solution, last consecutive result "
+        "diff is: "
+        << diff);
   } else {
-    ADEBUG("common/math/linear_quadratic_regulator.cpp, SolveLQRProblem",
-           "LQR solver converged at iteration: "
-               << num_iteration << ", max consecutive result diff.: " << diff);
+    ADEBUG("LQR solver converged at iteration: "
+           << num_iteration << ", max consecutive result diff.: " << diff);
   }
   *ptr_K = (R + BT * P * B).inverse() * (BT * P * A + MT);
 }

@@ -1,3 +1,4 @@
+#pragma once
 #include <memory>
 
 #include "Eigen/Core"
@@ -12,13 +13,23 @@
 namespace autoagric {
 namespace control {
 
-class MPCController final : public Controller {
+class MPCController : public Controller {
  public:
   typedef CPPAD_TESTVECTOR(double) Dvector;
   /**
    * @brief constructor
    */
   MPCController();
+
+  /**
+   * @brief copy constructor
+   */
+  MPCController(MPCController& other) = default;
+
+  /**
+   * @brief move constructor
+   */
+  MPCController(MPCController&& other) = default;
 
   /**
    * @brief destructor
@@ -30,8 +41,8 @@ class MPCController final : public Controller {
    * @param control_conf control_configuration
    * @return Status initialization status
    */
-  common::Status Init(std::shared_ptr<DependencyInjector> injector,
-                      const ControlConf* control_conf) override;
+  autoagric::common::Status Init(std::shared_ptr<DependencyInjector> injector,
+                                 const ControlConf* control_conf) override;
 
   /**
    * @brief compute steering target based on current vehicle status and target
@@ -42,7 +53,7 @@ class MPCController final : public Controller {
    * @param cmd control command
    * @return Status computation Status
    */
-  common::Status ComputeControlCommand(
+  autoagric::common::Status ComputeControlCommand(
       const localization::LocalizationEstimate* localization,
       const canbus::Chassis* chassis,
       const planning::ADCTrajectory* planning_published_trajectory,
@@ -52,7 +63,7 @@ class MPCController final : public Controller {
    * @brief reset lateral controller
    * @return Status reset status
    */
-  common::Status Reset() override;
+  autoagric::common::Status Reset() override;
 
   /**
    * @brief stop lateral controller
@@ -65,6 +76,16 @@ class MPCController final : public Controller {
    * @return string controller name in string
    */
   std::string Name() const override;
+
+  const std::vector<autoagric::common::TrajectoryPoint>& resampled_trajectory()
+      const {
+    return resampled_trajectory_;
+  }
+
+  const std::vector<autoagric::common::TrajectoryPoint>& warmup_solution()
+      const {
+    return warmup_solution_;
+  }
 
  private:
   bool LoadControlConf(const ControlConf* control_conf);
@@ -87,7 +108,7 @@ class MPCController final : public Controller {
   const ControlConf* control_conf_ = nullptr;
 
   // vehicle parameter
-  common::VehicleParam vehicle_param_;
+  autoagric::common::VehicleParam vehicle_param_;
 
   // a proxy to analyze the planning trajectory
   TrajectoryAnalyzer trajectory_analyzer_;
@@ -104,7 +125,7 @@ class MPCController final : public Controller {
 
   std::shared_ptr<DependencyInjector> injector_;
 
-  std::shared_ptr<common::math::MpcIpopt> mpc_ipopt_solver_;
+  std::shared_ptr<autoagric::common::math::MpcIpopt> mpc_ipopt_solver_;
 
   // the following parameters are vehicle physics related.
   // control time interval
@@ -216,9 +237,11 @@ class MPCController final : public Controller {
   // updated state weighting matrix
   Eigen::MatrixXd matrix_q_updated_;
 
-  std::vector<common::TrajectoryPoint> resampled_trajectory_;
+  std::vector<autoagric::common::TrajectoryPoint> resampled_trajectory_;
 
-  std::vector<common::TrajectoryPoint> warm_up_solution_;
+  std::vector<autoagric::common::TrajectoryPoint> warmup_solution_;
+
+  std::shared_ptr<MPCController> ConstPtr_;
 };
 
 }  // namespace control

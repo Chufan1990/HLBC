@@ -131,3 +131,27 @@ DEFINE_bool(
 
 DEFINE_bool(use_control_submodules, false,
             "use control submodules instead of controller agent");
+
+DEFINE_string(localization_message_name, "/current_pose",
+              "localization ros topic name");
+
+DEFINE_string(planning_message_name, "/final_path", "planning ros topic name");
+
+DEFINE_string(chassis_message_name, "/vehicle/feedback",
+              "chassis ros topic name");
+
+DEFINE_string(control_cmd_message_name, "/ctrl_cmd",
+              "control command rostopic name");
+
+DEFINE_int32(control_cmd_pending_queue_size, 1, "");
+
+DEFINE_bool(enable_trajectory_visualizer, true,
+            "Enable trajectory visualizer for reference trajectory and "
+            "predictive trajectory");
+
+DEFINE_bool(enable_trajectory_smoother, false,
+            "Enable trajectory visualizer for reference trajectory and "
+            "predictive trajectory");
+
+DEFINE_int32(control_cmd_frequency, 10,
+             "How frequent control command will be generated");

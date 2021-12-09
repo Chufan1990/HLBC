@@ -5,24 +5,37 @@
 
 #pragma once
 
-#include <glog/logging.h>
-#include <ros/console.h>
+#include "glog/logging.h"
+#include "ros/console.h"
+#include "ros/this_node.h"
 
-#define AERROR(name, args) ROS_ERROR_STREAM_NAMED(name, args)
-#define AINFO(name, args) ROS_INFO_STREAM_NAMED(name, args)
-#define AWARN(name, args) ROS_WARN_STREAM_NAMED(name, args)
-#define ADEBUG(name, args) ROS_DEBUG_STREAM_NAMED(name, args)
+#define LEFT_BRACKET "["
+#define RIGHT_BRACKET "]"
 
-#define AERROR_EVERY(period, name, args) \
-  ROS_INFO_STREAM_THROTTLE_NAMED(period / 1000.0, name, args)
-#define AINFO_EVERY(period, name, args) \
-  ROS_INFO_STREAM_THROTTLE_NAMED(period / 1000.0, name, args)
-#define AWARN_EVERY(period, name, args) \
-  ROS_WARN_STREAM_THROTTLE_NAMED(period / 1000.0, name, args)
-#define ADEBUG_EVERY(period, name, args) \
-  ROS_DEBUG_STREAM_THROTTLE_NAMED(period / 1000.0, name, args)
+#ifndef MODULE_NAME
+#define MODULE_NAME ros::this_node::getName()
+#endif
 
-#define ACHECK(cond, name, args) ROS_ERROR_STREAM_COND_NAMED(cond, name, args)
+#define AERROR(args) ROS_ERROR_STREAM(args)
+#define AINFO(args) ROS_INFO_STREAM(args)
+#define AWARN(args) ROS_WARN_STREAM(args)
+#define ADEBUG(args) ROS_DEBUG_STREAM(args)
+
+#define AERROR_EVERY(period, args) \
+  ROS_INFO_STREAM_THROTTLE(period / 1000.0, args)
+#define AINFO_EVERY(period, args) \
+  ROS_INFO_STREAM_THROTTLE(period / 1000.0, args)
+#define AWARN_EVERY(period, args) \
+  ROS_WARN_STREAM_THROTTLE(period / 1000.0, args)
+#define ADEBUG_EVERY(period, args) \
+  ROS_DEBUG_STREAM_THROTTLE(period / 1000.0, args)
+
+#define AERROR_IF(cond, args) ROS_ERROR_STREAM_COND(cond, args)
+#define ADEBUG_IF(cond, args) ROS_DEBUG_STREAM_COND(cond, args)
+#define AINFO_IF(cond, args) ROS_INFO_STREAM_COND(cond, args)
+#define AWARN_IF(cond, args) ROS_WARN_STREAM_COND(cond, args)
+
+#define ACHECK(cond) CHECK(cond) << LEFT_BRACKET << MODULE_NAME << RIGHT_BRACKET
 
 #include <cstdlib>
 #include <iostream>

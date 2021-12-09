@@ -15,7 +15,7 @@ namespace control {
 
 bool Interpolation1D::Init(const DataType& xy) {
   if (xy.empty()) {
-    AERROR("interpolation_1d.h, Interpolation1D::Init", "empty input.");
+    AERROR("empty input.");
     return false;
   }
 

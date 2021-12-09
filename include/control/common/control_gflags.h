@@ -78,3 +78,19 @@ DECLARE_bool(enable_feedback_augment_on_high_speed);
 DECLARE_bool(enable_gear_drive_negative_speed_protection);
 
 DECLARE_bool(use_control_submodules);
+
+DECLARE_string(localization_message_name);
+
+DECLARE_string(planning_message_name);
+
+DECLARE_string(chassis_message_name);
+
+DECLARE_string(control_cmd_message_name);
+
+DECLARE_int32(control_cmd_pending_queue_size);
+
+DECLARE_bool(enable_trajectory_visualizer);
+
+DECLARE_bool(enable_trajectory_smoother);
+
+DECLARE_int32(control_cmd_frequency);

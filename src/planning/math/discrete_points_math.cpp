@@ -71,7 +71,7 @@ bool DiscretePointsMath::ComputePathPofile(
     nx = xy_points[i].first;
     ny = xy_points[i].second;
     distance += std::hypot(fx - nx, fy - ny);
-    // ADEBUG("", i << " " << distance << " " << nx << " " << ny << " " << fx << " " << fy);
+    // ADEBUG(i << " " << distance << " " << nx << " " << ny << " " << fx << " " << fy);
     accumulated_s->push_back(distance);
     fx = nx;
     fy = ny;
@@ -141,7 +141,7 @@ bool DiscretePointsMath::ComputePathPofile(
     double xdds = x_over_s_second_derivatives[i];
     double ydds = y_over_s_second_derivatives[i];
 
-    ADEBUG("", i << " " << xds << " " << yds << " " << xdds << " " << ydds << " " << CurveMath::ComputeCurvature(xds, xdds, yds, ydds));
+    ADEBUG(i << " " << xds << " " << yds << " " << xdds << " " << ydds << " " << CurveMath::ComputeCurvature(xds, xdds, yds, ydds));
     kappas->push_back(CurveMath::ComputeCurvature(xds, xdds, yds, ydds));
   }
 

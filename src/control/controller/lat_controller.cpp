@@ -23,8 +23,7 @@ using autoagric::common::PathPoint;
 using autoagric::common::TrajectoryPoint;
 
 LatController::LatController() : name_("LQR-based Lateral Controller") {
-  AINFO("controller/lat_controller, LatController::LatController",
-        "Using " << name_);
+  AINFO("Using " << name_);
 }
 
 LatController::~LatController() {}
@@ -35,8 +34,7 @@ Status LatController::Init(std::shared_ptr<DependencyInjector> injector,
   injector_ = injector;
   // Load controller configuration
   if (!LoadControlConf(control_conf_)) {
-    AERROR("controller/lat_controller, LatController::Init",
-           "failed to load control conf");
+    AERROR("failed to load control conf");
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR,
                   "faild to load control_conf");
   }
@@ -81,7 +79,7 @@ Status LatController::Init(std::shared_ptr<DependencyInjector> injector,
                << reverse_q_param_size
                << " in parameter file not equal to matrix_size: "
                << matrix_size;
-    AERROR("controller/lat_controller, LatController::Init", error_msgs.str());
+    AERROR(error_msgs.str());
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR, error_msgs.str());
   }
 
@@ -109,8 +107,7 @@ Status LatController::Init(std::shared_ptr<DependencyInjector> injector,
 
 bool LatController::LoadControlConf(const ControlConf* control_conf) {
   if (!control_conf) {
-    AERROR("controller/lat_controller, LatController::LoadControlConf",
-           "control_conf = nullptr");
+    AERROR("control_conf = nullptr");
     return false;
   }
 
@@ -119,8 +116,7 @@ bool LatController::LoadControlConf(const ControlConf* control_conf) {
 
   ts_ = control_conf->lat_controller_conf().ts();
   if (ts_ <= 0.0) {
-    AERROR("controller/latc_controller, LatController::LoadControlConf",
-           "invalid control update interval");
+    AERROR("invalid control update interval");
     return false;
   }
 
@@ -172,8 +168,7 @@ void LatController::LoadLatGainScheduler(
   const auto& heading_err_gain_scheduler =
       lat_controller_conf.heading_err_gain_scheduler();
 
-  AINFO("controller/lat_controller, LatController::LoadLatGainScheduler",
-        "lateral control gain scheduler loaded");
+  AINFO("lateral control gain scheduler loaded");
 
   Interpolation1D::DataType xy1, xy2;
 
@@ -186,13 +181,11 @@ void LatController::LoadLatGainScheduler(
   }
 
   lat_err_interpolation_.reset(new Interpolation1D);
-  ACHECK(!lat_err_interpolation_->Init(xy1),
-         "controller/lat_controller, LatController::LoadLatGainScheduler",
-         "Fail to load lateral error gain scheduler");
+  AERROR_IF(!lat_err_interpolation_->Init(xy1),
+            "Fail to load lateral error gain scheduler");
   heading_err_interpolation_.reset(new Interpolation1D);
-  ACHECK(!heading_err_interpolation_->Init(xy2),
-         "controller/lat_controller, LatController::LoadLatGainScheduler",
-         "Fail to load heading error gain scheduler");
+  AERROR_IF(!heading_err_interpolation_->Init(xy2),
+            "Fail to load heading error gain scheduler");
 }
 
 Status LatController::ComputeControlCommand(
@@ -255,7 +248,7 @@ Status LatController::ComputeControlCommand(
       std::for_each(
           ptr_trajectory_points->begin(), ptr_trajectory_points->end(),
           [&cos_theta_diff, &sin_theta_diff, &tx, &ty,
-           &theta_diff](common::TrajectoryPoint& p) {
+           &theta_diff](autoagric::common::TrajectoryPoint& p) {
             auto x = p.path_point().x();
             auto y = p.path_point().y();
             auto theta = p.path_point().theta();
@@ -337,25 +330,25 @@ Status LatController::ComputeControlCommand(
 
   // Compound discrete matrix with road preview model
   UpdateMatrixCompound();
-  // ADEBUG("", "lf_: " << lf_);
-  // ADEBUG("", "lr_: " << lr_);
-  // ADEBUG("", "cf_: " << cf_);
-  // ADEBUG("", "cr_: " << cr_);
-  // ADEBUG("", "mass_: " << mass_);
+  // ADEBUG("lf_: " << lf_);
+  // ADEBUG("lr_: " << lr_);
+  // ADEBUG("cf_: " << cf_);
+  // ADEBUG("cr_: " << cr_);
+  // ADEBUG("mass_: " << mass_);
 
-  // ADEBUG("", "iz_: " << iz_);
-  // ADEBUG("", "ts_: " << ts_);
-  // ADEBUG("", "v: " << std::max(injector_->vehicle_state()->linear_velocity(),
+  // ADEBUG("iz_: " << iz_);
+  // ADEBUG("ts_: " << ts_);
+  // ADEBUG("v: " << std::max(injector_->vehicle_state()->linear_velocity(),
   //                              minimum_speed_protection_));
-  // ADEBUG("", "localization: \n" << localization->DebugString());
-  ADEBUG("", "debug: \n" << debug->DebugString());
-  // ADEBUG("", "vehicle_param: \n" << vehicle_param_.DebugString());
-  // ADEBUG("", "control_conf: \n" << control_conf_->DebugString());
+  // ADEBUG("localization: \n" << localization->DebugString());
+  ADEBUG("debug: \n" << debug->DebugString());
+  // ADEBUG("vehicle_param: \n" << vehicle_param_.DebugString());
+  // ADEBUG("control_conf: \n" << control_conf_->DebugString());
 
-  // ADEBUG("", "matrix_a_: \n" << matrix_a_);
-  // ADEBUG("", "matrix_adc_: \n" << matrix_adc_);
-  // ADEBUG("", "matrix_b_: \n" << matrix_b_);
-  // ADEBUG("", "matrix_bdc_: \n" << matrix_bdc_);
+  // ADEBUG("matrix_a_: \n" << matrix_a_);
+  // ADEBUG("matrix_adc_: \n" << matrix_adc_);
+  // ADEBUG("matrix_b_: \n" << matrix_b_);
+  // ADEBUG("matrix_bdc_: \n" << matrix_bdc_);
 
   // Adjust matrix_q_updated when in reverse gear
   int q_param_size = control_conf_->lat_controller_conf().matrix_q_size();
@@ -390,8 +383,8 @@ Status LatController::ComputeControlCommand(
                                   &matrix_k_);
   }
 
-  // ADEBUG("", "matrix_k_: \n" << matrix_k_);
-  // ADEBUG("", "matrix_state_: \n" << matrix_state_);
+  // ADEBUG("matrix_k_: \n" << matrix_k_);
+  // ADEBUG("matrix_state_: \n" << matrix_state_);
 
   // feedback = - K * state
   // Convert vehicle steer angle from rad to degree and then to steer degree
@@ -402,8 +395,8 @@ Status LatController::ComputeControlCommand(
                                       steer_single_direction_max_degree_ * 100;
 
   const double steer_angle_feedforward = ComputeFeedForward(debug->curvature());
-  ADEBUG("", "steer_angle_feedback: " << steer_angle_feedback << "%\n");
-  ADEBUG("", "steer_angle_feedforward: " << steer_angle_feedforward << "%\n");
+  ADEBUG("steer_angle_feedback: " << steer_angle_feedback << "%\n");
+  ADEBUG("steer_angle_feedforward: " << steer_angle_feedforward << "%\n");
   double steer_angle = 0.0;
   double steer_angle_feedback_augment = 0.0;
 
@@ -443,7 +436,7 @@ Status LatController::ComputeControlCommand(
                 steer_single_direction_max_degree_ * 100
           : 100.0;
 
-  const double steering_position = chassis->steering_percentage();
+  const double steering_position = chassis->steering_percentage() / vehicle_param_.max_steer_angle();
 
   // Re-compute the steering command if the MRAC control is enabled, with steer
   // angle limitation and steer rate limitation
@@ -552,10 +545,7 @@ void LatController::UpdateDrivingOrientation() {
       driving_orientation_ =
           common::math::NormalizeAngle(driving_orientation_ + M_PI);
       matrix_bd_ = matrix_b_ * ts_;
-      ADEBUG(
-          "controller/lat_controller.cpp, "
-          "LatController::UpdateDrivingOrientation",
-          "Matrix_b changed due to gear direction");
+      ADEBUG("Matrix_b changed due to gear direction");
     }
   }
 }
@@ -569,18 +559,10 @@ void LatController::UpdateState(SimpleLateralDebug* debug) {
         trajectory_analyzer_, debug);
   } else {
     const auto& com = vehicle_state->ComputeCOMPosition(lr_);
-    // ADEBUG("controller/lat_controller.cpp,
-    // LatController::ComputeLateralErrors",
-    //        "com.x(): " << com.x() << " com.y(): " << com.y()
-    //                    << " driving_orientation: " << driving_orientation_);
     ComputeLateralErrors(
         com.x(), com.y(), driving_orientation_,
         vehicle_state->linear_velocity(), vehicle_state->angular_velocity(),
         vehicle_state->linear_acceleration(), trajectory_analyzer_, debug);
-    // ComputeLateralErrors(
-    //     vehicle_state->x(), vehicle_state->y(), driving_orientation_,
-    //     vehicle_state->linear_velocity(), vehicle_state->angular_velocity(),
-    //     vehicle_state->linear_acceleration(), trajectory_analyzer_, debug);
   }
 
   if (enable_look_ahead_back_control_) {
@@ -645,13 +627,6 @@ void LatController::ComputeLateralErrors(
       target_point.path_point().x());
   debug->mutable_current_target_point()->mutable_path_point()->set_y(
       target_point.path_point().y());
-
-  // ADEBUG("controller/lat_controller.cpp, LatController::ComputeLateralErrors
-  // ",
-  //        "x point: " << x << " y point: " << y);
-  // ADEBUG("controller/lat_controller.cpp,
-  // LatController::ComputeLateralErrors",
-  //        "match point information : " << target_point.ShortDebugString());
 
   const double cos_target_heading = std::cos(target_point.path_point().theta());
   const double sin_target_heading = std::sin(target_point.path_point().theta());

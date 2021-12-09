@@ -69,7 +69,8 @@ class TrajectoryAnalyzer {
    * @param t absolute time for query
    * @return a point of trajectory
    */
-  common::TrajectoryPoint QueryNearestPointByAbsoluteTime(const double t) const;
+  autoagric::common::TrajectoryPoint QueryNearestPointByAbsoluteTime(
+      const double t) const;
 
   /**
    * @brief query a point of trajectory that its relative time is closest to the
@@ -77,7 +78,8 @@ class TrajectoryAnalyzer {
    * @param t relative time for query
    * @return a point of trajetory
    */
-  common::TrajectoryPoint QueryNearestPointByRelativeTime(const double t) const;
+  autoagric::common::TrajectoryPoint QueryNearestPointByRelativeTime(
+      const double t) const;
 
   /**
    * @brief query a point of trajectory that its position is closest to the
@@ -86,8 +88,8 @@ class TrajectoryAnalyzer {
    * @param y value of y-coordination in the given position
    * @return a point of trajectory
    */
-  common::TrajectoryPoint QueryNearestPointByPoistion(const double x,
-                                                      const double y) const;
+  autoagric::common::TrajectoryPoint QueryNearestPointByPoistion(
+      const double x, const double y) const;
 
   /**
    * @brief qurey a point on trajectory that its positin is closest to the given
@@ -97,7 +99,8 @@ class TrajectoryAnalyzer {
    * @return a point on trajectory. The point may be a point of trajectory or
    * interpolated by two adjacent points of trajectory
    */
-  common::PathPoint QueryMatchedPathPoint(const double x, const double y) const;
+  autoagric::common::PathPoint QueryMatchedPathPoint(const double x,
+                                                     const double y) const;
 
   /**
    * @brief convert a position with theta and speed to trajectory frame,
@@ -113,7 +116,8 @@ class TrajectoryAnalyzer {
    * @param ptr_d_dot lateral speed
    */
   void ToTrajectoryFrame(const double x, const double y, const double theta,
-                         const double v, const common::PathPoint& matched_point,
+                         const double v,
+                         const autoagric::common::PathPoint& matched_point,
                          double* ptr_s, double* ptr_s_dot, double* ptr_d,
                          double* ptr_d_dot) const;
 
@@ -133,9 +137,9 @@ class TrajectoryAnalyzer {
    * @param path_point PathPoint along the published planning trajectory
    * @return the position of the vehicle's center of mass
    */
-  common::math::Vec2d ComputeCOMPosition(
+  autoagric::common::math::Vec2d ComputeCOMPosition(
       const double rear_to_com_distance,
-      const common::PathPoint& path_point) const;
+      const autoagric::common::PathPoint& path_point) const;
 
   /**
    * @brief convert a position to trajectory frame
@@ -144,14 +148,15 @@ class TrajectoryAnalyzer {
    * @param y y-value of the position
    * @note depracated for lat_controller
    */
-  void ToTrajectoryFrame(const common::PathPoint& ref_point, const double x,
-                         const double y) const;
+  void ToTrajectoryFrame(const autoagric::common::PathPoint& ref_point,
+                         const double x, const double y) const;
 
   /**
    * @brief get all points of trjactory
    * @return a vector of trajectory points
    */
-  const std::vector<common::TrajectoryPoint>& trajectory_points() const;
+  const std::vector<autoagric::common::TrajectoryPoint>& trajectory_points()
+      const;
 
   /**
    * @brief re-sample trajectory points on relative time
@@ -161,14 +166,16 @@ class TrajectoryAnalyzer {
    * time step
    * @note deprecate for lat_controller
    */
-  void SampleByRelativeTime(
-      const double start_time, const double dt, const size_t trajectory_size,
-      std::vector<common::TrajectoryPoint>& resampled_trajectory) const;
+  void SampleByRelativeTime(const double start_time, const double dt,
+                            const size_t trajectory_size,
+                            std::vector<autoagric::common::TrajectoryPoint>&
+                                resampled_trajectory) const;
 
  private:
-  common::PathPoint FindMinDistancePoint(const common::TrajectoryPoint& p0,
-                                         const common::TrajectoryPoint& p1,
-                                         const double x, const double y) const;
+  autoagric::common::PathPoint FindMinDistancePoint(
+      const autoagric::common::TrajectoryPoint& p0,
+      const autoagric::common::TrajectoryPoint& p1, const double x,
+      const double y) const;
 
   /**
    * @brief tranform a path point to the center of rear wheels
@@ -179,7 +186,8 @@ class TrajectoryAnalyzer {
    * @param theta heading anglue of vehicle
    * @return path point on odometry frame
    */
-  // common::PathPoint ToOdometryFrame(const common::PathPoint point,
+  // autoagric::common::PathPoint ToOdometryFrame(const
+  // autoagric::common::PathPoint point,
   //                                   const double x, const double y,
   //                                   const double theta) const;
 
@@ -190,7 +198,7 @@ class TrajectoryAnalyzer {
    */
   // void UpdateRelativeTime(const common::Trajectory& published_trajectory);
 
-  std::vector<common::TrajectoryPoint> trajectory_points_;
+  std::vector<autoagric::common::TrajectoryPoint> trajectory_points_;
 
   double header_time_;
   size_t seq_num_ = 0;

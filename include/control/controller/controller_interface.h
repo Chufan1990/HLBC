@@ -24,7 +24,7 @@ class ControllerInterface {
 
   bool Init();
 
-  common::Status ComputeControlCommand(
+  autoagric::common::Status ComputeControlCommand(
       const localization::LocalizationEstimate* localization,
       const canbus::Chassis* chassis, const planning::ADCTrajectory* trajectory,
       control::ControlCommand* cmd);
@@ -55,22 +55,17 @@ class ControllerInterface {
     smoother_->Smooth(local_view_.trajectory(),
                       local_view_.mutable_trajectory());
 
-    ADEBUG("", local_view_.trajectory().DebugString());
+    ADEBUG(local_view_.trajectory().DebugString());
 
     auto status = CheckInput(&local_view_);
 
     if (!status.ok()) {
       AERROR_EVERY(100,
-                   "controller/controller_agent.cpp, "
-                   "ControllerAgent::ComputeControlCommand",
                    "Control input data failed: " << status.error_message());
     } else {
-      common::Status status_ts = CheckTimestamp(local_view_);
+      autoagric::common::Status status_ts = CheckTimestamp(local_view_);
       if (!status_ts.ok()) {
-        AERROR(
-            "controller/controller_agent.cpp, "
-            "ControllerAgent::ComputeControlCommand",
-            "Input messages timeout");
+        AERROR("Input messages timeout");
         status = status_ts;
       }
     }
@@ -79,7 +74,7 @@ class ControllerInterface {
         &local_view_.localization(), &local_view_.chassis(),
         &local_view_.trajectory(), &control_command_);
     if (!status.ok()) {
-      AERROR("", status.error_message());
+      AERROR(status.error_message());
       return false;
     }
     auto vehicle_param =
@@ -97,8 +92,8 @@ class ControllerInterface {
  private:
   ControllerAgent controller_agent_;
 
-  common::Status CheckInput(LocalView* local_view);
-  common::Status CheckTimestamp(const LocalView& local_view);
+  autoagric::common::Status CheckInput(LocalView* local_view);
+  autoagric::common::Status CheckTimestamp(const LocalView& local_view);
 
   LocalView local_view_;
   ControlCommand control_command_;

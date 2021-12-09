@@ -200,7 +200,7 @@ class DiscretePointTrajectorySmootherTest {
     //   anchor_points_.push_back(anchor_point);
     // }
 
-    ADEBUG("", ref_points.DebugString());
+    ADEBUG(ref_points.DebugString());
 
     trajectory_.reset(new ADCTrajectory(ref_points));
     vehicle_position_ =
@@ -253,14 +253,13 @@ int main(int argc, char** argv) {
   ros::Publisher pub4 = nh.advertise<visualization_msgs::MarkerArray>(
       "smoothed_trajectory_lane", 10);
 
-  ACHECK(!autoagric::common::util::GetProtoFromFile(
-             FLAGS_discrete_points_smoother_config_filename,
-             &trajectory_smoother_conf),
-         "",
-         "Unable to load control conf file: "
-             << FLAGS_discrete_points_smoother_config_filename);
+  AERROR_IF(!autoagric::common::util::GetProtoFromFile(
+                FLAGS_discrete_points_smoother_config_filename,
+                &trajectory_smoother_conf),
+            "Unable to load control conf file: "
+                << FLAGS_discrete_points_smoother_config_filename);
 
-  ADEBUG("", trajectory_smoother_conf.DebugString());
+  ADEBUG(trajectory_smoother_conf.DebugString());
 
   autoagric::planning::DiscretePointTrajectorySmootherTest tester(
       trajectory_smoother_conf);
@@ -296,15 +295,16 @@ int main(int argc, char** argv) {
   tester.smoother_->SetAnchorPoints(tester.anchor_points_);
   bool status =
       tester.smoother_->Smooth(*tester.trajectory_, &smoothed_trajectory);
-  ACHECK(!status, "", "Unable to smoother trajectory");
+  AERROR_IF(!status, "Unable to smoother trajectory");
 
-  ADEBUG("", "think we got it: \n" << smoothed_trajectory.DebugString());
+  ADEBUG("think we got it: \n" << smoothed_trajectory.DebugString());
 
   for (auto p : smoothed_trajectory.trajectory_point()) {
-    std::cout << p.path_point().x() << ", " << p.path_point().y() << ", " << p.path_point().z() 
-              << ", " << p.path_point().theta() << ", " << p.v() * 1.3 << ", "
-              << p.path_point().kappa() << " " << p.path_point().dkappa() << " "
-              << p.path_point().s() << std::endl;
+    std::cout << p.path_point().x() << ", " << p.path_point().y() << ", "
+              << p.path_point().z() << ", " << p.path_point().theta() << ", "
+              << p.v() * 1.3 << ", " << p.path_point().kappa() << " "
+              << p.path_point().dkappa() << " " << p.path_point().s()
+              << std::endl;
   }
 
   if (status) {
@@ -314,10 +314,10 @@ int main(int argc, char** argv) {
             new_lane, scale, n_color);
   }
   for (int i = 0; i < old_markers.first.markers.size(); i++) {
-    ADEBUG("", old_markers.first.markers[i].pose.position.x
-                   << " " << old_markers.first.markers[i].pose.position.y
-                   << " || " << new_markers.first.markers[i].pose.position.x
-                   << " " << new_markers.first.markers[i].pose.position.y);
+    ADEBUG(old_markers.first.markers[i].pose.position.x
+           << " " << old_markers.first.markers[i].pose.position.y << " || "
+           << new_markers.first.markers[i].pose.position.x << " "
+           << new_markers.first.markers[i].pose.position.y);
   }
 
   ros::Rate loop_rate(10);
@@ -329,7 +329,7 @@ int main(int argc, char** argv) {
       pub3.publish(new_markers.first);
       pub4.publish(new_markers.second);
     }
-    ADEBUG("", "are we doing this?");
+    ADEBUG("are we doing this?");
     loop_rate.sleep();
   }
 

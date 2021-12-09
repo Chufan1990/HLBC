@@ -118,7 +118,7 @@ HLBC的入口在*controller_interface.cpp*, 处理的流程在 `bool::Controller
         &local_view_.localization(), &local_view_.chassis(),
         &local_view_.trajectory(), &control_command_);
     if (!status.ok()) {
-        AERROR("", status.error_message());
+        AERROR(status.error_message());
         return false;
     }
     auto vehicle_param =
@@ -138,15 +138,12 @@ HLBC的入口在*controller_interface.cpp*, 处理的流程在 `bool::Controller
 
     // 2. 读取 configuration 文件并写入control_conf
     ACHECK(
-        !common::util::GetProtoFromFile(FLAGS_control_conf_file, &control_conf_),
-        "controller/controller_agent.cpp, ControllerAgent::Init",
+        !autoagric::common::util::GetProtoFromFile(FLAGS_control_conf_file, &control_conf_),
         "Unable to load control conf file: " << FLAGS_control_conf_file);
 
-    AINFO("controller/controller_agent.cpp, ControllerAgent::Init",
-            "Conf file: " << FLAGS_control_conf_file << " is loaded.");
+    AINFO("Conf file: " << FLAGS_control_conf_file << " is loaded.");
 
-    ADEBUG("controller/controller_agent.cpp, ControllerAgent::Init",
-            "FLAGS_use_control_submodules: " << FLAGS_use_control_submodules);
+    ADEBUG("FLAGS_use_control_submodules: " << FLAGS_use_control_submodules);
     // 3. 传入ControllerAgent
     if (!controller_agent_.Init(injector_, &control_conf_).ok()) return false;
     return true;

@@ -51,9 +51,9 @@ bool CosThetaSmoother::Solve(
 
   // for (size_t i = 0; i < raw_point2d.size(); i++) {
   //   size_t index = i << 1;
-  //   ADEBUG("", "Point " << i << " x: " << x_l[index] << " <= " << x[index]
+  //   ADEBUG("Point " << i << " x: " << x_l[index] << " <= " << x[index]
   //                       << " <= " << x_u[index]);
-  //   ADEBUG("", "Point " << i << " y: " << x_l[index + 1]
+  //   ADEBUG("Point " << i << " y: " << x_l[index + 1]
   //                       << " <= " << x[index + 1] << " <= " << x_u[index +
   //                       1]);
   // }
@@ -63,7 +63,7 @@ bool CosThetaSmoother::Solve(
   //   ADEBUG("",
   //          "New Point " << i << " x: " << g_l[index] << " to " <<
   //          g_u[index]);
-  //   ADEBUG("", "New Point " << i << " y: " << g_l[index + 1] << " to "
+  //   ADEBUG("New Point " << i << " y: " << g_l[index + 1] << " to "
   //                           << g_u[index + 1]);
   // }
 
@@ -96,14 +96,14 @@ bool CosThetaSmoother::Solve(
 
   bool ok = solution.status == CppAD::ipopt::solve_result<Dvector>::success;
 
-  ADEBUG("", "found optimal solution: " << (solution.status == 1));
+  ADEBUG("found optimal solution: " << (solution.status == 1));
 
   if (ok) {
     for (size_t i = 0; i < raw_point2d.size(); i++) {
       size_t index = i << 1;
       opt_x->push_back(solution.x[index]);
       opt_y->push_back(solution.x[index + 1]);
-    //   ADEBUG("", "new point " << i << " (" << opt_x->back() << ", "
+    //   ADEBUG("new point " << i << " (" << opt_x->back() << ", "
     //                           << opt_y->back() << ")");
     }
   }

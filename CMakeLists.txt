@@ -163,7 +163,6 @@ foreach(FIL ${PROTO_FILES})
       --cpp_out=${PROTO_META_BASE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/proto/${FIL})
 endforeach()
 
-
 add_subdirectory(third_party)
 
 # message(WARNING "GFLAGS_INCLUDE_DIR=${GFLAGS_INCLUDE_DIR}") message(WARNING
@@ -273,15 +272,27 @@ add_library(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCE_FILES}
 
 # set(LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
-# message(WARNING "LIBRARY_OUTPUT_DIRECTORY=${LIBRARY_OUTPUT_DIRECTORY}")
-
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 0.0.1 SOVERSION 1)
+
 
 target_link_libraries(${PROJECT_NAME} glog::glog absl::base
                       absl::synchronization absl::strings)
 
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS}
 # ${catkin_EXPORTED_TARGETS})
+
+add_executable(control_node src/nodes/control_node.cpp)
+
+add_dependencies(control_node ${catkin_EXPORTED_TARGETS})
+
+target_link_libraries(
+  control_node
+  ${PROJECT_NAME}
+  ${Protobuf_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${Ipopt_LIBRARIES}
+  ${GFLAGS_LIBRARIES}
+  glog::glog)
 
 add_executable(trajectory_visualizer_test
                src/nodes/trajectory_visualizer_test.cpp)
@@ -341,7 +352,7 @@ target_link_libraries(
 # PATTERN ".svn" EXCLUDE )
 
 install(
-  TARGETS ${PROJECT_NAME} trajectory_visualizer_test
+  TARGETS ${PROJECT_NAME} control_node trajectory_visualizer_test
           discrete_points_trajectory_smoother_test
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -349,13 +360,13 @@ install(
 # Install project namespaced headers
 
 install(
-  DIRECTORY third_party/protobuf/include/
+  DIRECTORY third_party/protobuf/include/ 
   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   PATTERN "*.cc" EXCLUDE
   PATTERN "*.cpp" EXCLUDE)
 
 install(
-  DIRECTORY third_party/protobuf/lib/
+  DIRECTORY third_party/protobuf/lib/ 
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   PATTERN ".svn" EXCLUDE)
 

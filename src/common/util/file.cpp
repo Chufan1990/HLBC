@@ -45,7 +45,7 @@ bool SetProtoToASCIIFile(const google::protobuf::Message &message,
   using google::protobuf::io::FileOutputStream;
   using google::protobuf::io::ZeroCopyOutputStream;
   if (file_descriptor < 0) {
-    AERROR("hlbc/common/file, SetProtoToASCIIFile", "Invalid file descriptor.");
+    AERROR("Invalid file descriptor.");
     return false;
   }
   ZeroCopyOutputStream *output = new FileOutputStream(file_descriptor);
@@ -59,8 +59,7 @@ bool SetProtoToASCIIFile(const google::protobuf::Message &message,
                          const std::string &file_name) {
   int fd = open(file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU);
   if (fd < 0) {
-    AERROR("hlbc/common/file, SetProtoToASCIIFile",
-           "Unable to open file " << file_name << " to write.");
+    AERROR("Unable to open file " << file_name << " to write.");
     return false;
   }
   return SetProtoToASCIIFile(message, fd);
@@ -73,8 +72,7 @@ bool GetProtoFromASCIIFile(const std::string &file_name,
   using google::protobuf::io::ZeroCopyInputStream;
   int file_descriptor = open(file_name.c_str(), O_RDONLY);
   if (file_descriptor < 0) {
-    AERROR("hlbc/common/file, GetProtoFromASCIIFile",
-           "Failed to open file " << file_name << " in text mode.");
+    AERROR("Failed to open file " << file_name << " in text mode.");
     // Failed to open;
     return false;
   }
@@ -82,8 +80,7 @@ bool GetProtoFromASCIIFile(const std::string &file_name,
   ZeroCopyInputStream *input = new FileInputStream(file_descriptor);
   bool success = TextFormat::Parse(input, message);
   if (!success) {
-    AERROR("hlbc/common/file, GetProtoFromASCIIFile",
-           "Failed to parse file " << file_name << " as text proto.");
+    AERROR("Failed to parse file " << file_name << " as text proto.");
   }
   delete input;
   close(file_descriptor);
@@ -101,13 +98,11 @@ bool GetProtoFromBinaryFile(const std::string &file_name,
                             google::protobuf::Message *message) {
   std::fstream input(file_name, std::ios::in | std::ios::binary);
   if (!input.good()) {
-    AERROR("hlbc/common/file, GetProtoFromBinaryFile",
-           "Failed to open file " << file_name << " in binary mode.");
+    AERROR("Failed to open file " << file_name << " in binary mode.");
     return false;
   }
   if (!message->ParseFromIstream(&input)) {
-    AERROR("hlbc/common/file, GetProtoFromBinaryFile",
-           "Failed to parse file " << file_name << " as binary proto.");
+    AERROR("Failed to parse file " << file_name << " as binary proto.");
     return false;
   }
   return true;
@@ -179,25 +174,22 @@ std::vector<std::string> Glob(const std::string &pattern) {
 bool CopyFile(const std::string &from, const std::string &to) {
   std::ifstream src(from, std::ios::binary);
   if (!src) {
-    AWARN("hlbc/common/file, CopyFile",
-          "Source path could not be normally opened: " << from);
+    AWARN("Source path could not be normally opened: " << from);
     std::string command = "cp -r " + from + " " + to;
-    ADEBUG("hlbc/common/file, CopyFile", command);
+    ADEBUG(command);
     const int ret = std::system(command.c_str());
     if (ret == 0) {
-      ADEBUG("hlbc/common/file, CopyFile",
-             "Copy success, command returns " << ret);
+      ADEBUG("Copy success, command returns " << ret);
       return true;
     } else {
-      ADEBUG("hlbc/common/file, CopyFile",
-             "Copy error, command returns " << ret);
+      ADEBUG("Copy error, command returns " << ret);
       return false;
     }
   }
 
   std::ofstream dst(to, std::ios::binary);
   if (!dst) {
-    AERROR("hlbc/common/file, CopyFile", "Target path is not writable: " << to);
+    AERROR("Target path is not writable: " << to);
     return false;
   }
 
@@ -208,7 +200,7 @@ bool CopyFile(const std::string &from, const std::string &to) {
 bool CopyDir(const std::string &from, const std::string &to) {
   DIR *directory = opendir(from.c_str());
   if (directory == nullptr) {
-    AERROR("hlbc/common/file, CopyDir", "Cannot open directory " << from);
+    AERROR("Cannot open directory " << from);
     return false;
   }
 
@@ -229,8 +221,7 @@ bool CopyDir(const std::string &from, const std::string &to) {
       }
     }
   } else {
-    AERROR("hlbc/common/file, CopyDir",
-           "Cannot create target directory " << to);
+    AERROR("Cannot create target directory " << to);
     ret = false;
   }
   closedir(directory);
@@ -273,8 +264,7 @@ bool EnsureDirectory(const std::string &directory_path) {
 bool RemoveAllFiles(const std::string &directory_path) {
   DIR *directory = opendir(directory_path.c_str());
   if (directory == nullptr) {
-    AERROR("hlbc/common/file, RemoveAllFiles",
-           "Cannot open directory " << directory_path);
+    AERROR("Cannot open directory " << directory_path);
     return false;
   }
 
@@ -287,8 +277,7 @@ bool RemoveAllFiles(const std::string &directory_path) {
     // build the path for each file in the folder
     std::string file_path = directory_path + "/" + file->d_name;
     if (unlink(file_path.c_str()) < 0) {
-      AERROR("hlbc/common/file, RemoveAllFiles",
-             "Fail to remove file " << file_path << ": " << strerror(errno));
+      AERROR("Fail to remove file " << file_path << ": " << strerror(errno));
       closedir(directory);
       return false;
     }
@@ -302,8 +291,7 @@ std::vector<std::string> ListSubPaths(const std::string &directory_path,
   std::vector<std::string> result;
   DIR *directory = opendir(directory_path.c_str());
   if (directory == nullptr) {
-    AERROR("hlbc/common/file, ListSubPaths",
-           "Cannot open directory " << directory_path);
+    AERROR("Cannot open directory " << directory_path);
     return result;
   }
 
@@ -355,7 +343,7 @@ bool GetType(const string &filename, FileType *type) {
   } else if (S_ISREG(stat_buf.st_mode) != 0) {
     *type = TYPE_FILE;
   } else {
-    AWARN("hlbc/common/file, GetType", "failed to get type: " << filename);
+    AWARN("failed to get type: " << filename);
     return false;
   }
   return true;
@@ -371,15 +359,14 @@ bool DeleteFile(const string &filename) {
   }
   if (type == TYPE_FILE) {
     if (remove(filename.c_str()) != 0) {
-      AERROR("hlbc/common/file, DeleteFile",
-             "failed to remove file: " << filename);
+      AERROR("failed to remove file: " << filename);
       return false;
     }
     return true;
   }
   DIR *dir = opendir(filename.c_str());
   if (dir == nullptr) {
-    AWARN("hlbc/common/file, DeleteFile", "failed to opendir: " << filename);
+    AWARN("failed to opendir: " << filename);
     return false;
   }
   dirent *dir_info = nullptr;
@@ -391,8 +378,7 @@ bool DeleteFile(const string &filename) {
     string temp_file = filename + "/" + string(dir_info->d_name);
     FileType temp_type;
     if (!GetType(temp_file, &temp_type)) {
-      AWARN("hlbc/common/file, DeleteFile",
-            "failed to get file type: " << temp_file);
+      AWARN("failed to get file type: " << temp_file);
       closedir(dir);
       return false;
     }
@@ -409,8 +395,7 @@ bool DeleteFile(const string &filename) {
 bool CreateDir(const string &dir) {
   int ret = mkdir(dir.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
   if (ret != 0) {
-    AWARN("hlbc/common/file, CreateDir",
-          "failed to create dir. [dir: " << dir << "] [err: " << strerror(errno)
+    AWARN("failed to create dir. [dir: " << dir << "] [err: " << strerror(errno)
                                          << "]");
     return false;
   }

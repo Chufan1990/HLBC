@@ -41,7 +41,7 @@ class LatController final : public Controller {
    * @param control_conf control_configuration
    * @return Status initialization status
    */
-  common::Status Init(std::shared_ptr<DependencyInjector> injector,
+  autoagric::common::Status Init(std::shared_ptr<DependencyInjector> injector,
                       const ControlConf* control_conf) override;
 
   /**
@@ -53,7 +53,7 @@ class LatController final : public Controller {
    * @param cmd control command
    * @return Status computation Status
    */
-  common::Status ComputeControlCommand(
+  autoagric::common::Status ComputeControlCommand(
       const localization::LocalizationEstimate* localization,
       const canbus::Chassis* chassis,
       const planning::ADCTrajectory* planning_published_trajectory,
@@ -63,7 +63,7 @@ class LatController final : public Controller {
    * @brief reset lateral controller
    * @return Status reset status
    */
-  common::Status Reset() override;
+  autoagric::common::Status Reset() override;
 
   /**
    * @brief stop lateral controller

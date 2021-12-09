@@ -9,29 +9,25 @@
 namespace autoagric {
 namespace control {
 
-using common::ErrorCode;
-using common::Status;
+using autoagric::common::ErrorCode;
+using autoagric::common::Status;
 
 bool ControllerInterface::Init() {
   injector_ = std::make_shared<DependencyInjector>();
 
-  ACHECK(
-      !common::util::GetProtoFromFile(FLAGS_control_conf_file, &control_conf_),
-      "controller/controller_agent.cpp, ControllerAgent::Init",
+  AERROR_IF(
+      !autoagric::common::util::GetProtoFromFile(FLAGS_control_conf_file, &control_conf_),
       "Unable to load control conf file: " << FLAGS_control_conf_file);
 
-  ACHECK(!common::util::GetProtoFromFile(
-             FLAGS_discrete_points_smoother_config_filename,
-             &trajectory_smoother_conf_),
-         "controller/controller_agent.cpp, ControllerAgent::Init",
-         "Unable to load control conf file: "
-             << FLAGS_discrete_points_smoother_config_filename);
+  AERROR_IF(!autoagric::common::util::GetProtoFromFile(
+                FLAGS_discrete_points_smoother_config_filename,
+                &trajectory_smoother_conf_),
+            "Unable to load control conf file: "
+                << FLAGS_discrete_points_smoother_config_filename);
 
-  AINFO("controller/controller_agent.cpp, ControllerAgent::Init",
-        "Conf file: " << FLAGS_control_conf_file << " is loaded.");
+  AINFO("Conf file: " << FLAGS_control_conf_file << " is loaded.");
 
-  ADEBUG("controller/controller_agent.cpp, ControllerAgent::Init",
-         "FLAGS_use_control_submodules: " << FLAGS_use_control_submodules);
+  ADEBUG("FLAGS_use_control_submodules: " << FLAGS_use_control_submodules);
 
   smoother_ = std::unique_ptr<planning::TrajectorySmoother>(
       new planning::DiscretePointsTrajectorySmoother(
@@ -42,16 +38,8 @@ bool ControllerInterface::Init() {
 }
 
 Status ControllerInterface::CheckInput(LocalView* local_view) {
-  // ADEBUG("controller/controller_agent.cpp, ControllerAgent::CheckInput",
-  //        "Received localization:"
-  //            << local_view->localization().ShortDebugString());
-  // ADEBUG("controller/controller_agent.cpp, ControllerAgent::CheckInput",
-  //        "Received chassis:" << local_view->chassis().ShortDebugString());
-
   if (local_view->trajectory().trajectory_point().empty()) {
-    AWARN_EVERY(100,
-                "controller/controller_agent.cpp, ControllerAgent::CheckInput",
-                "planning has no trajectory point. ");
+    AWARN_EVERY(100, "planning has no trajectory point. ");
 
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR,
                   "planning has no trajectory point. planning_seq_num:" +
@@ -78,8 +66,7 @@ Status ControllerInterface::CheckInput(LocalView* local_view) {
 Status ControllerInterface::CheckTimestamp(const LocalView& local_view) {
   if (!control_conf_.enable_input_timestamp_check() ||
       control_conf_.is_control_test_mode()) {
-    ADEBUG("controller/controller_agent, ControllerAgent::CheckTimestamp",
-           "Skip input timestamp check by gflags");
+    ADEBUG("Skip input timestamp check by gflags");
     return Status::OK();
   }
 
@@ -89,8 +76,7 @@ Status ControllerInterface::CheckTimestamp(const LocalView& local_view) {
       current_timestamp - local_view.localization().header().timestamp_sec();
   if (localization_diff > (control_conf_.max_localization_miss_num() *
                            control_conf_.localization_period())) {
-    AERROR("controller/controller_agent, ControllerAgent::CheckTimestamp",
-           "localization msg lost for " << std::setprecision(6)
+    AERROR("localization msg lost for " << std::setprecision(6)
                                         << localization_diff << "s");
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR, "localization msg timeout");
   }
@@ -99,9 +85,8 @@ Status ControllerInterface::CheckTimestamp(const LocalView& local_view) {
       current_timestamp - local_view.chassis().header().timestamp_sec();
   if (chassis_diff >
       (control_conf_.max_chassis_miss_num() * control_conf_.chassis_period())) {
-    AERROR(
-        "controller/controller_agent, ControllerAgent::CheckTimestamp",
-        "chassis msg lost for " << std::setprecision(6) << chassis_diff << "s");
+    AERROR("chassis msg lost for " << std::setprecision(6) << chassis_diff
+                                   << "s");
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR, "chassis msg timeout");
   }
 
@@ -109,8 +94,7 @@ Status ControllerInterface::CheckTimestamp(const LocalView& local_view) {
       current_timestamp - local_view.trajectory().header().timestamp_sec();
   if (trajectory_diff > (control_conf_.max_planning_miss_num() *
                          control_conf_.trajectory_period())) {
-    AERROR("controller/controller_agent, ControllerAgent::CheckTimestamp",
-           "trajectory msg lost for " << std::setprecision(6) << trajectory_diff
+    AERROR("trajectory msg lost for " << std::setprecision(6) << trajectory_diff
                                       << "s");
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR, "trajectory msg timeout");
   }

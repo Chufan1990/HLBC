@@ -45,8 +45,9 @@ class Controller {
    * @param control_conf control configurations
    * @return Status initialization status
    */
-  virtual common::Status Init(std::shared_ptr<DependencyInjector> injector,
-                              const ControlConf *control_conf) = 0;
+  virtual autoagric::common::Status Init(
+      std::shared_ptr<DependencyInjector> injector,
+      const ControlConf *control_conf) = 0;
 
   /**
    * @brief compute control command based on current vehicle status
@@ -57,7 +58,7 @@ class Controller {
    * @param cmd control command
    * @return Status computation status
    */
-  virtual common::Status ComputeControlCommand(
+  virtual autoagric::common::Status ComputeControlCommand(
       const localization::LocalizationEstimate *localization,
       const canbus::Chassis *chassis, const planning::ADCTrajectory *trajectory,
       control::ControlCommand *cmd) = 0;
@@ -66,7 +67,7 @@ class Controller {
    * @brief reset Controller
    * @return Status reset status
    */
-  virtual common::Status Reset() = 0;
+  virtual autoagric::common::Status Reset() = 0;
 
   /**
    * @brief controller name

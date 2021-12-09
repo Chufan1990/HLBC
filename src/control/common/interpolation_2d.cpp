@@ -15,7 +15,7 @@ namespace control {
 
 bool Interpolation2D::Init(const DataType& xyz) {
   if (xyz.empty()) {
-    AERROR("control/common/interpolation_2d.h, Interpolation2D::Init",
+    AERROR(
            "empty input.");
     return false;
   }
@@ -52,7 +52,7 @@ double Interpolation2D::InterpolateYz(const std::map<double, double>& yz_table,
                                       double y) const {
   if (yz_table.empty()) {
     ADEBUG_EVERY(
-        1, "control/common/interpolation_2d.h, Interpolation2D::InterpolateYz",
+        1, 
         "Unable to interpolateYz because yz_table is empty.");
     return y;
   }

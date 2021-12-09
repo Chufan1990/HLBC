@@ -45,9 +45,9 @@ Status VehicleStateProvider::Update(
   } else if (localization.header().has_timestamp_sec()) {
     vehicle_state_.set_timestamp(localization.header().timestamp_sec());
   } else if (chassis.has_header() && chassis.header().has_timestamp_sec()) {
-    AERROR("vehicle_state.cpp, VehicleStateProvider::Update",
-           "Unable to use location timestamp for vehicle state. Use chassis "
-           "time instead.");
+    AERROR(
+        "Unable to use location timestamp for vehicle state. Use chassis "
+        "time instead.");
     vehicle_state_.set_timestamp(chassis.header().timestamp_sec());
   }
 
@@ -85,19 +85,13 @@ Status VehicleStateProvider::Update(
 bool VehicleStateProvider::ConstructExceptLinearVelocity(
     const localization::LocalizationEstimate &localization) {
   if (!localization.has_pose()) {
-    AERROR(
-        "vehicle_state.cpp, "
-        "VehicleStateProvider::ConstructExceptLinearVelocity",
-        "Invalid localization input.");
+    AERROR("Invalid localization input.");
     return false;
   }
 
   // skip localization update when it is in use_navigation_mode.
   if (FLAGS_use_navigation_mode) {
-    ADEBUG(
-        "vehicle_state.cpp, "
-        "VehicleStateProvider::ConstructExceptLinearVelocity",
-        "Skip localization update when it is in use_navigation_mode.");
+    ADEBUG("Skip localization update when it is in use_navigation_mode.");
     return true;
   }
 
@@ -126,8 +120,6 @@ bool VehicleStateProvider::ConstructExceptLinearVelocity(
   if (FLAGS_enable_map_reference_unify) {
     if (!localization.pose().has_angular_velocity_vrf()) {
       AERROR(
-          "vehicle_state.cpp, "
-          "VehicleStateProvider::ConstructExceptLinearVelocity",
           "localization.pose().has_angular_velocity_vrf() must be true "
           "when FLAGS_enable_map_reference_unify is true.");
       return false;
@@ -137,8 +129,6 @@ bool VehicleStateProvider::ConstructExceptLinearVelocity(
 
     if (!localization.pose().has_linear_acceleration_vrf()) {
       AERROR(
-          "vehicle_state.cpp, "
-          "VehicleStateProvider::ConstructExceptLinearVelocity",
           "localization.pose().has_linear_acceleration_vrf() must be "
           "true when FLAGS_enable_map_reference_unify is true.");
       return false;
@@ -147,20 +137,14 @@ bool VehicleStateProvider::ConstructExceptLinearVelocity(
         localization.pose().linear_acceleration_vrf().y());
   } else {
     if (!localization.pose().has_angular_velocity()) {
-      AERROR(
-          "vehicle_state.cpp, "
-          "VehicleStateProvider::ConstructExceptLinearVelocity",
-          "localization.pose() has no angular velocity.");
+      AERROR("localization.pose() has no angular velocity.");
       return false;
     }
     vehicle_state_.set_angular_velocity(
         localization.pose().angular_velocity().z());
 
     if (!localization.pose().has_linear_acceleration()) {
-      AERROR(
-          "vehicle_state.cpp, "
-          "VehicleStateProvider::ConstructExceptLinearVelocity",
-          "localization.pose() has no linear acceleration.");
+      AERROR("localization.pose() has no linear acceleration.");
       return false;
     }
     vehicle_state_.set_linear_acceleration(
@@ -284,7 +268,7 @@ math::Vec2d VehicleStateProvider::ComputeCOMPosition(
     v << 0.0, 0.0, 0.0;
   }
 
-  // ADEBUG("", "rear_to_com vector: " << v);
+  // ADEBUG("rear_to_com vector: " << v);
   Eigen::Vector3d pos_vec(vehicle_state_.x(), vehicle_state_.y(),
                           vehicle_state_.z());
   // Initialize the COM position without rotation
@@ -292,7 +276,7 @@ math::Vec2d VehicleStateProvider::ComputeCOMPosition(
 
   // If we have rotation information, take it into consideration.
   if (vehicle_state_.pose().has_orientation()) {
-    // ADEBUG("", "has_orientation: "
+    // ADEBUG("has_orientation: "
     //                << vehicle_state_.pose().orientation().DebugString());
     const auto &orientation = vehicle_state_.pose().orientation();
     Eigen::Quaternion<double> quaternion(orientation.qw(), orientation.qx(),

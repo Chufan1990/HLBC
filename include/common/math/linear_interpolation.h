@@ -4,8 +4,8 @@
 
 #include <cmath>
 
-#include "common/macro.h"
 #include "autoagric/common/pnc_point.pb.h"
+#include "common/macro.h"
 
 namespace autoagric {
 namespace common {
@@ -15,8 +15,7 @@ template <typename T>
 T lerp(const T &x0, const double t0, const T &x1, const double t1,
        const double t) {
   if (std::fabs(t1 - t0) <= 1e-6) {
-    AERROR("linear_interpolation.h, lerp",
-           "input time difference is too small\n");
+    AERROR("input time difference is too small\n");
     return x0;
   }
 

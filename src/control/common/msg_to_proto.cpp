@@ -56,7 +56,7 @@ void GetProtoFromMsg(const autoware_msgs::LaneConstPtr& msg,
     trajectory_point->set_v(waypoint.twist.twist.linear.x);
   }
 
-  //   ADEBUG("", "trajectory->trajectory_point(): " <<
+  //   ADEBUG("trajectory->trajectory_point(): " <<
   //   trajectory->DebugString());
 
   trajectory->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
@@ -64,38 +64,38 @@ void GetProtoFromMsg(const autoware_msgs::LaneConstPtr& msg,
   trajectory->mutable_header()->set_sequence_num(msg->header.seq);
 }
 
-void GetProtoFromMsg(const geometry_msgs::PoseStampedConstPtr& msg1,
-                     const geometry_msgs::TwistStampedConstPtr& msg2,
+void GetProtoFromMsg(const geometry_msgs::PoseStampedConstPtr& msg,
                      LocalizationEstimate* localization) {
   localization->Clear();
-  localization->mutable_pose()->mutable_position()->set_x(
-      msg1->pose.position.x);
-  localization->mutable_pose()->mutable_position()->set_y(
-      msg1->pose.position.y);
-  localization->mutable_pose()->mutable_position()->set_z(
-      msg1->pose.position.z);
+  localization->mutable_pose()->mutable_position()->set_x(msg->pose.position.x);
+  localization->mutable_pose()->mutable_position()->set_y(msg->pose.position.y);
+  localization->mutable_pose()->mutable_position()->set_z(msg->pose.position.z);
   localization->mutable_pose()->mutable_orientation()->set_qx(
-      msg1->pose.orientation.x);
+      msg->pose.orientation.x);
   localization->mutable_pose()->mutable_orientation()->set_qy(
-      msg1->pose.orientation.y);
+      msg->pose.orientation.y);
   localization->mutable_pose()->mutable_orientation()->set_qz(
-      msg1->pose.orientation.z);
+      msg->pose.orientation.z);
   localization->mutable_pose()->mutable_orientation()->set_qw(
-      msg1->pose.orientation.w);
+      msg->pose.orientation.w);
   localization->mutable_pose()->set_heading(
-      common::math::NormalizeAngle(tf2::getYaw(tf2::Quaternion(
-          msg1->pose.orientation.x, msg1->pose.orientation.y,
-          msg1->pose.orientation.z, msg1->pose.orientation.w))));
-  localization->mutable_pose()->mutable_linear_velocity()->set_x(
-      msg2->twist.linear.x);
-  localization->mutable_pose()->mutable_angular_velocity()->set_z(
-      msg2->twist.angular.z);
-  localization->mutable_pose()->mutable_angular_velocity_vrf()->set_z(
-      msg2->twist.angular.z);
+      common::math::NormalizeAngle(tf2::getYaw(
+          tf2::Quaternion(msg->pose.orientation.x, msg->pose.orientation.y,
+                          msg->pose.orientation.z, msg->pose.orientation.w))));
   localization->mutable_pose()->mutable_linear_acceleration_vrf()->set_x(0.0);
-  localization->mutable_header()->set_timestamp_sec(msg1->header.stamp.toSec());
-  localization->mutable_header()->set_frame_id(msg1->header.frame_id);
-  localization->mutable_header()->set_sequence_num(msg1->header.seq);
+  localization->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
+  localization->mutable_header()->set_frame_id(msg->header.frame_id);
+  localization->mutable_header()->set_sequence_num(msg->header.seq);
+}
+
+void GetProtoFromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
+                     LocalizationEstimate* localization) {
+  localization->mutable_pose()->mutable_linear_velocity()->set_x(
+      msg->twist.linear.x);
+  localization->mutable_pose()->mutable_angular_velocity()->set_z(
+      msg->twist.angular.z);
+  localization->mutable_pose()->mutable_angular_velocity_vrf()->set_z(
+      msg->twist.angular.z);
 }
 
 void GetProtoFromMsg(const autoware_msgs::ControlCommandStampedConstPtr& msg,
@@ -104,6 +104,19 @@ void GetProtoFromMsg(const autoware_msgs::ControlCommandStampedConstPtr& msg,
   chassis->set_steering_percentage(msg->cmd.steering_angle / 26.0);
   chassis->set_speed_mps(msg->cmd.linear_velocity / 100.0);
   chassis->set_gear_location(Chassis::GEAR_DRIVE);
+  chassis->set_driving_mode(Chassis::COMPLETE_AUTO_DRIVE);
+  chassis->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
+  chassis->mutable_header()->set_frame_id(msg->header.frame_id);
+  chassis->mutable_header()->set_sequence_num(msg->header.seq);
+}
+
+void GetProtoFromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
+                     canbus::Chassis* chassis) {
+  chassis->Clear();
+  chassis->set_steering_percentage(msg->twist.angular.z);
+  chassis->set_speed_mps(msg->twist.linear.x);
+  chassis->set_gear_location(msg->twist.linear.x >= 0 ? Chassis::GEAR_DRIVE
+                                                      : Chassis::GEAR_REVERSE);
   chassis->set_driving_mode(Chassis::COMPLETE_AUTO_DRIVE);
   chassis->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
   chassis->mutable_header()->set_frame_id(msg->header.frame_id);
@@ -158,7 +171,7 @@ void GetProtoFromMsg(const autoware_msgs::ControlCommandStampedConstPtr& msg,
 //   trajectory->mutable_trajectory_point(1)->set_relative_time(0.0);
 //   trajectory->mutable_trajectory_point(1)->mutable_path_point()->set_kappa(
 //       trajectory->trajectory_point(2).path_point().kappa());
-//   ADEBUG("", "updated trajectory: " << trajectory->DebugString());
+//   ADEBUG("updated trajectory: " << trajectory->DebugString());
 // }
 
 }  // namespace control

@@ -2,7 +2,9 @@
 
 #include <ros/ros.h>
 
+#include <memory>
 #include <utility>
+#include <vector>
 
 #include "autoagric/planning/planning.pb.h"
 #include "autoware_msgs/Lane.h"
@@ -23,14 +25,16 @@ class TrajectoryVisualizer {
       MarkerType;
   TrajectoryVisualizer(ros::NodeHandle& nh);
 
-  TrajectoryVisualizer();
+  TrajectoryVisualizer(ros::NodeHandle& nh,
+                       const std::vector<std::string>& names);
 
-  virtual ~TrajectoryVisualizer() = default;
+  TrajectoryVisualizer() = default;
+
+  virtual ~TrajectoryVisualizer();
 
   void Init();
 
-
-  void Proc(const MarkerType& markers);
+  void Proc(const std::vector<MarkerType>& markers);
 
   static MarkerType LaneToMarkerArray(const autoware_msgs::Lane& lane,
                                       const geometry_msgs::Vector3& scale,
@@ -91,14 +95,12 @@ class TrajectoryVisualizer {
     return std::make_pair(arrows, points_and_line);
   }
 
-
  private:
   MarkerType LaneToMarkerArray(const autoware_msgs::LaneConstPtr& lane);
 
-  ros::NodeHandle nh_;
+  std::vector<ros::NodeHandle> nh_queue_;
 
-  ros::Subscriber sub1_;
-  ros::Publisher pub1_, pub2_;
+  std::vector<std::pair<ros::Publisher, ros::Publisher>> publisher_queue_;
 };
 
 }  // namespace common

@@ -11,7 +11,6 @@
 #include "control/controller/lat_controller.h"
 #include "control/controller/mpc_controller.h"
 
-
 namespace autoagric {
 namespace control {
 
@@ -65,8 +64,7 @@ using autoagric::common::Status;
 
 Status ControllerAgent::InitializeConf(const ControlConf *control_conf) {
   if (!control_conf) {
-    AERROR("controller/controller_agent.cpp, ControllerAgent::InitializeConf",
-           "control_conf is null");
+    AERROR("control_conf is null");
     return Status(ErrorCode::CONTROL_INIT_ERROR, "Failed to load config");
   }
   control_conf_ = control_conf;
@@ -78,22 +76,19 @@ Status ControllerAgent::Init(std::shared_ptr<DependencyInjector> injector,
   injector_ = injector;
   // std::make_shared<DependencyInjector>();
 
-  AINFO("controller/controller_agent.cpp, ControllerAgent::Init",
-        "Control init, starting ...");
+  AINFO("Control init, starting ...");
 
-  ACHECK(!InitializeConf(control_conf).ok(),
-         "controller/controller_agent.cpp, ControllerAgent::Init",
-         "Failed to initialize config.");
+  AERROR_IF(!InitializeConf(control_conf).ok(), "Failed to initialize config.");
 
   /**
    * @todo(chufan) add controller factory
    */
-  controller_ = std::unique_ptr<MPCController>(new MPCController());
+  private_controller_ = std::make_shared<MPCController>();
+  controller_ = private_controller_;
 
   if (!FLAGS_use_control_submodules &&
       !controller_->Init(injector_, control_conf_).ok()) {
-    ADEBUG("controller/controller_agent.cpp, ControllerAgent::Init",
-           "original control");
+    ADEBUG("original control");
     return Status(ErrorCode::CONTROL_INIT_ERROR,
                   "fail to init controller: " + controller_->Name());
   }
@@ -104,27 +99,22 @@ Status ControllerAgent::ComputeControlCommand(
     const localization::LocalizationEstimate *localization,
     const canbus::Chassis *chassis, const planning::ADCTrajectory *trajectory,
     control::ControlCommand *cmd) {
-  ADEBUG(
-      "controller/controller_agent.cpp, ControllerAgent::ComputeControlCommand",
-      "controller:" << controller_->Name() << " processing ...");
+  ADEBUG("controller:" << controller_->Name() << " processing ...");
   double start_timestamp = ros::Time::now().toNSec();
   auto status = controller_->ComputeControlCommand(localization, chassis,
                                                    trajectory, cmd);
   double end_timestamp = ros::Time::now().toNSec();
   const double time_diff_ms = (end_timestamp - start_timestamp) / 1e6;
 
-  ADEBUG(
-      "controller/controller_agent.cpp, ControllerAgent::ComputeControlCommand",
-      "controller: " << controller_->Name()
-                     << " calculation time is: " << time_diff_ms << " ms.");
+  ADEBUG("controller: " << controller_->Name()
+                        << " calculation time is: " << time_diff_ms << " ms.");
   cmd->mutable_latency_stats()->add_controller_time_ms(time_diff_ms);
 
   return status;
 }
 
 Status ControllerAgent::Reset() {
-  ADEBUG("controller/controller_agent.cpp, ControllerAgent::Reset",
-         "controller:" << controller_->Name() << " reset...");
+  ADEBUG("controller:" << controller_->Name() << " reset...");
   controller_->Reset();
 
   return Status::OK();

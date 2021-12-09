@@ -44,7 +44,7 @@ MpcIpopt::MpcIpopt(const std::string options, const int horizon,
       speed_index_(heading_index_ + horizon),
       steer_index_(speed_index_ + horizon),
       accel_index_(steer_index_ + horizon - 1) {
-  ADEBUG("", "x_index_" << x_index_ << "y_index_" << y_index_
+  ADEBUG("x_index_" << x_index_ << "y_index_" << y_index_
                         << "heading_index_" << heading_index_ << "speed_index_"
                         << speed_index_ << "steer_index_" << steer_index_
                         << "accel_index_" << accel_index_);
@@ -54,7 +54,7 @@ void MpcIpopt::Update(Dvector* vars, Dvector* vars_lowerbound,
                       Dvector* vars_upperbound, Dvector* constraints_lowerbound,
                       Dvector* constraints_upperbound,
                       Eigen::MatrixXd* matrix_q, Eigen::MatrixXd* matrix_r,
-                      std::vector<common::TrajectoryPoint>* ref_trajectory) {
+                      std::vector<autoagric::common::TrajectoryPoint>* ref_trajectory) {
   vars_lowerbound_ = vars_lowerbound;
   vars_upperbound_ = vars_upperbound;
   constraints_lowerbound_ = constraints_lowerbound;
@@ -66,7 +66,7 @@ void MpcIpopt::Update(Dvector* vars, Dvector* vars_lowerbound,
 }
 
 bool MpcIpopt::Solve(std::shared_ptr<MpcIpopt>& mpc_ipopt,
-                     std::vector<common::TrajectoryPoint>& solution) {
+                     std::vector<autoagric::common::TrajectoryPoint>& solution) {
   CppAD::ipopt::solve_result<Dvector> ret;
 
   CppAD::ipopt::solve<Dvector, MpcIpopt>(
@@ -78,7 +78,7 @@ bool MpcIpopt::Solve(std::shared_ptr<MpcIpopt>& mpc_ipopt,
   ok &= ret.status == CppAD::ipopt::solve_result<Dvector>::success;
 
   if (!ok) {
-    AERROR("", "mpc solver failed: " << ret.status);
+    AERROR("mpc solver failed: " << ret.status);
     return ok;
   }
 

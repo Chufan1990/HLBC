@@ -10,12 +10,15 @@
 namespace autoagric {
 namespace control {
 
-using common::ErrorCode;
-using common::Status;
+using autoagric::common::ErrorCode;
+using autoagric::common::Status;
 using Matrix = Eigen::MatrixXd;
+using autoagric::common::TrajectoryPoint;
+using autoagric::common::VehicleConfigHelper;
+using autoagric::common::math::MpcIpopt;
 
 MPCController::MPCController() : name_("MPC-based controller") {
-  AINFO("", "Using " << name_);
+  AINFO("Using " << name_);
 }
 
 MPCController::~MPCController() {}
@@ -26,8 +29,7 @@ Status MPCController::Init(std::shared_ptr<DependencyInjector> injector,
   injector_ = injector;
   // Load controller configuration
   if (!LoadControlConf(control_conf_)) {
-    AERROR("controller/lat_controller, LatController::Init",
-           "failed to load control conf");
+    AERROR("failed to load control conf");
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR,
                   "faild to load control_conf");
   }
@@ -46,7 +48,7 @@ Status MPCController::Init(std::shared_ptr<DependencyInjector> injector,
         absl::StrCat("MPC controller error: matrix_q size: ", q_param_size,
                      " in parameter file not equal to basic_state_size_: ",
                      basic_state_size_);
-    AERROR("", error_msg);
+    AERROR(error_msg);
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR, error_msg);
   }
   for (int i = 0; i < q_param_size; ++i) {
@@ -100,30 +102,30 @@ Status MPCController::Init(std::shared_ptr<DependencyInjector> injector,
     constraints_upperbound_[i] = 0;
   }
 
-  resampled_trajectory_ = std::vector<common::TrajectoryPoint>(horizon_);
+  resampled_trajectory_ = std::vector<TrajectoryPoint>(horizon_, TrajectoryPoint());
 
-  warm_up_solution_ = std::vector<common::TrajectoryPoint>(horizon_);
+  warmup_solution_ = std::vector<TrajectoryPoint>(horizon_, TrajectoryPoint());
 
   LoadMPCGainScheduler(control_conf->mpc_controller_conf());
 
-  mpc_ipopt_solver_ = std::make_shared<common::math::MpcIpopt>(
-      new common::math::MpcIpopt(ipopt_options_, horizon_, ts_, lf_,
-                                 control_conf->mpc_controller_conf()));
-  ADEBUG("", "[MPCController] init done!");
+  mpc_ipopt_solver_ = std::make_shared<MpcIpopt>(new MpcIpopt(
+      ipopt_options_, horizon_, ts_, lf_, control_conf->mpc_controller_conf()));
+  ADEBUG("[MPCController] init done!");
   return Status::OK();
 }
 
 bool MPCController::LoadControlConf(const ControlConf *control_conf) {
   if (!control_conf) {
-    AERROR("", "control_conf = nullptr");
+    AERROR("control_conf = nullptr");
     return false;
   }
-  vehicle_param_ =
-      common::VehicleConfigHelper::Instance()->GetConfig().vehicle_param();
+  vehicle_param_ = VehicleConfigHelper::Instance()->GetConfig().vehicle_param();
+
+  ADEBUG(control_conf->DebugString());
 
   ts_ = control_conf->mpc_controller_conf().ts();
   if (ts_ <= 0.0) {
-    AERROR("", "invalid control update interval");
+    AERROR("invalid control update interval");
     return false;
   }
 
@@ -137,7 +139,7 @@ bool MPCController::LoadControlConf(const ControlConf *control_conf) {
 
   static constexpr double kEpsilon = 1e-6;
   if (std::isnan(steer_ratio_) || steer_ratio_ < kEpsilon) {
-    AERROR("", "[MPCController] teer_ratio = 0");
+    AERROR("[MPCController] teer_ratio = 0");
     return false;
   }
 
@@ -196,7 +198,7 @@ bool MPCController::LoadControlConf(const ControlConf *control_conf) {
       control_conf->mpc_controller_conf().unconstrained_control_diff_limit();
 
   LoadControlCalibrationTable(control_conf->mpc_controller_conf());
-  ADEBUG("", "MPC conf loaded");
+  ADEBUG("MPC conf loaded");
   return true;
 }
 
@@ -210,7 +212,7 @@ void MPCController::LoadMPCGainScheduler(
       mpc_controller_conf.feedforwardterm_gain_scheduler();
   const auto &steer_weight_gain_scheduler =
       mpc_controller_conf.steer_weight_gain_scheduler();
-  ADEBUG("", "MPC control gain scheduler loaded");
+  ADEBUG("MPC control gain scheduler loaded");
   Interpolation1D::DataType xy1, xy2, xy3, xy4;
   for (const auto &scheduler : lat_err_gain_scheduler.scheduler()) {
     xy1.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
@@ -226,28 +228,28 @@ void MPCController::LoadMPCGainScheduler(
   }
 
   lat_err_interpolation_.reset(new Interpolation1D);
-  ACHECK(lat_err_interpolation_->Init(xy1), "",
-         "Fail to load lateral error gain scheduler for MPC controller");
+  AERROR_IF(!lat_err_interpolation_->Init(xy1),
+            "Fail to load lateral error gain scheduler for MPC controller");
 
   heading_err_interpolation_.reset(new Interpolation1D);
-  ACHECK(heading_err_interpolation_->Init(xy2), "",
-         "Fail to load heading error gain scheduler for MPC controller");
+  AERROR_IF(!heading_err_interpolation_->Init(xy2),
+            "Fail to load heading error gain scheduler for MPC controller");
 
   feedforwardterm_interpolation_.reset(new Interpolation1D);
-  ACHECK(feedforwardterm_interpolation_->Init(xy3), "",
-         "Fail to load feed forward term gain scheduler for MPC controller");
+  AERROR_IF(!feedforwardterm_interpolation_->Init(xy3),
+            "Fail to load feed forward term gain scheduler for MPC controller");
 
   steer_weight_interpolation_.reset(new Interpolation1D);
-  ACHECK(steer_weight_interpolation_->Init(xy4), "",
-         "Fail to load steer weight gain scheduler for MPC controller");
+  AERROR_IF(!steer_weight_interpolation_->Init(xy4),
+            "Fail to load steer weight gain scheduler for MPC controller");
 }
 
 void MPCController::LoadControlCalibrationTable(
     const MPCControllerConf &mpc_controller_conf) {
   const auto &control_table = mpc_controller_conf.calibration_table();
-  ADEBUG("", "Control calibration table loaded");
-  ADEBUG("", "Control calibration table size is "
-                 << control_table.calibration_size());
+  ADEBUG("Control calibration table loaded");
+  ADEBUG("Control calibration table size is "
+         << control_table.calibration_size());
   Interpolation2D::DataType xyz;
   for (const auto &calibration : control_table.calibration()) {
     xyz.push_back(std::make_tuple(calibration.speed(),
@@ -255,8 +257,8 @@ void MPCController::LoadControlCalibrationTable(
                                   calibration.command()));
   }
   control_interpolation_.reset(new Interpolation2D);
-  ACHECK(control_interpolation_->Init(xyz), "",
-         "Fail to load control calibration table");
+  AERROR_IF(!control_interpolation_->Init(xyz),
+            "Fail to load control calibration table");
 }
 
 Status MPCController::ComputeControlCommand(
@@ -264,6 +266,8 @@ Status MPCController::ComputeControlCommand(
     const canbus::Chassis *chassis,
     const planning::ADCTrajectory *planning_published_trajectory,
     ControlCommand *cmd) {
+
+  ADEBUG("Im in. looks alright for now");
   auto target_tracking_trajectory = *planning_published_trajectory;
 
   auto time_stamp_diff =
@@ -273,6 +277,7 @@ Status MPCController::ComputeControlCommand(
   if (time_stamp_diff > 1e-2) {
     trajectory_analyzer_ =
         std::move(TrajectoryAnalyzer(&target_tracking_trajectory));
+        ADEBUG("trajectory_analyzer regenerated");
   }
 
   current_trajectory_timestamp_ =
@@ -280,12 +285,11 @@ Status MPCController::ComputeControlCommand(
 
   auto pos_trajectory_time_stamp_diff =
       localization->header().timestamp_sec() - current_trajectory_timestamp_;
-
   trajectory_analyzer_.SampleByRelativeTime(pos_trajectory_time_stamp_diff, ts_,
                                             horizon_, resampled_trajectory_);
-
+  ADEBUG("Trajectory resampling done");
   UpdateState();
-
+ ADEBUG("Update done. Ready to compute");
   double mpc_start_timestamp = ros::Time::now().toNSec();
 
   mpc_ipopt_solver_->Update(&vars_, &vars_lowerbound_, &vars_upperbound_,
@@ -293,20 +297,20 @@ Status MPCController::ComputeControlCommand(
                             &matrix_q_updated_, &matrix_r_updated_,
                             &resampled_trajectory_);
 
-  if (common::math::MpcIpopt::Solve(mpc_ipopt_solver_, warm_up_solution_)) {
-    cmd->set_steering_target(warm_up_solution_[1 + latency_steps_].steer());
-    cmd->set_speed(warm_up_solution_[1 + latency_steps_].v());
-    cmd->set_acceleration(warm_up_solution_[1 + latency_steps_].a());
-    ADEBUG("", "MPC ipopt problem failed! ";);
+  if (MpcIpopt::Solve(mpc_ipopt_solver_, warmup_solution_)) {
+    cmd->set_steering_target(warmup_solution_[1 + latency_steps_].steer());
+    cmd->set_speed(warmup_solution_[1 + latency_steps_].v());
+    cmd->set_acceleration(warmup_solution_[1 + latency_steps_].a());
+    ADEBUG("MPC ipopt problem solved! ";);
   } else {
     cmd->set_speed(0);
     cmd->set_acceleration(0);
-    AERROR("", "MPC ipopt problem failed! ";);
+    AERROR("MPC ipopt problem failed! ";);
   }
 
   double mpc_end_timestamp = ros::Time::now().toNSec();
-  ADEBUG("", "MPC core algorithm: calculation time is: "
-                 << (mpc_end_timestamp - mpc_start_timestamp) * 1000 << " ms.");
+  ADEBUG("MPC core algorithm: calculation time is: "
+         << (mpc_end_timestamp - mpc_start_timestamp) * 1000 << " ms.");
 
   /**
    * @todo(chufan) add emergency stop
@@ -346,8 +350,7 @@ void MPCController::UpdateState() {
   vars_lowerbound_[heading_start_] = heading;
   vars_upperbound_[heading_start_] = heading;
 
-  const double steer =
-      SteerPct2Wheel(injector_->vehicle_state()->steering_percentage());
+  const double steer = injector_->vehicle_state()->steering_percentage();
   vars_[steer_start_] = steer;
   vars_lowerbound_[steer_start_] = steer;
   vars_upperbound_[steer_start_] = steer;

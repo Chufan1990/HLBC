@@ -45,7 +45,7 @@
 //   //                             &smoothed_point2d);
 //   //       break;
 //   //     default:
-//   //       AERROR("", "smoother type not defined");
+//   //       AERROR("smoother type not defined");
 //   //       break;
 //   //   }
 
@@ -56,7 +56,7 @@
 //       CosThetaSmooth(raw_point2d, anchorpoints_lateralbound, &smoothed_point2d);
 
 //   if (!status) {
-//     AERROR("", "discrete_points reference line smoother failed");
+//     AERROR("discrete_points reference line smoother failed");
 //     return false;
 //   }
 
@@ -68,7 +68,7 @@
 //   ReferencePoint::RemoveDuplicates(&ref_points);
 
 //   if (ref_points.size() < 2) {
-//     AERROR("", "fail to generate smoothed reference line.");
+//     AERROR("fail to generate smoothed reference line.");
 //     return false;
 //   }
 
@@ -99,12 +99,12 @@
 //   bool status = smoother.Solve(raw_point2d, box_bounds, &opt_x, &opt_y);
 
 //   if (!status) {
-//     AERROR("", "costheta reference line smoothing failed");
+//     AERROR("costheta reference line smoothing failed");
 //     return false;
 //   }
 
 //   if (opt_x.size() < 2 || opt_y.size() < 2) {
-//     AERROR("", "return by costheta smoother is wrong. size smaller than 2");
+//     AERROR("return by costheta smoother is wrong. size smaller than 2");
 //     return false;
 //   }
 

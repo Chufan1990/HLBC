@@ -1,5 +1,9 @@
 #include "control/common/trajectory_visualizer.h"
 
+#include <algorithm>
+
+#include "common/macro.h"
+
 namespace autoagric {
 namespace control {
 namespace common {
@@ -9,18 +13,42 @@ using visualization_msgs::Marker;
 using visualization_msgs::MarkerArray;
 using MarkerType = std::pair<MarkerArray, MarkerArray>;
 
-TrajectoryVisualizer::TrajectoryVisualizer(ros::NodeHandle& nh) : nh_(nh) {
-  Init();
+TrajectoryVisualizer::TrajectoryVisualizer(ros::NodeHandle& nh) {
+  nh_queue_.emplace_back(nh);
+}
+
+TrajectoryVisualizer::TrajectoryVisualizer(
+    ros::NodeHandle& nh, const std::vector<std::string>& names) {
+  for (auto& name : names) {
+    nh_queue_.emplace_back(ros::NodeHandle(nh, name));
+  }
+}
+
+TrajectoryVisualizer::~TrajectoryVisualizer() {
+  nh_queue_.clear();
+  publisher_queue_.clear();
 }
 
 void TrajectoryVisualizer::Init() {
-  pub1_ = nh_.advertise<MarkerArray>("arrows", 10);
-  pub2_ = nh_.advertise<MarkerArray>("points_and_line", 10);
+  for (auto& nh : nh_queue_) {
+    publisher_queue_.emplace_back(
+        std::make_pair<ros::Publisher, ros::Publisher>(
+            nh.advertise<MarkerArray>("arrows", 10),
+            nh.advertise<MarkerArray>("points_and_line", 10)));
+  }
 }
 
-void TrajectoryVisualizer::Proc(const MarkerType& markers) {
-  pub1_.publish(markers.first);
-  pub2_.publish(markers.second);
+void TrajectoryVisualizer::Proc(const std::vector<MarkerType>& markers) {
+  int visualizer_num = std::min<int>(markers.size(), publisher_queue_.size());
+
+  AERROR_IF(markers.size() == publisher_queue_.size(),
+            "numbers of markers and publishers are not equal");
+
+  for (int i = 0; i < visualizer_num; i++) {
+    auto& publisher = publisher_queue_[i];
+    publisher.first.publish(markers[i].first);
+    publisher.second.publish(markers[i].second);
+  }
 }
 
 MarkerType TrajectoryVisualizer::LaneToMarkerArray(

@@ -67,7 +67,7 @@ class Factory {
   std::unique_ptr<AbstractProduct> CreateObject(const IdentifierType& id,
                                                 Args&&... args) {
     auto result = CreateObjectOrNull(id, std::forward<Args>(args)...);
-    ACHECK(!result, "", "Factory could not create Object of type : " << id);
+    AERROR_IF(!result, "", "Factory could not create Object of type : " << id);
     return result;
   }
 

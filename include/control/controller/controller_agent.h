@@ -11,6 +11,7 @@
 #include "autoagric/control/local_view.pb.h"
 #include "control/common/dependency_injector.h"
 #include "control/controller/controller.h"
+#include "control/controller/mpc_controller.h"
 
 /**
  * @namespace autoagric::control
@@ -30,10 +31,10 @@ class ControllerAgent {
    * @param control_conf control configurations
    * @return Status initialization status
    */
-  // common::Status Init(std::shared_ptr<DependencyInjector> injector,
+  // autoagric::common::Status Init(std::shared_ptr<DependencyInjector> injector,
   //                     const ControlConf *control_conf);
 
-  common::Status Init(std::shared_ptr<DependencyInjector> injector,
+  autoagric::common::Status Init(std::shared_ptr<DependencyInjector> injector,
                       const ControlConf *control_conf);
 
   /**
@@ -45,7 +46,7 @@ class ControllerAgent {
    * @param cmd control command
    * @return Status computation status
    */
-  common::Status ComputeControlCommand(
+  autoagric::common::Status ComputeControlCommand(
       const localization::LocalizationEstimate *localization,
       const canbus::Chassis *chassis, const planning::ADCTrajectory *trajectory,
       control::ControlCommand *cmd);
@@ -54,7 +55,12 @@ class ControllerAgent {
    * @brief reset ControllerAgent
    * @return Status reset status
    */
-  common::Status Reset();
+  autoagric::common::Status Reset();
+
+
+  const std::shared_ptr<MPCController> controller() const {
+    return private_controller_;
+  } 
 
  private:
   /**
@@ -64,15 +70,17 @@ class ControllerAgent {
    */
   // void RegisterControllers(const ControlConf *control_conf);
 
-  common::Status InitializeConf(const ControlConf *control_conf);
+  autoagric::common::Status InitializeConf(const ControlConf *control_conf);
 
   const ControlConf *control_conf_ = nullptr;
 
-  std::unique_ptr<Controller> controller_ = nullptr;
-  //   common::util::Factory<ControlConf::ControllerType, Controller>
+  std::shared_ptr<Controller> controller_ = nullptr;
+  //   autoagric::common::util::Factory<ControlConf::ControllerType, Controller>
   //       controller_factory_;
   //   std::vector<std::unique_ptr<Controller>> controller_list_;
   std::shared_ptr<DependencyInjector> injector_ = nullptr;
+
+  std::shared_ptr<MPCController> private_controller_ = nullptr;
 };
 }  // namespace control
 }  // namespace autoagric
