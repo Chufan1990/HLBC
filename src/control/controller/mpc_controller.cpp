@@ -6,6 +6,7 @@
 #include "common/macro.h"
 #include "common/math/math_utils.h"
 #include "common/math/quaternion.h"
+#include "control/common/pid_BC_controller.h"
 
 namespace autoagric {
 namespace control {
@@ -16,6 +17,8 @@ using Matrix = Eigen::MatrixXd;
 using autoagric::common::TrajectoryPoint;
 using autoagric::common::VehicleConfigHelper;
 using autoagric::common::math::MpcIpopt;
+using autoagric::control::common::PIDBCController;
+using autoagric::control::common::PIDController;
 
 MPCController::MPCController() : name_("MPC-based controller") {
   AINFO("Using " << name_);
@@ -102,9 +105,11 @@ Status MPCController::Init(std::shared_ptr<DependencyInjector> injector,
     constraints_upperbound_[i] = 0;
   }
 
-  resampled_trajectory_ = std::vector<TrajectoryPoint>(horizon_, TrajectoryPoint());
+  resampled_trajectory_ =
+      std::vector<TrajectoryPoint>(horizon_, TrajectoryPoint());
 
-  warmup_solution_ = std::vector<TrajectoryPoint>(horizon_, TrajectoryPoint());
+  warmstart_solution_ =
+      std::vector<TrajectoryPoint>(horizon_, TrajectoryPoint());
 
   LoadMPCGainScheduler(control_conf->mpc_controller_conf());
 
@@ -120,8 +125,6 @@ bool MPCController::LoadControlConf(const ControlConf *control_conf) {
     return false;
   }
   vehicle_param_ = VehicleConfigHelper::Instance()->GetConfig().vehicle_param();
-
-  ADEBUG(control_conf->DebugString());
 
   ts_ = control_conf->mpc_controller_conf().ts();
   if (ts_ <= 0.0) {
@@ -159,12 +162,21 @@ bool MPCController::LoadControlConf(const ControlConf *control_conf) {
   const double mpc_eps = control_conf->mpc_controller_conf().eps();
   const double mpc_max_iteration =
       control_conf->mpc_controller_conf().max_iteration();
-  const double print_level = control_conf->mpc_controller_conf().print_level();
+  const double print_level =
+      control_conf->mpc_controller_conf().ipopt_print_level();
+  const std::string warm_start =
+      control_conf->mpc_controller_conf().ipopt_warm_start();
+  const std::string same_structure =
+      control_conf->mpc_controller_conf().ipopt_same_structure();
 
-  ipopt_options_ = absl::StrCat(
-      "Integer print_level ", print_level, "\n", "Sparse true forward\n",
-      "Sparse true reverse\n", "Integer max_iter ", mpc_max_iteration, "\n",
-      "Numeric tol ", mpc_eps, "\n");
+  ipopt_options_ =
+      absl::StrCat("Integer print_level ", print_level, "\nSparse true forward",
+                   "\nSparse true reverse", "\nInteger max_iter ",
+                   mpc_max_iteration, "\nString warm_start_init_point ",
+                   warm_start, "\nString warm_start_same_structure ",
+                   same_structure, "\nNumeric tol ", mpc_eps, "\n");
+
+  ADEBUG("Ipopt options: " << ipopt_options_);
 
   throttle_lowerbound_ =
       std::max(vehicle_param_.throttle_deadzone(),
@@ -185,6 +197,9 @@ bool MPCController::LoadControlConf(const ControlConf *control_conf) {
       control_conf->mpc_controller_conf().latency_time();
   latency_steps_ = latency_time / ts_;
 
+  AERROR_IF(latency_steps_ > horizon_,
+            "latency steps larger than preditive horizon");
+
   max_acceleration_when_stopped_ =
       control_conf->max_acceleration_when_stopped();
   max_abs_speed_when_stopped_ = vehicle_param_.max_abs_speed_when_stopped();
@@ -198,6 +213,12 @@ bool MPCController::LoadControlConf(const ControlConf *control_conf) {
       control_conf->mpc_controller_conf().unconstrained_control_diff_limit();
 
   LoadControlCalibrationTable(control_conf->mpc_controller_conf());
+
+  brake_pid_controller_ = std::unique_ptr<PIDController>(new PIDBCController());
+
+  brake_pid_controller_->Init(
+      control_conf->mpc_controller_conf().brake_pid_conf());
+
   ADEBUG("MPC conf loaded");
   return true;
 }
@@ -266,8 +287,6 @@ Status MPCController::ComputeControlCommand(
     const canbus::Chassis *chassis,
     const planning::ADCTrajectory *planning_published_trajectory,
     ControlCommand *cmd) {
-
-  ADEBUG("Im in. looks alright for now");
   auto target_tracking_trajectory = *planning_published_trajectory;
 
   auto time_stamp_diff =
@@ -277,7 +296,6 @@ Status MPCController::ComputeControlCommand(
   if (time_stamp_diff > 1e-2) {
     trajectory_analyzer_ =
         std::move(TrajectoryAnalyzer(&target_tracking_trajectory));
-        ADEBUG("trajectory_analyzer regenerated");
   }
 
   current_trajectory_timestamp_ =
@@ -285,33 +303,35 @@ Status MPCController::ComputeControlCommand(
 
   auto pos_trajectory_time_stamp_diff =
       localization->header().timestamp_sec() - current_trajectory_timestamp_;
-  trajectory_analyzer_.SampleByRelativeTime(pos_trajectory_time_stamp_diff, ts_,
-                                            horizon_, resampled_trajectory_);
-  ADEBUG("Trajectory resampling done");
+
+  trajectory_analyzer_.SampleByRelativeTime(0, ts_, horizon_,
+                                            resampled_trajectory_);
+
   UpdateState();
- ADEBUG("Update done. Ready to compute");
+
   double mpc_start_timestamp = ros::Time::now().toNSec();
+  double steer_angle_feedback = 0.0;
+  double linear_velocity_feedback = 0.0;
+  double linear_acceleration_feedback = 0.0;
+  double brake_feedback = 0.0;
 
   mpc_ipopt_solver_->Update(&vars_, &vars_lowerbound_, &vars_upperbound_,
                             &constraints_lowerbound_, &constraints_upperbound_,
                             &matrix_q_updated_, &matrix_r_updated_,
                             &resampled_trajectory_);
 
-  if (MpcIpopt::Solve(mpc_ipopt_solver_, warmup_solution_)) {
-    cmd->set_steering_target(warmup_solution_[1 + latency_steps_].steer());
-    cmd->set_speed(warmup_solution_[1 + latency_steps_].v());
-    cmd->set_acceleration(warmup_solution_[1 + latency_steps_].a());
+  if (MpcIpopt::Solve(mpc_ipopt_solver_, warmstart_solution_)) {
+    steer_angle_feedback = warmstart_solution_[1 + latency_steps_].steer();
+    linear_velocity_feedback = warmstart_solution_[1 + latency_steps_].v();
+    linear_acceleration_feedback = warmstart_solution_[1 + latency_steps_].a();
     ADEBUG("MPC ipopt problem solved! ";);
   } else {
-    cmd->set_speed(0);
-    cmd->set_acceleration(0);
     AERROR("MPC ipopt problem failed! ";);
   }
 
   double mpc_end_timestamp = ros::Time::now().toNSec();
   ADEBUG("MPC core algorithm: calculation time is: "
-         << (mpc_end_timestamp - mpc_start_timestamp) * 1000 << " ms.");
-
+         << (mpc_end_timestamp - mpc_start_timestamp) / 1e6 << " ms.");
   /**
    * @todo(chufan) add emergency stop
    * @todo(chufan) add standstill acceleration
@@ -319,6 +339,37 @@ Status MPCController::ComputeControlCommand(
    * @todo(chufan) verify the necessarity of feedforward steering compensation
    * @todo(chufan) add steering angle and speed and acceleration saturation
    */
+
+  for (int i = 0; i < warmstart_solution_.size(); i++) {
+    ADEBUG(warmstart_solution_[i].DebugString());
+  }
+
+  if (linear_acceleration_feedback < -1e-2) {
+    brake_feedback =
+        brake_pid_controller_->Control(linear_acceleration_feedback, ts_);
+    brake_feedback = brake_feedback > brake_lowerbound_ ? brake_feedback : 0.0;
+  } else if (linear_acceleration_feedback > 1e-2) {
+    brake_pid_controller_->Reset();
+  }
+
+  if (linear_velocity_feedback > 1e-6 &&
+      resampled_trajectory_.back().v() > 1e-6) {
+    cmd->set_gear_location(canbus::Chassis::GEAR_DRIVE);
+  } else if (linear_velocity_feedback < -1e-6 &&
+             resampled_trajectory_.back().v() < -1e-6) {
+    cmd->set_gear_location(canbus::Chassis::GEAR_REVERSE);
+  } else if ((linear_velocity_feedback * resampled_trajectory_.back().v()) <
+             -1e-3) {
+    cmd->set_gear_location(canbus::Chassis::GEAR_NEUTRAL);
+  } else {
+    cmd->set_gear_location(canbus::Chassis::GEAR_PARKING);
+  }
+
+  cmd->set_speed(linear_velocity_feedback);
+  cmd->set_steering_target(steer_angle_feedback);
+  cmd->set_acceleration(linear_acceleration_feedback);
+  cmd->set_brake(brake_feedback);
+
   return Status::OK();
 }
 
@@ -331,8 +382,8 @@ void MPCController::UpdateState() {
   vars_lowerbound_[y_start_] = com.y();
   vars_upperbound_[y_start_] = com.y();
 
-  const double v = std::max(injector_->vehicle_state()->linear_velocity(),
-                            minimum_speed_protection_);
+  const double v = injector_->vehicle_state()->linear_velocity();
+
   vars_[speed_start_] = v;
   vars_lowerbound_[speed_start_] = v;
   vars_upperbound_[speed_start_] = v;
@@ -342,7 +393,7 @@ void MPCController::UpdateState() {
   if (injector_->vehicle_state()->pose().has_heading()) {
     heading = injector_->vehicle_state()->pose().heading();
   } else {
-    heading = common::math::QuaternionToHeading(
+    heading = autoagric::common::math::QuaternionToHeading(
         orientation.qw(), orientation.qx(), orientation.qy(), orientation.qz());
   }
 
@@ -379,10 +430,15 @@ void MPCController::UpdateState() {
   constraints_upperbound_[heading_start_] = heading;
   constraints_upperbound_[speed_start_] = v;
 
-  /**
-   * @todo(chufan) add warm up initial guess for mpc solver
-   *
-   */
+  for (int i = 1; i < horizon_; i++) {
+    vars_[x_start_ + i] = warmstart_solution_[i].path_point().x();
+    vars_[y_start_ + i] = warmstart_solution_[i].path_point().y();
+    vars_[heading_start_ + i] = warmstart_solution_[i].path_point().theta();
+    vars_[speed_start_ + i] = warmstart_solution_[i].v();
+    vars_[steer_start_ + i - 1] = warmstart_solution_[i].steer();
+    vars_[accel_start_ + i - 1] = warmstart_solution_[i].a();
+    warmstart_solution_[i].Clear();
+  }
 }
 
 Status MPCController::Reset() { return Status::OK(); }

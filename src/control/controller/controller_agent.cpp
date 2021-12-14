@@ -108,7 +108,7 @@ Status ControllerAgent::ComputeControlCommand(
 
   ADEBUG("controller: " << controller_->Name()
                         << " calculation time is: " << time_diff_ms << " ms.");
-  cmd->mutable_latency_stats()->add_controller_time_ms(time_diff_ms);
+  // cmd->mutable_latency_stats()->add_controller_time_ms(time_diff_ms);
 
   return status;
 }

@@ -10,6 +10,8 @@ using CppAD::AD;
 using CppAD::cos;
 using CppAD::pow;
 using CppAD::sin;
+using Matrix = Eigen::MatrixXd;
+
 MpcIpopt::MpcIpopt(MpcIpopt* other)
     : options_(other->options_),
       horizon_(other->horizon_),
@@ -44,17 +46,17 @@ MpcIpopt::MpcIpopt(const std::string options, const int horizon,
       speed_index_(heading_index_ + horizon),
       steer_index_(speed_index_ + horizon),
       accel_index_(steer_index_ + horizon - 1) {
-  ADEBUG("x_index_" << x_index_ << "y_index_" << y_index_
-                        << "heading_index_" << heading_index_ << "speed_index_"
-                        << speed_index_ << "steer_index_" << steer_index_
-                        << "accel_index_" << accel_index_);
+  ADEBUG("x_index_" << x_index_ << "\ny_index_" << y_index_ << "\nheading_index_"
+                    << heading_index_ << "\nspeed_index_" << speed_index_
+                    << "\nsteer_index_" << steer_index_ << "\naccel_index_"
+                    << accel_index_);
 }
 
-void MpcIpopt::Update(Dvector* vars, Dvector* vars_lowerbound,
-                      Dvector* vars_upperbound, Dvector* constraints_lowerbound,
-                      Dvector* constraints_upperbound,
-                      Eigen::MatrixXd* matrix_q, Eigen::MatrixXd* matrix_r,
-                      std::vector<autoagric::common::TrajectoryPoint>* ref_trajectory) {
+void MpcIpopt::Update(
+    Dvector* vars, Dvector* vars_lowerbound, Dvector* vars_upperbound,
+    Dvector* constraints_lowerbound, Dvector* constraints_upperbound,
+    Matrix* matrix_q, Matrix* matrix_r,
+    std::vector<autoagric::common::TrajectoryPoint>* ref_trajectory) {
   vars_lowerbound_ = vars_lowerbound;
   vars_upperbound_ = vars_upperbound;
   constraints_lowerbound_ = constraints_lowerbound;
@@ -65,8 +67,9 @@ void MpcIpopt::Update(Dvector* vars, Dvector* vars_lowerbound,
   ref_trajectory_ = ref_trajectory;
 }
 
-bool MpcIpopt::Solve(std::shared_ptr<MpcIpopt>& mpc_ipopt,
-                     std::vector<autoagric::common::TrajectoryPoint>& solution) {
+bool MpcIpopt::Solve(
+    std::shared_ptr<MpcIpopt>& mpc_ipopt,
+    std::vector<autoagric::common::TrajectoryPoint>& solution) {
   CppAD::ipopt::solve_result<Dvector> ret;
 
   CppAD::ipopt::solve<Dvector, MpcIpopt>(
@@ -85,15 +88,22 @@ bool MpcIpopt::Solve(std::shared_ptr<MpcIpopt>& mpc_ipopt,
   if (solution.size() != mpc_ipopt->horizon_)
     solution.resize(mpc_ipopt->horizon_);
 
-  int index = 0;
-  for (auto& p : solution) {
-    p.mutable_path_point()->set_x(ret.x[mpc_ipopt->x_index_ + index]);
-    p.mutable_path_point()->set_y(ret.x[mpc_ipopt->y_index_ + index]);
-    p.mutable_path_point()->set_theta(ret.x[mpc_ipopt->heading_index_ + index]);
-    p.set_v(ret.x[mpc_ipopt->speed_index_ + index]);
-    p.set_steer(ret.x[mpc_ipopt->steer_index_ + index]);
-    p.set_a(ret.x[mpc_ipopt->accel_index_ + index]);
-    index++;
+  auto& p = solution[0];
+  p.mutable_path_point();
+
+  p.mutable_path_point()->set_x(ret.x[mpc_ipopt->x_index_]);
+  p.mutable_path_point()->set_y(ret.x[mpc_ipopt->y_index_]);
+  p.mutable_path_point()->set_theta(ret.x[mpc_ipopt->heading_index_]);
+  p.set_v(ret.x[mpc_ipopt->speed_index_]);
+
+  for (int i = 1; i < mpc_ipopt->horizon_; i++) {
+    auto& p = solution[i];
+    p.mutable_path_point()->set_x(ret.x[mpc_ipopt->x_index_ + i]);
+    p.mutable_path_point()->set_y(ret.x[mpc_ipopt->y_index_ + i]);
+    p.mutable_path_point()->set_theta(ret.x[mpc_ipopt->heading_index_ + i]);
+    p.set_v(ret.x[mpc_ipopt->speed_index_ + i]);
+    p.set_steer(ret.x[mpc_ipopt->steer_index_ + i - 1]);
+    p.set_a(ret.x[mpc_ipopt->accel_index_ + i - 1]);
   }
 
   return ok;

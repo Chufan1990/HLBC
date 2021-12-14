@@ -1,9 +1,10 @@
 <!-- -->
 <launch>
-	<!-- <env name="ROSCONSOLE_CONFIG_FILE" value="$(find hlbc)/conf/custom_rosconsole.conf"/> -->
+	<env name="ROSCONSOLE_CONFIG_FILE" value="$(find hlbc)/conf/custom_rosconsole.conf"/>
 	<param name="/use_sim_time" value="true"/>
 	<!-- rosrun waypoint_follower pure_pursuit -->
 	<node pkg="hlbc" type="control_node" name="control" output="screen">
+		<remap from="control/cmd" to="twist/raw"/>
 	</node>
 
 </launch>

@@ -34,6 +34,8 @@ class ControlComponent final {
 
   void Onlocalization(const geometry_msgs::PoseStampedConstPtr& msg);
 
+  void OnIMU(const geometry_msgs::TwistStampedConstPtr& msg);
+
   autoagric::common::Status ProduceControlCommand(
       ControlCommand* control_command);
 
@@ -51,6 +53,8 @@ class ControlComponent final {
   std::shared_ptr<ros::Subscriber> localization_reader_;
 
   std::shared_ptr<ros::Subscriber> planning_reader_;
+
+  std::shared_ptr<ros::Subscriber> imu_reader_;
 
   std::shared_ptr<ros::Publisher> control_cmd_writer_;
 

@@ -62,6 +62,8 @@ DECLARE_int32(chassis_pending_queue_size);
 DECLARE_int32(planning_pending_queue_size);
 DECLARE_int32(localization_pending_queue_size);
 DECLARE_int32(pad_msg_pending_queue_size);
+DECLARE_int32(control_cmd_pending_queue_size);
+DECLARE_int32(imu_pending_queue_size);
 
 DECLARE_bool(reverse_heading_control);
 
@@ -85,9 +87,9 @@ DECLARE_string(planning_message_name);
 
 DECLARE_string(chassis_message_name);
 
-DECLARE_string(control_cmd_message_name);
+DECLARE_string(imu_message_name);
 
-DECLARE_int32(control_cmd_pending_queue_size);
+DECLARE_string(control_cmd_message_name);
 
 DECLARE_bool(enable_trajectory_visualizer);
 

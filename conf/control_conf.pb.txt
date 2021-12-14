@@ -4,8 +4,9 @@ enable_speed_station_preview: false
 is_control_test_mode: false
 use_preview_speed_for_table: false
 enable_input_timestamp_check: true
-max_localization_miss_num : 20
-max_planning_miss_num: 20
+max_localization_miss_num : 10  
+max_planning_miss_num: 10
+max_chassis_miss_num: 10
 max_acceleration_when_stopped: 0.01
 max_path_remain_when_stopped: 0.3
 steer_angle_rate: 100
@@ -13,10 +14,10 @@ enable_gain_scheduler: true
 set_steer_limit: true
 enable_slope_offset: false
 
-control_period: 0.01
+control_period: 0.1
 trajectory_period: 0.1
-chassis_period: 0.01
-localization_period: 0.01
+chassis_period: 0.1
+localization_period: 0.1
 max_status_interval_sec: 0.1
 max_planning_interval_sec: 0.2
 max_planning_delay_threshold: 4.0
@@ -29,8 +30,8 @@ query_relative_time: 0.8
 minimum_speed_protection: 0.1
 maximum_forward_speed: 3.0;
 maximum_backward_speed: -2.0;
-maximum_driving_acceleration: 3.0;
-maximum_driving_deceleration: -5.0;
+maximum_driving_acceleration: 6.0;
+maximum_driving_deceleration: -20.0;
 lat_controller_conf {
   ts: 0.01
   preview_window: 0
@@ -122,7 +123,7 @@ lon_controller_conf {
   switch_speed: 3.0
 }
 mpc_controller_conf {
-  ts: 0.01
+  ts: 0.1
   cf: 155494.663
   cr: 155494.663
   mass_fl: 520
@@ -134,7 +135,7 @@ mpc_controller_conf {
   matrix_q: 20.0
   matrix_q: 10.0
   matrix_q: 1.0
-  matrix_r: 3.25
+  matrix_r: 2.25
   matrix_r: 1.0
   cutoff_freq: 10
   mean_filter_window_size: 10
@@ -144,6 +145,18 @@ mpc_controller_conf {
   brake_minimum_action: 0.0
   throttle_minimum_action: 0.0
   enable_mpc_feedforward_compensation: false
+  ipopt_print_level: 2
+  ipopt_warm_start: "no"
+  ipopt_same_structure: "no"
+  brake_pid_conf{
+    integrator_enable: true
+    integrator_saturation_level: 3.0
+    output_saturation_level: 50
+    kp: 15
+    ki: 5
+    kd: 0.0
+    kaw: 10.0
+  }
   lat_err_gain_scheduler {
     scheduler {
       speed: 2.5

@@ -19,6 +19,7 @@ namespace control {
 using autoagric::canbus::Chassis;
 using autoagric::common::PathPoint;
 using autoagric::common::TrajectoryPoint;
+using autoagric::common::math::Vec2d;
 using autoagric::localization::LocalizationEstimate;
 using autoagric::planning::ADCTrajectory;
 
@@ -38,8 +39,12 @@ void GetProtoFromMsg(const autoware_msgs::LaneConstPtr& msg,
   trajectory->mutable_header()->set_sequence_num(msg->header.seq);
   trajectory->mutable_header()->set_frame_id(msg->header.frame_id);
 
+  auto prev_waypoint = &(msg->waypoints[1]);
+  double relative_time = 0;
+
   for (size_t i = 1; i < std::min(msg->waypoints.size(), size_t(21)); i++) {
     auto& waypoint = msg->waypoints[i];
+
     auto&& trajectory_point = trajectory->add_trajectory_point();
     trajectory_point->mutable_path_point()->set_x(
         waypoint.pose.pose.position.x);
@@ -54,19 +59,23 @@ void GetProtoFromMsg(const autoware_msgs::LaneConstPtr& msg,
             waypoint.pose.pose.orientation.z,
             waypoint.pose.pose.orientation.w))));
     trajectory_point->set_v(waypoint.twist.twist.linear.x);
+    trajectory_point->mutable_path_point()->set_s(waypoint.time_cost -
+                                                  prev_waypoint->time_cost);
+    trajectory_point->set_relative_time(relative_time);
+    relative_time += std::fabs((waypoint.time_cost - prev_waypoint->time_cost) /
+                               prev_waypoint->twist.twist.linear.x);
+    prev_waypoint = &waypoint;
   }
 
   //   ADEBUG("trajectory->trajectory_point(): " <<
   //   trajectory->DebugString());
 
-  trajectory->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
-  trajectory->mutable_header()->set_frame_id(msg->header.frame_id);
-  trajectory->mutable_header()->set_sequence_num(msg->header.seq);
+  trajectory->mutable_header()->set_timestamp_sec(ros::Time::now().toSec());
+  trajectory->mutable_header()->set_frame_id("map");
 }
 
 void GetProtoFromMsg(const geometry_msgs::PoseStampedConstPtr& msg,
                      LocalizationEstimate* localization) {
-  localization->Clear();
   localization->mutable_pose()->mutable_position()->set_x(msg->pose.position.x);
   localization->mutable_pose()->mutable_position()->set_y(msg->pose.position.y);
   localization->mutable_pose()->mutable_position()->set_z(msg->pose.position.z);
@@ -82,7 +91,6 @@ void GetProtoFromMsg(const geometry_msgs::PoseStampedConstPtr& msg,
       common::math::NormalizeAngle(tf2::getYaw(
           tf2::Quaternion(msg->pose.orientation.x, msg->pose.orientation.y,
                           msg->pose.orientation.z, msg->pose.orientation.w))));
-  localization->mutable_pose()->mutable_linear_acceleration_vrf()->set_x(0.0);
   localization->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
   localization->mutable_header()->set_frame_id(msg->header.frame_id);
   localization->mutable_header()->set_sequence_num(msg->header.seq);
@@ -92,8 +100,23 @@ void GetProtoFromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
                      LocalizationEstimate* localization) {
   localization->mutable_pose()->mutable_linear_velocity()->set_x(
       msg->twist.linear.x);
+  localization->mutable_pose()->mutable_linear_velocity()->set_y(
+      msg->twist.linear.y);
+  localization->mutable_pose()->mutable_linear_velocity()->set_z(
+      msg->twist.linear.z);
+  localization->mutable_pose()->mutable_angular_velocity()->set_x(
+      msg->twist.angular.x);
+  localization->mutable_pose()->mutable_angular_velocity()->set_y(
+      msg->twist.angular.y);
   localization->mutable_pose()->mutable_angular_velocity()->set_z(
       msg->twist.angular.z);
+  localization->mutable_pose()->mutable_linear_acceleration_vrf()->set_x(0.0);
+  localization->mutable_pose()->mutable_linear_acceleration_vrf()->set_y(0.0);
+  localization->mutable_pose()->mutable_linear_acceleration_vrf()->set_z(0.0);
+  localization->mutable_pose()->mutable_angular_velocity_vrf()->set_x(
+      msg->twist.angular.x);
+  localization->mutable_pose()->mutable_angular_velocity_vrf()->set_y(
+      msg->twist.angular.y);
   localization->mutable_pose()->mutable_angular_velocity_vrf()->set_z(
       msg->twist.angular.z);
 }

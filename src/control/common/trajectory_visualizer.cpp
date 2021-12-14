@@ -21,6 +21,7 @@ TrajectoryVisualizer::TrajectoryVisualizer(
     ros::NodeHandle& nh, const std::vector<std::string>& names) {
   for (auto& name : names) {
     nh_queue_.emplace_back(ros::NodeHandle(nh, name));
+    ADEBUG(nh_queue_.back().getNamespace());
   }
 }
 
@@ -41,8 +42,10 @@ void TrajectoryVisualizer::Init() {
 void TrajectoryVisualizer::Proc(const std::vector<MarkerType>& markers) {
   int visualizer_num = std::min<int>(markers.size(), publisher_queue_.size());
 
-  AERROR_IF(markers.size() == publisher_queue_.size(),
-            "numbers of markers and publishers are not equal");
+  AERROR_IF(markers.size() != publisher_queue_.size(),
+            "numbers of markers and publishers are not equal. Marker: "
+                << markers.size()
+                << ". Publisher: " << publisher_queue_.size());
 
   for (int i = 0; i < visualizer_num; i++) {
     auto& publisher = publisher_queue_[i];

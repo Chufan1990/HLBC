@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package autoagric.control;
+
+message PidConf {
+  bool integrator_enable = 1;
+  double integrator_saturation_level = 2;
+  double kp = 3;
+  double ki = 4;
+  double kd = 5;
+  double kaw = 6;
+  double output_saturation_level = 7;
+}

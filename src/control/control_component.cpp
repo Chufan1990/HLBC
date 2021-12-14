@@ -33,8 +33,12 @@ bool ControlComponent::Init() {
       FLAGS_localization_message_name, FLAGS_localization_pending_queue_size,
       &ControlComponent::Onlocalization, this));
 
+  imu_reader_ = std::make_shared<ros::Subscriber>(
+      nh_.subscribe(FLAGS_imu_message_name, FLAGS_imu_pending_queue_size,
+                    &ControlComponent::OnIMU, this));
+
   control_cmd_writer_ = std::make_shared<ros::Publisher>(
-      nh_.advertise<autoware_msgs::ControlCommandStamped>(
+      nh_.advertise<geometry_msgs::TwistStamped>(
           FLAGS_control_cmd_message_name,
           FLAGS_control_cmd_pending_queue_size));
 
@@ -44,9 +48,10 @@ bool ControlComponent::Init() {
   if (FLAGS_enable_trajectory_visualizer) {
     auto visual_nh = ros::NodeHandle(nh_, "visual");
     std::vector<std::string> names = {"resampled_trajectory",
-                                      "warmup_solution"};
+                                      "warmstart_solution"};
     visualizer_ =
         std::make_unique<common::TrajectoryVisualizer>(visual_nh, names);
+    visualizer_->Init();
   }
 
   injector_ = std::make_shared<DependencyInjector>();
@@ -130,21 +135,23 @@ Status ControlComponent::CheckTimestamp(const LocalView& local_view) {
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR, "chassis msg timeout");
   }
 
-  double trajectory_diff =
-      current_timestamp - local_view.trajectory().header().timestamp_sec();
-  if (trajectory_diff > (control_conf_.max_planning_miss_num() *
-                         control_conf_.trajectory_period())) {
-    AERROR("trajectory msg lost for " << std::setprecision(6) << trajectory_diff
-                                      << "s");
-    return Status(ErrorCode::CONTROL_COMPUTE_ERROR, "trajectory msg timeout");
-  }
+  // double trajectory_diff =
+  //     current_timestamp - local_view.trajectory().header().timestamp_sec();
+  // if (trajectory_diff > (control_conf_.max_planning_miss_num() *
+  //                        control_conf_.trajectory_period())) {
+  //   AERROR("trajectory msg lost for " << std::setprecision(6) <<
+  //   trajectory_diff
+  //                                     << "s");
+  //   return Status(ErrorCode::CONTROL_COMPUTE_ERROR, "trajectory msg
+  //   timeout");
+  // }
   return Status::OK();
 }
 
 Status ControlComponent::ProduceControlCommand(
     ControlCommand* control_command) {
   Status status = CheckInput(&local_view_);
-
+  estop_ = false;
   if (!status.ok()) {
     AERROR_EVERY(100, "Control input data failed: " << status.error_message());
     estop_ = true;
@@ -158,6 +165,7 @@ Status ControlComponent::ProduceControlCommand(
   }
 
   if (status.ok()) {
+    ADEBUG("Ready to execuate mpc controller");
     Status status_compute = controller_agent_.ComputeControlCommand(
         &local_view_.localization(), &local_view_.chassis(),
         &local_view_.trajectory(), control_command);
@@ -185,12 +193,13 @@ Status ControlComponent::ProduceControlCommand(
     control_command->set_brake(control_conf_.soft_estop_brake());
     control_command->set_gear_location(canbus::Chassis::GEAR_DRIVE);
   }
+
+  ADEBUG(control_command->DebugString());
+
   return status;
 }
 
 bool ControlComponent::Proc() {
-  const auto start_time = ros::Time::now();
-
   spinner_->start();
 
   geometry_msgs::Vector3 scale_1, scale_2;
@@ -215,24 +224,23 @@ bool ControlComponent::Proc() {
   ros::Rate loop_rate(FLAGS_control_cmd_frequency);
 
   while (ros::ok()) {
+    const auto start_time = ros::Time::now();
     Status status = ProduceControlCommand(&control_command);
     AERROR_IF(!status.ok(),
               "Failed to produce control command:" << status.error_message());
 
     ADEBUG(control_command.ShortDebugString());
 
-    const auto end_time = ros::Time::now();
-    const double time_diff_ms = (end_time - start_time).toSec() * 1e3;
-    ADEBUG("total control time spend: " << time_diff_ms << " ms.");
+    geometry_msgs::TwistStamped cmd;
 
-    autoware_msgs::ControlCommandStamped cmd_msg;
-
-    cmd_msg.header.stamp = ros::Time::now();
-    cmd_msg.cmd.linear_velocity = control_command.speed();
-    cmd_msg.cmd.linear_acceleration = control_command.acceleration();
-    cmd_msg.cmd.steering_angle = control_command.steering_target();
-
-    control_cmd_writer_->publish(cmd_msg);
+    cmd.header.stamp = ros::Time::now();
+    cmd.twist.linear.x = control_command.brake() > 1e-6
+                             ? 0.0
+                             : std::fabs(control_command.speed());
+    cmd.twist.linear.y = control_command.brake();
+    cmd.twist.linear.z = control_command.gear_location();
+    cmd.twist.angular.z = control_command.steering_target();
+    control_cmd_writer_->publish(cmd);
 
     if (FLAGS_enable_trajectory_visualizer) {
       std::vector<std::pair<visualization_msgs::MarkerArray,
@@ -250,11 +258,15 @@ bool ControlComponent::Proc() {
       markers.emplace_back(
           std::move(common::TrajectoryVisualizer::TrajectoryToMarkerArray<
                     std::vector<autoagric::common::TrajectoryPoint>>(
-              controller->warmup_solution(),
+              controller->warmstart_solution(),
               local_view_.trajectory().header().frame_id(),
-              ros::Time::now().toSec(), scale_1, color_1)));
+              ros::Time::now().toSec(), scale_2, color_2)));
+
       visualizer_->Proc(markers);
     }
+    const auto end_time = ros::Time::now();
+    const double time_diff_ms = (end_time - start_time).toSec() * 1e3;
+    ADEBUG("total control time spend: " << time_diff_ms << " ms.");
     loop_rate.sleep();
   }
 
@@ -273,6 +285,10 @@ void ControlComponent::OnPlanning(const autoware_msgs::LaneConstPtr& msg) {
 
 void ControlComponent::Onlocalization(
     const geometry_msgs::PoseStampedConstPtr& msg) {
+  GetProtoFromMsg(msg, local_view_.mutable_localization());
+}
+
+void ControlComponent::OnIMU(const geometry_msgs::TwistStampedConstPtr& msg) {
   GetProtoFromMsg(msg, local_view_.mutable_localization());
 }
 

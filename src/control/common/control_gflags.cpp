@@ -94,13 +94,15 @@ DEFINE_bool(enable_navigation_mode_error_filter, false,
 DEFINE_bool(enable_navigation_mode_position_update, true,
             "Enable position update for navigation mode");
 
-DEFINE_int32(chassis_pending_queue_size, 10, "Max chassis pending queue size");
-DEFINE_int32(planning_pending_queue_size, 10,
+DEFINE_int32(chassis_pending_queue_size, 1, "Max chassis pending queue size");
+DEFINE_int32(planning_pending_queue_size, 1,
              "Max planning pending queue size");
-DEFINE_int32(localization_pending_queue_size, 10,
+DEFINE_int32(localization_pending_queue_size, 1,
              "Max localization pending queue size");
-DEFINE_int32(pad_msg_pending_queue_size, 10,
+DEFINE_int32(pad_msg_pending_queue_size, 1,
              "Max pad message pending queue size");
+DEFINE_int32(control_cmd_pending_queue_size, 1, "");
+DEFINE_int32(imu_pending_queue_size, 1, "");
 
 DEFINE_bool(reverse_heading_control, false, "test vehicle reverse control");
 
@@ -140,10 +142,11 @@ DEFINE_string(planning_message_name, "/final_path", "planning ros topic name");
 DEFINE_string(chassis_message_name, "/vehicle/feedback",
               "chassis ros topic name");
 
-DEFINE_string(control_cmd_message_name, "/ctrl_cmd",
-              "control command rostopic name");
+DEFINE_string(imu_message_name, "/vehicle/twist",
+              "imu ros topic name");
 
-DEFINE_int32(control_cmd_pending_queue_size, 1, "");
+DEFINE_string(control_cmd_message_name, "/control/cmd",
+              "control command rostopic name");
 
 DEFINE_bool(enable_trajectory_visualizer, true,
             "Enable trajectory visualizer for reference trajectory and "

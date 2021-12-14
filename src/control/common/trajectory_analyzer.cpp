@@ -228,7 +228,7 @@ void TrajectoryAnalyzer::TrajectoryTransformToCOM(
   }
 }
 
-common::math::Vec2d TrajectoryAnalyzer::ComputeCOMPosition(
+Vec2d TrajectoryAnalyzer::ComputeCOMPosition(
     const double rear_to_com_distance, const PathPoint &path_point) const {
   // Initialize the vector for coordinate transformation of the position
   // reference point
@@ -242,7 +242,7 @@ common::math::Vec2d TrajectoryAnalyzer::ComputeCOMPosition(
   // Transform original position with vector v
   Eigen::Vector3d com_pos_3d = v + pos_vec;
   // Return transfromed x and y
-  return common::math::Vec2d(com_pos_3d[0], com_pos_3d[1]);
+  return Vec2d(com_pos_3d[0], com_pos_3d[1]);
 }
 
 void TrajectoryAnalyzer::SampleByRelativeTime(
@@ -265,27 +265,32 @@ void TrajectoryAnalyzer::SampleByRelativeTime(
   double t = start_time;
 
   for (auto &p : resampled_trajectory) {
-    p0 = std::lower_bound(p0, trajectory_points_.end(), t, func_comp);
-    p1 = p0 + 1;
-    ADEBUG("??");
-    if (p0 == trajectory_points_.end()) {
-      p1 = trajectory_points_.end();
+    p1 = std::lower_bound(p1, trajectory_points_.end(), t, func_comp);
+    if (p1 == trajectory_points_.begin())
+      p0 = p1;
+    else if (p1 == trajectory_points_.end()) {
+      p1 -= 1;
+      p0 = p1;
+    } else {
+      p0 = p1 - 1;
     }
 
-    p.mutable_path_point()->set_s(
+    auto path_point = p.mutable_path_point();
+
+    path_point->set_s(
         common::math::lerp(p0->path_point().s(), p0->relative_time(),
                            p1->path_point().s(), p1->relative_time(), t));
-    p.mutable_path_point()->set_x(
+    path_point->set_x(
         common::math::lerp(p0->path_point().x(), p0->relative_time(),
                            p1->path_point().x(), p1->relative_time(), t));
-    p.mutable_path_point()->set_y(
+    path_point->set_y(
         common::math::lerp(p0->path_point().y(), p0->relative_time(),
                            p1->path_point().y(), p1->relative_time(), t));
-    p.mutable_path_point()->set_theta(
+    path_point->set_theta(
         common::math::slerp(p0->path_point().theta(), p0->relative_time(),
                             p1->path_point().theta(), p1->relative_time(), t));
     // approximate the curvature at the intermediate point
-    p.mutable_path_point()->set_kappa(
+    path_point->set_kappa(
         common::math::lerp(p0->path_point().kappa(), p0->relative_time(),
                            p1->path_point().kappa(), p1->relative_time(), t));
 
@@ -297,8 +302,14 @@ void TrajectoryAnalyzer::SampleByRelativeTime(
 
     p.set_relative_time(t - start_time);
 
+    // ADEBUG("=============================================");
+    // AWARN(p0->DebugString());
+    // ADEBUG(p.DebugString());
+    // AWARN(p1->DebugString());
+
     t += dt;
   }
+  // ADEBUG("=============================================");
 }
 
 }  // namespace control

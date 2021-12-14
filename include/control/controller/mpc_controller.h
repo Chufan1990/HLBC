@@ -9,6 +9,8 @@
 #include "control/common/interpolation_2d.h"
 #include "control/common/trajectory_analyzer.h"
 #include "control/controller/controller.h"
+#include "control/common/pid_controller.h"
+
 
 namespace autoagric {
 namespace control {
@@ -82,9 +84,9 @@ class MPCController : public Controller {
     return resampled_trajectory_;
   }
 
-  const std::vector<autoagric::common::TrajectoryPoint>& warmup_solution()
+  const std::vector<autoagric::common::TrajectoryPoint>& warmstart_solution()
       const {
-    return warmup_solution_;
+    return warmstart_solution_;
   }
 
  private:
@@ -239,9 +241,11 @@ class MPCController : public Controller {
 
   std::vector<autoagric::common::TrajectoryPoint> resampled_trajectory_;
 
-  std::vector<autoagric::common::TrajectoryPoint> warmup_solution_;
+  std::vector<autoagric::common::TrajectoryPoint> warmstart_solution_;
 
   std::shared_ptr<MPCController> ConstPtr_;
+
+  std::unique_ptr<autoagric::control::common::PIDController> brake_pid_controller_;
 };
 
 }  // namespace control

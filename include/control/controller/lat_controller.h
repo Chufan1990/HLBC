@@ -104,7 +104,7 @@ class LatController final : public Controller {
   const ControlConf* control_conf_ = nullptr;
 
   // vehicle parameter
-  common::VehicleParam vehicle_param_;
+  autoagric::common::VehicleParam vehicle_param_;
 
   // a proxy to analyze the planning trajectory
   TrajectoryAnalyzer trajectory_analyzer_;

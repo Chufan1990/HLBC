@@ -4,6 +4,7 @@
 	<param name="/use_sim_time" value="false"/>
 	<!-- rosrun waypoint_follower pure_pursuit -->
 	<node pkg="hlbc" type="control_node" name="control" output="screen">
+		<remap from="control/cmd" to="twist_raw"/>
 	</node>
 
 </launch>

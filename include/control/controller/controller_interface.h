@@ -78,7 +78,7 @@ class ControllerInterface {
       return false;
     }
     auto vehicle_param =
-        common::VehicleConfigHelper::Instance()->GetConfig().vehicle_param();
+        autoagric::common::VehicleConfigHelper::Instance()->GetConfig().vehicle_param();
     ret = control_command_.steering_target() / 100.0 *
           vehicle_param.max_steer_angle();
 

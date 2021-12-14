@@ -13,16 +13,17 @@ message Chassis {
 
     // security mode when manual intervention happens, only response status
     EMERGENCY_MODE = 4;
+
   }
 
   enum GearPosition {
-    GEAR_NEUTRAL = 0;
-    GEAR_DRIVE = 1;
+    GEAR_NONE = 0;
+    GEAR_PARKING = 1;
     GEAR_REVERSE = 2;
-    GEAR_PARKING = 3;
-    GEAR_LOW = 4;
-    GEAR_INVALID = 5;
-    GEAR_NONE = 6;
+    GEAR_NEUTRAL = 3;
+    GEAR_DRIVE = 4;
+    GEAR_LOW = 5;
+    GEAR_INVALID = 6;
   }
 
   enum ErrorCode {

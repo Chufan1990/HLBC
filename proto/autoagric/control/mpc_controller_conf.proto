@@ -3,8 +3,8 @@ syntax = "proto3";
 package autoagric.control;
 
 import "autoagric/control/calibration_table.proto";
-
 import "autoagric/control/gain_scheduler_conf.proto";
+import "autoagric/control/pid_conf.proto";
 
 // model predictive control param
 message MPCControllerConf {
@@ -41,6 +41,10 @@ message MPCControllerConf {
   calibrationtable.ControlCalibrationTable calibration_table = 22;
   bool enable_mpc_feedforward_compensation = 23;
   double unconstrained_control_diff_limit = 24;
-  int32 print_level = 25;
+  int32 ipopt_print_level = 25;
   double latency_time = 26;
+
+  autoagric.control.PidConf brake_pid_conf = 27;
+  string ipopt_warm_start = 28;
+  string ipopt_same_structure = 29;
 }
