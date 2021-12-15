@@ -40,7 +40,7 @@ TrajectoryAnalyzer::TrajectoryAnalyzer(
   header_time_ = planning_published_trajectory->header().timestamp_sec();
   seq_num_ = planning_published_trajectory->header().sequence_num();
 
-  for (int i = 1; i < planning_published_trajectory->trajectory_point_size();
+  for (int i = 0; i < planning_published_trajectory->trajectory_point_size();
        ++i) {
     trajectory_points_.push_back(
         planning_published_trajectory->trajectory_point(i));
@@ -54,7 +54,7 @@ PathPoint TrajectoryAnalyzer::QueryMatchedPathPoint(const double x,
   double d_min = PointDistanceSquare(trajectory_points_.front(), x, y);
   size_t index_min = 0;
 
-  for (size_t i = 1; i < trajectory_points_.size(); ++i) {
+  for (size_t i = 0; i < trajectory_points_.size(); ++i) {
     double d_temp = PointDistanceSquare(trajectory_points_[i], x, y);
     if (d_temp < d_min) {
       d_min = d_temp;
@@ -168,7 +168,7 @@ TrajectoryPoint TrajectoryAnalyzer::QueryNearestPointByPoistion(
   double d_min = PointDistanceSquare(trajectory_points_.front(), x, y);
   size_t index_min = 0;
 
-  for (size_t i = 1; i < trajectory_points_.size(); ++i) {
+  for (size_t i = 0; i < trajectory_points_.size(); ++i) {
     double d_temp = PointDistanceSquare(trajectory_points_[i], x, y);
     if (d_temp < d_min) {
       d_min = d_temp;

@@ -13,8 +13,7 @@ const double kDoubleEpsilon = 1e-6;
 double slerp(const double a0, const double t0, const double a1, const double t1,
              const double t) {
   if (std::fabs(t1 - t0) <= kDoubleEpsilon) {
-    ROS_DEBUG_THROTTLE_NAMED(1, "linear_interpolation.cpp/slerp",
-                             "input time difference is too small\n");
+    ADEBUG_EVERY(100, "input time difference is too small\n");
     return NormalizeAngle(a0);
   }
 

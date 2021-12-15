@@ -1,13 +1,14 @@
 #include "control/common/msg_to_proto.h"
 
-#include <ros/ros.h>
-#include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-
+#include <algorithm>
 #include <cmath>
 
 #include "common/macro.h"
 #include "common/math/math_utils.h"
+#include "common/math/vec2d.h"
+#include "ros/ros.h"
+#include "tf2/utils.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 /**
  * @namespace autoagric::control
@@ -30,6 +31,10 @@ double PointDistanceSquare(const TrajectoryPoint& point, const double x,
   const double dy = point.path_point().y() - y;
   return dx * dx + dy * dy;
 }
+
+double sign(const double x){
+    return x < 0 ? -1.0 : 1.0;
+}
 }  // namespace
 
 void GetProtoFromMsg(const autoware_msgs::LaneConstPtr& msg,
@@ -39,10 +44,16 @@ void GetProtoFromMsg(const autoware_msgs::LaneConstPtr& msg,
   trajectory->mutable_header()->set_sequence_num(msg->header.seq);
   trajectory->mutable_header()->set_frame_id(msg->header.frame_id);
 
-  auto prev_waypoint = &(msg->waypoints[1]);
-  double relative_time = 0;
+  double pv = std::fabs(msg->waypoints[0].twist.twist.linear.x) < 1e-2
+                  ? sign(msg->waypoints[0].twist.twist.linear.x) * 1e-2
+                  : msg->waypoints[0].twist.twist.linear.x;
 
-  for (size_t i = 1; i < std::min(msg->waypoints.size(), size_t(21)); i++) {
+  Vec2d pvec(msg->waypoints[0].pose.pose.position.x,
+             msg->waypoints[0].pose.pose.position.y);
+  double relative_time = 0.0;
+  double distance = 0.0;
+
+  for (int i = 0; i < std::min<int>(msg->waypoints.size(), 21); i++) {
     auto& waypoint = msg->waypoints[i];
 
     auto&& trajectory_point = trajectory->add_trajectory_point();
@@ -59,12 +70,15 @@ void GetProtoFromMsg(const autoware_msgs::LaneConstPtr& msg,
             waypoint.pose.pose.orientation.z,
             waypoint.pose.pose.orientation.w))));
     trajectory_point->set_v(waypoint.twist.twist.linear.x);
-    trajectory_point->mutable_path_point()->set_s(waypoint.time_cost -
-                                                  prev_waypoint->time_cost);
+    trajectory_point->mutable_path_point()->set_s(distance);
     trajectory_point->set_relative_time(relative_time);
-    relative_time += std::fabs((waypoint.time_cost - prev_waypoint->time_cost) /
-                               prev_waypoint->twist.twist.linear.x);
-    prev_waypoint = &waypoint;
+    Vec2d nvec(msg->waypoints[i].pose.pose.position.x,
+               msg->waypoints[i].pose.pose.position.y);
+    distance += pvec.DistanceTo(nvec);
+    relative_time += std::fabs(pvec.DistanceTo(nvec) / pv);
+    pv = std::fabs(waypoint.twist.twist.linear.x) < 1e-2
+             ? sign(waypoint.twist.twist.linear.x) * 1e-2
+             : waypoint.twist.twist.linear.x;
   }
 
   //   ADEBUG("trajectory->trajectory_point(): " <<

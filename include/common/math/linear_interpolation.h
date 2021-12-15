@@ -15,7 +15,7 @@ template <typename T>
 T lerp(const T &x0, const double t0, const T &x1, const double t1,
        const double t) {
   if (std::fabs(t1 - t0) <= 1e-6) {
-    AERROR("input time difference is too small\n");
+    ADEBUG_EVERY(100, "input time difference is too small\n");
     return x0;
   }
 

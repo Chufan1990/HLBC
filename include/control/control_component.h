@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 #include <string>
 
 #include "autoagric/control/local_view.pb.h"
@@ -79,6 +80,18 @@ class ControlComponent final {
   std::unique_ptr<planning::TrajectorySmoother> smoother_;
 
   planning::TrajectorySmootherConfig trajectory_smoother_conf_;
+
+  localization::LocalizationEstimate latest_localization_;
+
+  canbus::Chassis latest_chassis_;
+
+  planning::ADCTrajectory latest_trajectory_;
+
+  std::timed_mutex trajectory_copy_done_;
+
+  std::timed_mutex localization_copy_done_;
+
+  std::timed_mutex chassis_copy_done_;
 };
 
 }  // namespace control

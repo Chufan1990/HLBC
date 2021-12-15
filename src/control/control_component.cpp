@@ -1,5 +1,7 @@
 #include "control/control_component.h"
 
+#include <chrono>
+
 #include "common/macro.h"
 #include "common/util/file.h"
 #include "control/common/control_gflags.h"
@@ -78,12 +80,14 @@ bool ControlComponent::Init() {
   }
 
   if (!controller_agent_.Init(injector_, &control_conf_).ok()) return false;
+
   ADEBUG("Control component init done");
   return true;
 }
 
 Status ControlComponent::CheckInput(LocalView* local_view) {
-  if (local_view->trajectory().trajectory_point().empty()) {
+  if ((!local_view->has_trajectory()) ||
+      local_view->trajectory().trajectory_point().empty()) {
     AWARN_EVERY(100, "planning has no trajectory point. ");
 
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR,
@@ -150,6 +154,25 @@ Status ControlComponent::CheckTimestamp(const LocalView& local_view) {
 
 Status ControlComponent::ProduceControlCommand(
     ControlCommand* control_command) {
+  local_view_.Clear();
+  {
+    std::lock(trajectory_copy_done_, localization_copy_done_,
+              chassis_copy_done_);
+    // make sure both already-locked mutexes are unlocked at the end of scope
+    std::lock_guard<std::timed_mutex> lock1(trajectory_copy_done_,
+                                            std::adopt_lock);
+    std::lock_guard<std::timed_mutex> lock2(localization_copy_done_,
+                                            std::adopt_lock);
+    std::lock_guard<std::timed_mutex> lock3(chassis_copy_done_,
+                                            std::adopt_lock);
+
+    local_view_.mutable_trajectory()->Swap(&latest_trajectory_);
+    local_view_.mutable_localization()->Swap(&latest_localization_);
+    local_view_.mutable_chassis()->Swap(&latest_chassis_);
+  }
+
+  // ADEBUG(local_view_.DebugString());
+
   Status status = CheckInput(&local_view_);
   estop_ = false;
   if (!status.ok()) {
@@ -194,8 +217,6 @@ Status ControlComponent::ProduceControlCommand(
     control_command->set_gear_location(canbus::Chassis::GEAR_DRIVE);
   }
 
-  ADEBUG(control_command->DebugString());
-
   return status;
 }
 
@@ -229,7 +250,7 @@ bool ControlComponent::Proc() {
     AERROR_IF(!status.ok(),
               "Failed to produce control command:" << status.error_message());
 
-    ADEBUG(control_command.ShortDebugString());
+    ADEBUG("\n" << control_command.DebugString());
 
     geometry_msgs::TwistStamped cmd;
 
@@ -276,20 +297,36 @@ bool ControlComponent::Proc() {
 
 void ControlComponent::OnChassis(
     const geometry_msgs::TwistStampedConstPtr& msg) {
-  GetProtoFromMsg(msg, local_view_.mutable_chassis());
+  std::unique_lock<std::timed_mutex> locker(chassis_copy_done_,
+                                            std::defer_lock);
+  if (locker.try_lock_for(std::chrono::milliseconds(40))) {
+    GetProtoFromMsg(msg, &latest_chassis_);
+  }
 }
 
 void ControlComponent::OnPlanning(const autoware_msgs::LaneConstPtr& msg) {
-  GetProtoFromMsg(msg, local_view_.mutable_trajectory());
+  std::unique_lock<std::timed_mutex> locker(trajectory_copy_done_,
+                                            std::defer_lock);
+  if (locker.try_lock_for(std::chrono::milliseconds(40))) {
+    GetProtoFromMsg(msg, &latest_trajectory_);
+  }
 }
 
 void ControlComponent::Onlocalization(
     const geometry_msgs::PoseStampedConstPtr& msg) {
-  GetProtoFromMsg(msg, local_view_.mutable_localization());
+  std::unique_lock<std::timed_mutex> locker(localization_copy_done_,
+                                            std::defer_lock);
+  if (locker.try_lock_for(std::chrono::milliseconds(40))) {
+    GetProtoFromMsg(msg, &latest_localization_);
+  }
 }
 
 void ControlComponent::OnIMU(const geometry_msgs::TwistStampedConstPtr& msg) {
-  GetProtoFromMsg(msg, local_view_.mutable_localization());
+  std::unique_lock<std::timed_mutex> locker(localization_copy_done_,
+                                            std::defer_lock);
+  if (locker.try_lock_for(std::chrono::milliseconds(40))) {
+    GetProtoFromMsg(msg, &latest_localization_);
+  }
 }
 
 }  // namespace control

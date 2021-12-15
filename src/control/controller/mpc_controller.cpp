@@ -1,5 +1,7 @@
 #include "control/controller/mpc_controller.h"
 
+#include <iomanip>
+
 #include "absl/strings/str_cat.h"
 #include "autoagric/common/error_code.pb.h"
 #include "common/configs/vehicle_config_helper.h"
@@ -37,7 +39,7 @@ Status MPCController::Init(std::shared_ptr<DependencyInjector> injector,
                   "faild to load control_conf");
   }
 
-  matrix_r_ = Matrix::Identity(controls_, controls_);
+  matrix_r_ = Matrix::Identity(controls_ * 2, controls_ * 2);
   matrix_q_ = Matrix::Zero(basic_state_size_, basic_state_size_);
 
   int r_param_size = control_conf->mpc_controller_conf().matrix_r_size();
@@ -306,7 +308,16 @@ Status MPCController::ComputeControlCommand(
 
   trajectory_analyzer_.SampleByRelativeTime(0, ts_, horizon_,
                                             resampled_trajectory_);
-
+  for (size_t i = 0; i < resampled_trajectory_.size(); i++) {
+    ADEBUG(std::setprecision(3)
+           << std::fixed << " x: " << resampled_trajectory_[i].path_point().x()
+           << " y: " << resampled_trajectory_[i].path_point().y()
+           << " h: " << resampled_trajectory_[i].path_point().theta()
+           << " v: " << resampled_trajectory_[i].v()
+           << " a: " << resampled_trajectory_[i].a()
+           << " s: " << resampled_trajectory_[i].steer()
+           << " t: " << resampled_trajectory_[i].relative_time());
+  }
   UpdateState();
 
   double mpc_start_timestamp = ros::Time::now().toNSec();
@@ -333,22 +344,31 @@ Status MPCController::ComputeControlCommand(
   ADEBUG("MPC core algorithm: calculation time is: "
          << (mpc_end_timestamp - mpc_start_timestamp) / 1e6 << " ms.");
   /**
-   * @todo(chufan) add emergency stop
    * @todo(chufan) add standstill acceleration
    * @todo(chufan) add calibration table for speed to throttle
    * @todo(chufan) verify the necessarity of feedforward steering compensation
    * @todo(chufan) add steering angle and speed and acceleration saturation
    */
 
-  for (int i = 0; i < warmstart_solution_.size(); i++) {
-    ADEBUG(warmstart_solution_[i].DebugString());
+  for (size_t i = 0; i < warmstart_solution_.size(); i++) {
+    ADEBUG(std::setprecision(3)
+           << std::fixed << " x: " << warmstart_solution_[i].path_point().x()
+           << " y: " << warmstart_solution_[i].path_point().y()
+           << " h: " << warmstart_solution_[i].path_point().theta() << " v: "
+           << warmstart_solution_[i].v() << " a: " << warmstart_solution_[i].a()
+           << " s: " << warmstart_solution_[i].steer()
+           << " t: " << warmstart_solution_[i].relative_time());
   }
 
-  if (linear_acceleration_feedback < -1e-2) {
+  ADEBUG("linear_acceleration_feedback: " << linear_acceleration_feedback
+                                          << " chassis->speed_mps(): "
+                                          << chassis->speed_mps());
+
+  if ((linear_acceleration_feedback * chassis->speed_mps()) < -1e-3) {
     brake_feedback =
         brake_pid_controller_->Control(linear_acceleration_feedback, ts_);
     brake_feedback = brake_feedback > brake_lowerbound_ ? brake_feedback : 0.0;
-  } else if (linear_acceleration_feedback > 1e-2) {
+  } else if ((linear_acceleration_feedback * chassis->speed_mps()) > 1e-2) {
     brake_pid_controller_->Reset();
   }
 
@@ -406,18 +426,18 @@ void MPCController::UpdateState() {
   vars_lowerbound_[steer_start_] = steer;
   vars_upperbound_[steer_start_] = steer;
 
-  const double accel = injector_->vehicle_state()->linear_acceleration();
-  vars_[accel_start_] = accel;
-  vars_lowerbound_[accel_start_] = accel;
-  vars_upperbound_[accel_start_] = accel;
+  // const double accel = injector_->vehicle_state()->linear_acceleration();
+  // vars_[accel_start_] = accel;
+  // vars_lowerbound_[accel_start_] = accel;
+  // vars_upperbound_[accel_start_] = accel;
 
   for (int i = 1; i <= latency_steps_; i++) {
     vars_[steer_start_ + i] = steer;
     vars_lowerbound_[steer_start_ + i] = steer;
     vars_upperbound_[steer_start_ + i] = steer;
-    vars_[accel_start_ + i] = accel;
-    vars_lowerbound_[accel_start_ + i] = accel;
-    vars_upperbound_[accel_start_ + i] = accel;
+    // vars_[accel_start_ + i] = accel;
+    // vars_lowerbound_[accel_start_ + i] = accel;
+    // vars_upperbound_[accel_start_ + i] = accel;
   }
 
   constraints_lowerbound_[x_start_] = com.x();
