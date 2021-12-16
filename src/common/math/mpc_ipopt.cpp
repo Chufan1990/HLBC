@@ -154,8 +154,8 @@ void MpcIpopt::operator()(ADvector& fg, const ADvector& vars) {
     AD<double> steer0 = vars[steer_index_ + i];
     AD<double> a0 = vars[accel_index_ + i];
 
-    fg[2 + x_index_ + i] = x1 - (x0 + v0 * cos(heading0) * dt_);
-    fg[2 + y_index_ + i] = y1 - (y0 + v0 * sin(heading0) * dt_);
+    fg[2 + x_index_ + i] = x1 - (x0 + v0 * sin(heading0) * dt_);
+    fg[2 + y_index_ + i] = y1 - (y0 + v0 * cos(heading0) * dt_);
     fg[2 + speed_index_ + i] = v1 - (v0 + a0 * dt_);
     fg[2 + heading_index_ + i] =
         heading1 - (heading0 + v0 * steer0 / lf_ * dt_);

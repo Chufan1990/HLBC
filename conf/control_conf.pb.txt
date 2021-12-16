@@ -25,11 +25,11 @@ soft_estop_brake: 50.0
 active_controllers: MPC_CONTROLLER
 active_controllers: LON_CONTROLLER
 max_steering_percentage_allowed: 100
-minimum_speed_resolution: 0.2
+minimum_speed_resolution: 0.01
 query_relative_time: 0.8
 minimum_speed_protection: 0.1
-maximum_forward_speed: 3.0;
-maximum_backward_speed: -2.0;
+maximum_forward_speed: 5.0;
+maximum_backward_speed: -5.0;
 maximum_driving_acceleration: 3.0;
 maximum_driving_deceleration: -3.0;
 lat_controller_conf {
@@ -132,7 +132,7 @@ mpc_controller_conf {
   mass_rr: 520
   eps: 0.01
   matrix_q: 100.0
-  matrix_q: 100.0
+  matrix_q: 20.0
   matrix_q: 10.0
   matrix_q: 1.0
   matrix_r: 2.25

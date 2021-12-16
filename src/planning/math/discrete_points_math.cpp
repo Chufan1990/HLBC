@@ -2,10 +2,9 @@
 
 #include <cmath>
 
+#include "common/macro.h"
 #include "glog/logging.h"
 #include "planning/math/curve_math.h"
-
-#include "common/macro.h"
 
 namespace autoagric {
 namespace planning {
@@ -42,7 +41,7 @@ bool DiscretePointsMath::ComputePathPofile(
     double y_delta = 0.0;
     if (i == 0) {
       x_delta = (xy_points[i + 1].first - xy_points[i].first);
-      y_delta = (xy_points[i + 1].second - xy_points[i].first);
+      y_delta = (xy_points[i + 1].second - xy_points[i].second);
 
     } else if (i == points_size - 1) {
       x_delta = (xy_points[i].first - xy_points[i - 1].first);
@@ -71,7 +70,8 @@ bool DiscretePointsMath::ComputePathPofile(
     nx = xy_points[i].first;
     ny = xy_points[i].second;
     distance += std::hypot(fx - nx, fy - ny);
-    // ADEBUG(i << " " << distance << " " << nx << " " << ny << " " << fx << " " << fy);
+    // ADEBUG(i << " " << distance << " " << nx << " " << ny << " " << fx << " "
+    // << fy);
     accumulated_s->push_back(distance);
     fx = nx;
     fy = ny;
@@ -141,7 +141,8 @@ bool DiscretePointsMath::ComputePathPofile(
     double xdds = x_over_s_second_derivatives[i];
     double ydds = y_over_s_second_derivatives[i];
 
-    ADEBUG(i << " " << xds << " " << yds << " " << xdds << " " << ydds << " " << CurveMath::ComputeCurvature(xds, xdds, yds, ydds));
+    ADEBUG(i << " " << xds << " " << yds << " " << xdds << " " << ydds << " "
+             << CurveMath::ComputeCurvature(xds, xdds, yds, ydds));
     kappas->push_back(CurveMath::ComputeCurvature(xds, xdds, yds, ydds));
   }
 

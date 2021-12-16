@@ -101,6 +101,16 @@ class TrajectoryAnalyzer {
    */
   autoagric::common::PathPoint QueryMatchedPathPoint(const double x,
                                                      const double y) const;
+  /**
+   * @brief qurey a point on trajectory that its positin is closest to the given
+   * position
+   * @param x value of x-coordination in the given position
+   * @param y value of y-coofdination in the given position
+   * @return a point on trajectory. The point may be a point of trajectory or
+   * interpolated by two adjacent points of trajectory
+   */
+  autoagric::common::TrajectoryPoint QueryMatchedTrajectoryPoint(
+      const double x, const double y) const;
 
   /**
    * @brief convert a position with theta and speed to trajectory frame,
@@ -170,9 +180,39 @@ class TrajectoryAnalyzer {
                             const size_t trajectory_size,
                             std::vector<autoagric::common::TrajectoryPoint>&
                                 resampled_trajectory) const;
+  /**
+   * @brief convert Cartesian coordinates of trajectory points to Frenet
+   * coordinates
+   * @param x x Cartesian coordinate of Frenet origin
+   * @param y y Cartesian coordinate of Frenet origin
+   * @param heading heading angle Cartesian coordinate of Frenet origin
+   * @param ptr_trajectory_points trajectory in Cartesian coordinates
+   * @note deprecate for lat_controller
+   */
+  void Map2Local(
+      const double x, const double y, const double heading,
+      std::vector<autoagric::common::TrajectoryPoint>* ptr_trajectory_points);
+
+  /**
+   * @brief convert Frenet coordinates of trajectory points to Cartesian
+   * coordinates
+   * @param x x Cartesian coordinate of Frenet origin
+   * @param y y Cartesian coordinate of Frenet origin
+   * @param heading heading angle Cartesian coordinate of Frenet origin
+   * @param ptr_trajectory_points trajectory in Frenet coordinates
+   * @return vector of trajectory points in Cartesian coordinates
+   * @note deprecate for lat_controller
+   */
+  std::vector<autoagric::common::TrajectoryPoint> Local2Map(
+      const double tx, const double ty, const double heading,
+      const std::vector<autoagric::common::TrajectoryPoint>*
+          ptr_trajectory_points) const;
+
+  autoagric::common::math::Vec2d ComputeFrenetCoord(
+      const autoagric::common::PathPoint& p, const autoagric::common::math::Vec2d& com) const;
 
  private:
-  autoagric::common::PathPoint FindMinDistancePoint(
+  autoagric::common::TrajectoryPoint FindMinDistancePoint(
       const autoagric::common::TrajectoryPoint& p0,
       const autoagric::common::TrajectoryPoint& p1, const double x,
       const double y) const;

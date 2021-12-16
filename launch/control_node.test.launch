@@ -5,6 +5,10 @@
 	<!-- rosrun waypoint_follower pure_pursuit -->
 	<node pkg="hlbc" type="control_node" name="control" output="screen">
 		<remap from="control/cmd" to="twist/raw"/>
+		<remap from="control/visual/resampled_trajectory/arrows" to="/test/visual/resampled_trajectory/arrows"/>
+		<remap from="control/visual/resampled_trajectory/points_and_line" to="/test/visual/resampled_trajectory/points_and_line"/>
+		<remap from="control/visual/warmstart_solution/arrows" to="/test/visual/warmstart_solution/arrows"/>
+		<remap from="control/visual/warmstart_solution/points_and_line" to="/test/visual/warmstart_solution/points_and_line"/>
 	</node>
 
 </launch>

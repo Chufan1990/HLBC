@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "common/macro.h"
+#include "common/math/math_utils.h"
 #include "planning/math/discrete_points_math.h"
 #include "planning/math/discretized_points_smoothing/cos_theta_smoother.h"
 
@@ -178,9 +179,21 @@ bool DiscretePointsTrajectorySmoother::GenerateTrajectoryPointProfile(
 
   for (std::size_t i = 0; i < points_size; i++) {
     TrajectoryPoint point;
+
+    double mean_v = i == points_size - 1
+                        ? (raw_trajectory.trajectory_point(i).v() +
+                           raw_trajectory.trajectory_point(i - 1).v()) /
+                              2.0
+                        : (raw_trajectory.trajectory_point(i).v() +
+                           raw_trajectory.trajectory_point(i + 1).v()) /
+                              2.0;
+
     point.mutable_path_point()->set_x(xy_points[i].first);
     point.mutable_path_point()->set_y(xy_points[i].second);
-    point.mutable_path_point()->set_theta(headings[i]);
+    point.mutable_path_point()->set_theta(
+        autoagric::common::math::NormalizeAngle(
+            headings[i] +
+            (mean_v < 0 ? M_PI : 0)));
     point.mutable_path_point()->set_kappa(kappas[i]);
     point.mutable_path_point()->set_dkappa(dkappas[i]);
     point.mutable_path_point()->set_s(accumulated_s[i]);
@@ -189,11 +202,11 @@ bool DiscretePointsTrajectorySmoother::GenerateTrajectoryPointProfile(
     if (i == 0)
       point.set_relative_time(0.0);
     else
-      point.set_relative_time((point.path_point().s() -
-                               trajectory_points->back().path_point().s()) *
-                                  2.0 /
-                                  (point.v() + trajectory_points->back().v()) +
-                              trajectory_points->back().relative_time());
+      point.set_relative_time(
+          std::fabs((point.path_point().s() -
+                     trajectory_points->back().path_point().s()) *
+                    2.0 / (point.v() + trajectory_points->back().v())) +
+          trajectory_points->back().relative_time());
 
     // ADEBUG(point.DebugString());
     trajectory_points->emplace_back(point);

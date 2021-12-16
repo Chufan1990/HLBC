@@ -5,7 +5,7 @@
 #include "autoagric/planning/reference_line_smoother_config.pb.h"
 #include "common/configs/vehicle_config_helper.h"
 #include "common/macro.h"
-#include "control/common/msg_to_proto.h"
+#include "control/common/pb3_ros_msgs.h"
 #include "control/controller/controller_agent.h"
 #include "planning/reference_line/trajectory_smoother.h"
 
@@ -33,11 +33,11 @@ class ControllerInterface {
   bool ComputeControlCommand(const L& localization, const C& chassis,
                              const T& trajectory, const F& feedback,
                              double& ret) {
-    GetProtoFromMsg(trajectory, local_view_.mutable_trajectory());
+    pb3::fromMsg(trajectory, local_view_.mutable_trajectory());
 
-    GetProtoFromMsg(feedback, local_view_.mutable_chassis());
+    pb3::fromMsg(feedback, local_view_.mutable_chassis());
 
-    GetProtoFromMsg(localization, chassis, local_view_.mutable_localization());
+    pb3::fromMsg(localization, chassis, local_view_.mutable_localization());
 
     std::vector<planning::AnchorPoint> anchor_points;
 

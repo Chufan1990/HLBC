@@ -15,8 +15,14 @@ set(CMAKE_CXX_FLAGS_RELEASE
 # Find catkin macros and libraries if COMPONENTS list like find_package(catkin
 # REQUIRED COMPONENTS xyz) is used, also find other catkin packages
 find_package(
-  catkin REQUIRED COMPONENTS geometry_msgs visualization_msgs roscpp std_msgs
-                             message_generation autoware_msgs)
+  catkin REQUIRED
+  COMPONENTS geometry_msgs
+             visualization_msgs
+             roscpp
+             std_msgs
+             rospy
+             message_generation
+             autoware_msgs)
 
 set(THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 set(Protobuf_DIR "${THIRDPARTY_DIR}/protobuf")
@@ -118,18 +124,27 @@ endif()
 # * uncomment the generate_messages entry below * add every package in
 # MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-# Generate messages in the 'msg' folder add_message_files( FILES Message1.msg
-# Message2.msg )
+# Generate messages in the 'msg' folder
 
-# Generate services in the 'srv' folder add_service_files( FILES Service1.srv
-# Service2.srv )
+file(
+  GLOB_RECURSE ${PROJECT_NAME}_MESSAGE_SOURCE_FILES
+  RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/msg
+  *.msg)
+
+message(
+  WARNING
+    "${PROJECT_NAME}_MESSAGE_SOURCE_FILES = ${${PROJECT_NAME}_MESSAGE_SOURCE_FILES}"
+)
+
+add_message_files(DIRECTORY msg FILES ${${PROJECT_NAME}_MESSAGE_SOURCE_FILES})
+# add_message_files(FILES PathPoint.msg) Generate services in the 'srv' folder
+# add_service_files( FILES Service1.srv Service2.srv )
 
 # Generate actions in the 'action' folder add_action_files( FILES Action1.action
 # Action2.action )
 
 # Generate added messages and services with any dependencies listed here
-# generate_messages( DEPENDENCIES std_msgs  # Or other packages containing msgs
-# )
+generate_messages(DEPENDENCIES std_msgs)
 
 # Generate protobuf in the 'proto' folder file( GLOB_RECURSE PROTO_FILES
 # RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/proto/" *.proto)
@@ -208,6 +223,7 @@ catkin_package(
   geometry_msgs
   visualization_msgs
   roscpp
+  rospy
   std_msgs
   message_runtime
   autoware_msgs
@@ -274,7 +290,6 @@ add_library(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCE_FILES}
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 0.0.1 SOVERSION 1)
 
-
 target_link_libraries(${PROJECT_NAME} glog::glog absl::base
                       absl::synchronization absl::strings)
 
@@ -323,6 +338,21 @@ target_link_libraries(
   ${GFLAGS_LIBRARIES}
   glog::glog)
 
+add_executable(static_trajectory_loader_test
+               src/nodes/static_trajectory_loader_test.cpp)
+
+add_dependencies(static_trajectory_loader_test ${catkin_EXPORTED_TARGETS}
+                 ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+target_link_libraries(
+  static_trajectory_loader_test
+  ${PROJECT_NAME}
+  ${Protobuf_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${Ipopt_LIBRARIES}
+  ${GFLAGS_LIBRARIES}
+  glog::glog)
+
 # ##############################################################################
 # Install ##
 # ##############################################################################
@@ -360,13 +390,13 @@ install(
 # Install project namespaced headers
 
 install(
-  DIRECTORY third_party/protobuf/include/ 
+  DIRECTORY third_party/protobuf/include/
   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
   PATTERN "*.cc" EXCLUDE
   PATTERN "*.cpp" EXCLUDE)
 
 install(
-  DIRECTORY third_party/protobuf/lib/ 
+  DIRECTORY third_party/protobuf/lib/
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   PATTERN ".svn" EXCLUDE)
 

@@ -83,11 +83,11 @@ HLBC的入口在*controller_interface.cpp*, 处理的流程在 `bool::Controller
         const F& feedback, double& ret) {
 
     // 1. 读取输入数据后进行数据格式转换，将ros message转换成protobuf
-    GetProtoFromMsg(trajectory, local_view_.mutable_trajectory());
+    pb3::fromMsg(trajectory, local_view_.mutable_trajectory());
 
-    GetProtoFromMsg(feedback, local_view_.mutable_chassis());
+    pb3::fromMsg(feedback, local_view_.mutable_chassis());
 
-    GetProtoFromMsg(localization, chassis, local_view_.mutable_localization());
+    pb3::fromMsg(localization, chassis, local_view_.mutable_localization());
 
     // 2. 计算轨迹点的曲率，曲率一阶导，曲率二阶导，相对径向位移和相对时间
     UpdateTrajectoryPoint(&local_view_.localization(),

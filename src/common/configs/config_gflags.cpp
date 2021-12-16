@@ -81,7 +81,7 @@ DEFINE_bool(reverse_heading_vehicle_state, false,
 DEFINE_bool(state_transform_to_com_reverse, false,
             "Enable vehicle states coordinate transformation from center of "
             "rear-axis to center of mass, during reverse driving");
-DEFINE_bool(state_transform_to_com_drive, true,
+DEFINE_bool(state_transform_to_com_drive, false,
             "Enable vehicle states coordinate transformation from center of "
             "rear-axis to center of mass, during forward driving");
 DEFINE_bool(multithread_run, false,

@@ -70,6 +70,7 @@
         "regex": "cpp",
         "valarray": "cpp",
         "any": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "*.inc": "cpp"
     }
 }

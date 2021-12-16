@@ -14,6 +14,7 @@
 #include "geometry_msgs/TwistStamped.h"
 #include "planning/reference_line/trajectory_smoother.h"
 #include "ros/ros.h"
+#include "hlbc/Trajectory.h"
 
 namespace autoagric {
 namespace control {
@@ -33,6 +34,8 @@ class ControlComponent final {
 
   void OnPlanning(const autoware_msgs::LaneConstPtr& msg);
 
+  void OnPlanningTest(const hlbc::TrajectoryConstPtr& msg);
+
   void Onlocalization(const geometry_msgs::PoseStampedConstPtr& msg);
 
   void OnIMU(const geometry_msgs::TwistStampedConstPtr& msg);
@@ -49,15 +52,17 @@ class ControlComponent final {
 
   ros::NodeHandle visualizer_nh_;
 
-  std::shared_ptr<ros::Subscriber> chassis_reader_;
+  std::unique_ptr<ros::Subscriber> chassis_reader_;
 
-  std::shared_ptr<ros::Subscriber> localization_reader_;
+  std::unique_ptr<ros::Subscriber> localization_reader_;
 
-  std::shared_ptr<ros::Subscriber> planning_reader_;
+  std::unique_ptr<ros::Subscriber> planning_reader_;
 
-  std::shared_ptr<ros::Subscriber> imu_reader_;
+  std::unique_ptr<ros::Subscriber> planning_test_reader_;
 
-  std::shared_ptr<ros::Publisher> control_cmd_writer_;
+  std::unique_ptr<ros::Subscriber> imu_reader_;
+
+  std::unique_ptr<ros::Publisher> control_cmd_writer_;
 
   LocalView local_view_;
 

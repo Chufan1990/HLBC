@@ -8,6 +8,7 @@
 #include "common/macro.h"
 #include "common/math/math_utils.h"
 #include "common/math/quaternion.h"
+#include "control/common/control_gflags.h"
 #include "control/common/pid_BC_controller.h"
 
 namespace autoagric {
@@ -16,6 +17,7 @@ namespace control {
 using autoagric::common::ErrorCode;
 using autoagric::common::Status;
 using Matrix = Eigen::MatrixXd;
+using autoagric::common::PathPoint;
 using autoagric::common::TrajectoryPoint;
 using autoagric::common::VehicleConfigHelper;
 using autoagric::common::math::MpcIpopt;
@@ -306,8 +308,27 @@ Status MPCController::ComputeControlCommand(
   auto pos_trajectory_time_stamp_diff =
       localization->header().timestamp_sec() - current_trajectory_timestamp_;
 
-  trajectory_analyzer_.SampleByRelativeTime(0, ts_, horizon_,
-                                            resampled_trajectory_);
+  const auto &com = injector_->vehicle_state()->ComputeCOMPosition(lr_);
+
+  auto matched_point =
+      trajectory_analyzer_.QueryMatchedTrajectoryPoint(com.x(), com.y());
+
+  matched_point_ = matched_point.path_point();
+
+  trajectory_analyzer_.SampleByRelativeTime(matched_point.relative_time(), ts_,
+                                            horizon_, resampled_trajectory_);
+  ADEBUG("Comparing: \n matched_point "
+         << matched_point.path_point().x() << " "
+         << matched_point.path_point().y() << "\n resampled"
+         << resampled_trajectory_.front().path_point().x() << " "
+         << resampled_trajectory_.front().path_point().y());
+
+  ADEBUG("Comparing: \n com " << com.x() << " " << com.y() << "\nlocalization"
+                              << localization->pose().position().x() << " "
+                              << localization->pose().position().y());
+
+  // ADEBUG(planning_published_trajectory->DebugString());
+
   for (size_t i = 0; i < resampled_trajectory_.size(); i++) {
     ADEBUG(std::setprecision(3)
            << std::fixed << " x: " << resampled_trajectory_[i].path_point().x()
@@ -318,7 +339,22 @@ Status MPCController::ComputeControlCommand(
            << " s: " << resampled_trajectory_[i].steer()
            << " t: " << resampled_trajectory_[i].relative_time());
   }
-  UpdateState();
+
+  trajectory_analyzer_.Map2Local(
+      matched_point.path_point().x(), matched_point.path_point().y(),
+      matched_point.path_point().theta(), &resampled_trajectory_);
+
+  for (size_t i = 0; i < resampled_trajectory_.size(); i++) {
+    ADEBUG(std::setprecision(3)
+           << std::fixed << " x: " << resampled_trajectory_[i].path_point().x()
+           << " y: " << resampled_trajectory_[i].path_point().y()
+           << " h: " << resampled_trajectory_[i].path_point().theta()
+           << " v: " << resampled_trajectory_[i].v()
+           << " a: " << resampled_trajectory_[i].a()
+           << " s: " << resampled_trajectory_[i].steer()
+           << " t: " << resampled_trajectory_[i].relative_time());
+  }
+  UpdateState(matched_point.path_point());
 
   double mpc_start_timestamp = ros::Time::now().toNSec();
   double steer_angle_feedback = 0.0;
@@ -338,6 +374,49 @@ Status MPCController::ComputeControlCommand(
     ADEBUG("MPC ipopt problem solved! ";);
   } else {
     AERROR("MPC ipopt problem failed! ";);
+
+    // AERROR("x");
+    // for (int i = 0; i < horizon_; i++) {
+    //   ADEBUG(std::setprecision(3)
+    //          << std::fixed << vars_lowerbound_[i + x_start_] << " "
+    //          << vars_[i + x_start_] << " " << vars_upperbound_[i +
+    //          x_start_]);
+    // }
+    // AERROR("y");
+    // for (int i = 0; i < horizon_; i++) {
+    //   ADEBUG(std::setprecision(3)
+    //          << std::fixed << vars_lowerbound_[i + y_start_] << " "
+    //          << vars_[i + y_start_] << " " << vars_upperbound_[i +
+    //          y_start_]);
+    // }
+    // AERROR("heading");
+    // for (int i = 0; i < horizon_; i++) {
+    //   ADEBUG(std::setprecision(3)
+    //          << std::fixed << vars_lowerbound_[i + heading_start_] << " "
+    //          << vars_[i + heading_start_] << " "
+    //          << vars_upperbound_[i + heading_start_]);
+    // }
+    // AERROR("speed");
+    // for (int i = 0; i < horizon_; i++) {
+    //   ADEBUG(std::setprecision(3)
+    //          << std::fixed << vars_lowerbound_[i + speed_start_] << " "
+    //          << vars_[i + speed_start_] << " "
+    //          << vars_upperbound_[i + speed_start_]);
+    // }
+    // AERROR("accel");
+    // for (int i = 0; i < horizon_ - 1; i++) {
+    //   ADEBUG(std::setprecision(3)
+    //          << std::fixed << vars_lowerbound_[i + accel_start_] << " "
+    //          << vars_[i + accel_start_] << " "
+    //          << vars_upperbound_[i + accel_start_]);
+    // }
+    // AERROR("steer");
+    // for (int i = 0; i < horizon_ - 1; i++) {
+    //   ADEBUG(std::setprecision(3)
+    //          << std::fixed << vars_lowerbound_[i + steer_start_] << " "
+    //          << vars_[i + steer_start_] << " "
+    //          << vars_upperbound_[i + steer_start_]);
+    // }
   }
 
   double mpc_end_timestamp = ros::Time::now().toNSec();
@@ -359,10 +438,6 @@ Status MPCController::ComputeControlCommand(
            << " s: " << warmstart_solution_[i].steer()
            << " t: " << warmstart_solution_[i].relative_time());
   }
-
-  ADEBUG("linear_acceleration_feedback: " << linear_acceleration_feedback
-                                          << " chassis->speed_mps(): "
-                                          << chassis->speed_mps());
 
   if ((linear_acceleration_feedback * chassis->speed_mps()) < -1e-3) {
     brake_feedback =
@@ -393,14 +468,17 @@ Status MPCController::ComputeControlCommand(
   return Status::OK();
 }
 
-void MPCController::UpdateState() {
+void MPCController::UpdateState(const PathPoint &matched_point) {
   const auto &com = injector_->vehicle_state()->ComputeCOMPosition(lr_);
-  vars_[x_start_] = com.x();
-  vars_lowerbound_[x_start_] = com.x();
-  vars_upperbound_[x_start_] = com.x();
-  vars_[y_start_] = com.y();
-  vars_lowerbound_[y_start_] = com.y();
-  vars_upperbound_[y_start_] = com.y();
+  const auto pos =
+      std::move(trajectory_analyzer_.ComputeFrenetCoord(matched_point, com));
+
+  vars_[x_start_] = pos.x();
+  vars_lowerbound_[x_start_] = pos.x();
+  vars_upperbound_[x_start_] = pos.x();
+  vars_[y_start_] = pos.y();
+  vars_lowerbound_[y_start_] = pos.y();
+  vars_upperbound_[y_start_] = pos.y();
 
   const double v = injector_->vehicle_state()->linear_velocity();
 
@@ -417,9 +495,12 @@ void MPCController::UpdateState() {
         orientation.qw(), orientation.qx(), orientation.qy(), orientation.qz());
   }
 
-  vars_[heading_start_] = heading;
-  vars_lowerbound_[heading_start_] = heading;
-  vars_upperbound_[heading_start_] = heading;
+  const auto new_heading =
+      autoagric::common::math::NormalizeAngle(heading - matched_point.theta());
+
+  vars_[heading_start_] = new_heading;
+  vars_lowerbound_[heading_start_] = new_heading;
+  vars_upperbound_[heading_start_] = new_heading;
 
   const double steer = injector_->vehicle_state()->steering_percentage();
   vars_[steer_start_] = steer;
@@ -440,25 +521,28 @@ void MPCController::UpdateState() {
     // vars_upperbound_[accel_start_ + i] = accel;
   }
 
-  constraints_lowerbound_[x_start_] = com.x();
-  constraints_lowerbound_[y_start_] = com.y();
-  constraints_lowerbound_[heading_start_] = heading;
+  constraints_lowerbound_[x_start_] = pos.x();
+  constraints_lowerbound_[y_start_] = pos.y();
+  constraints_lowerbound_[heading_start_] = new_heading;
   constraints_lowerbound_[speed_start_] = v;
 
-  constraints_upperbound_[x_start_] = com.x();
-  constraints_upperbound_[y_start_] = com.y();
-  constraints_upperbound_[heading_start_] = heading;
+  constraints_upperbound_[x_start_] = pos.x();
+  constraints_upperbound_[y_start_] = pos.y();
+  constraints_upperbound_[heading_start_] = new_heading;
   constraints_upperbound_[speed_start_] = v;
 
-  for (int i = 1; i < horizon_; i++) {
-    vars_[x_start_ + i] = warmstart_solution_[i].path_point().x();
-    vars_[y_start_ + i] = warmstart_solution_[i].path_point().y();
-    vars_[heading_start_ + i] = warmstart_solution_[i].path_point().theta();
-    vars_[speed_start_ + i] = warmstart_solution_[i].v();
-    vars_[steer_start_ + i - 1] = warmstart_solution_[i].steer();
-    vars_[accel_start_ + i - 1] = warmstart_solution_[i].a();
-    warmstart_solution_[i].Clear();
-  }
+  // for (int i = 1; i < horizon_; i++) {
+  //   vars_[x_start_ + i] = warmstart_solution_[i].path_point().x();
+  //   vars_[y_start_ + i] = warmstart_solution_[i].path_point().y();
+  //   vars_[heading_start_ + i] = warmstart_solution_[i].path_point().theta();
+  //   vars_[speed_start_ + i] = warmstart_solution_[i].v();
+  //   vars_[steer_start_ + i - 1] = warmstart_solution_[i].steer();
+  //   vars_[accel_start_ + i - 1] = warmstart_solution_[i].a();
+  //   warmstart_solution_[i].Clear();
+
+  ADEBUG(std::setprecision(3)
+         << std::fixed << " x: " << pos.x() << " y: " << pos.y()
+         << " h: " << new_heading << " v: " << v << " s: " << steer);
 }
 
 Status MPCController::Reset() { return Status::OK(); }
@@ -468,6 +552,18 @@ void MPCController::Stop() {
 }
 
 std::string MPCController::Name() const { return name_; }
+
+std::vector<TrajectoryPoint> MPCController::resampled_trajectory() const {
+  return trajectory_analyzer_.Local2Map(matched_point_.x(), matched_point_.y(),
+                                        matched_point_.theta(),
+                                        &resampled_trajectory_);
+}
+
+std::vector<TrajectoryPoint> MPCController::warmstart_solution() const {
+  return trajectory_analyzer_.Local2Map(matched_point_.x(), matched_point_.y(),
+                                        matched_point_.theta(),
+                                        &warmstart_solution_);
+}
 
 }  // namespace control
 }  // namespace autoagric

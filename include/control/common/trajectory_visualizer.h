@@ -9,6 +9,7 @@
 #include "autoagric/planning/planning.pb.h"
 #include "autoware_msgs/Lane.h"
 #include "geometry_msgs/Vector3.h"
+#include "hlbc/Trajectory.h"
 #include "std_msgs/ColorRGBA.h"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
@@ -36,9 +37,13 @@ class TrajectoryVisualizer {
 
   void Proc(const std::vector<MarkerType>& markers);
 
-  static MarkerType LaneToMarkerArray(const autoware_msgs::Lane& lane,
-                                      const geometry_msgs::Vector3& scale,
-                                      const std_msgs::ColorRGBA& color);
+  static MarkerType toMarkerArray(const hlbc::Trajectory& lane,
+                                  const geometry_msgs::Vector3& scale,
+                                  const std_msgs::ColorRGBA& color);
+
+  static MarkerType toMarkerArray(const autoware_msgs::Lane& lane,
+                                  const geometry_msgs::Vector3& scale,
+                                  const std_msgs::ColorRGBA& color);
 
   template <typename T>
   static MarkerType TrajectoryToMarkerArray(const T& trajectory,
@@ -51,7 +56,8 @@ class TrajectoryVisualizer {
 
     points.header.frame_id = line_strip.header.frame_id = frame_id;
     points.header.stamp.sec = line_strip.header.stamp.sec = timestamp;
-    points.ns = line_strip.ns = "points_and_lines";
+    points.ns = "points";
+    line_strip.ns = "line";
     points.id = 0;
     line_strip.id = 1;
 
@@ -76,8 +82,10 @@ class TrajectoryVisualizer {
       arrow.pose.position.x = point.path_point().x();
       arrow.pose.position.y = point.path_point().y();
       arrow.pose.position.z = point.path_point().z();
-      arrow.pose.orientation =
-          tf2::toMsg(tf2::Quaternion(0.0, 0.0, point.path_point().theta()));
+
+      auto q = tf2::Quaternion();
+      q.setRPY(0, 0, point.path_point().theta());
+      arrow.pose.orientation = tf2::toMsg(q);
 
       arrow.header.frame_id = frame_id;
       arrow.id = i++;
@@ -96,7 +104,7 @@ class TrajectoryVisualizer {
   }
 
  private:
-  MarkerType LaneToMarkerArray(const autoware_msgs::LaneConstPtr& lane);
+  MarkerType toMarkerArray(const autoware_msgs::Lane& lane);
 
   std::vector<ros::NodeHandle> nh_queue_;
 

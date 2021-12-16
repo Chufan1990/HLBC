@@ -49,6 +49,11 @@ TrajectoryAnalyzer::TrajectoryAnalyzer(
 
 PathPoint TrajectoryAnalyzer::QueryMatchedPathPoint(const double x,
                                                     const double y) const {
+  return TrajectoryPointToPathPoint(QueryMatchedTrajectoryPoint(x, y));
+}
+
+TrajectoryPoint TrajectoryAnalyzer::QueryMatchedTrajectoryPoint(
+    const double x, const double y) const {
   CHECK_GT(trajectory_points_.size(), 0U);
 
   double d_min = PointDistanceSquare(trajectory_points_.front(), x, y);
@@ -70,7 +75,7 @@ PathPoint TrajectoryAnalyzer::QueryMatchedPathPoint(const double x,
   if (index_start == index_end ||
       std::fabs(trajectory_points_[index_start].path_point().s() -
                 trajectory_points_[index_end].path_point().s()) <= kEpsilon) {
-    return TrajectoryPointToPathPoint(trajectory_points_[index_start]);
+    return trajectory_points_[index_start];
   }
 
   return FindMinDistancePoint(trajectory_points_[index_start],
@@ -183,10 +188,9 @@ const std::vector<TrajectoryPoint> &TrajectoryAnalyzer::trajectory_points()
   return trajectory_points_;
 }
 
-PathPoint TrajectoryAnalyzer::FindMinDistancePoint(const TrajectoryPoint &p0,
-                                                   const TrajectoryPoint &p1,
-                                                   const double x,
-                                                   const double y) const {
+TrajectoryPoint TrajectoryAnalyzer::FindMinDistancePoint(
+    const TrajectoryPoint &p0, const TrajectoryPoint &p1, const double x,
+    const double y) const {
   // given the fact that the discretized trajectory is dense enough,
   // we assume linear trajectory between consecutive trajectory points.
   auto dist_square = [&p0, &p1, &x, &y](const double s) {
@@ -199,21 +203,30 @@ PathPoint TrajectoryAnalyzer::FindMinDistancePoint(const TrajectoryPoint &p0,
     return dx * dx + dy * dy;
   };
 
-  PathPoint p = p0.path_point();
+  TrajectoryPoint p = p0;
   double s = common::math::GoldenSectionSearch(dist_square, p0.path_point().s(),
                                                p1.path_point().s());
-  p.set_s(s);
-  p.set_x(common::math::lerp(p0.path_point().x(), p0.path_point().s(),
-                             p1.path_point().x(), p1.path_point().s(), s));
-  p.set_y(common::math::lerp(p0.path_point().y(), p0.path_point().s(),
-                             p1.path_point().y(), p1.path_point().s(), s));
-  p.set_theta(common::math::slerp(p0.path_point().theta(), p0.path_point().s(),
-                                  p1.path_point().theta(), p1.path_point().s(),
-                                  s));
+  p.mutable_path_point()->set_s(s);
+  p.mutable_path_point()->set_x(
+      common::math::lerp(p0.path_point().x(), p0.path_point().s(),
+                         p1.path_point().x(), p1.path_point().s(), s));
+  p.mutable_path_point()->set_y(
+      common::math::lerp(p0.path_point().y(), p0.path_point().s(),
+                         p1.path_point().y(), p1.path_point().s(), s));
+  p.mutable_path_point()->set_theta(
+      common::math::slerp(p0.path_point().theta(), p0.path_point().s(),
+                          p1.path_point().theta(), p1.path_point().s(), s));
   // approximate the curvature at the intermediate point
-  p.set_kappa(common::math::lerp(p0.path_point().kappa(), p0.path_point().s(),
-                                 p1.path_point().kappa(), p1.path_point().s(),
-                                 s));
+  p.mutable_path_point()->set_kappa(
+      common::math::lerp(p0.path_point().kappa(), p0.path_point().s(),
+                         p1.path_point().kappa(), p1.path_point().s(), s));
+  p.set_v(common::math::lerp(p0.v(), p0.path_point().s(), p1.v(),
+                             p1.path_point().s(), s));
+  p.set_a(common::math::lerp(p0.a(), p0.path_point().s(), p1.a(),
+                             p1.path_point().s(), s));
+  p.set_relative_time(
+      common::math::lerp(p0.relative_time(), p0.path_point().s(),
+                         p1.relative_time(), p1.path_point().s(), s));
   return p;
 }
 
@@ -243,6 +256,67 @@ Vec2d TrajectoryAnalyzer::ComputeCOMPosition(
   Eigen::Vector3d com_pos_3d = v + pos_vec;
   // Return transfromed x and y
   return Vec2d(com_pos_3d[0], com_pos_3d[1]);
+}
+
+void TrajectoryAnalyzer::Map2Local(
+    const double x, const double y, const double heading,
+    std::vector<TrajectoryPoint> *ptr_trajectory_points) {
+  const double cos_theta = std::cos(heading);
+  const double sin_theta = std::sin(heading);
+
+  std::for_each(ptr_trajectory_points->begin(), ptr_trajectory_points->end(),
+                [&cos_theta, &sin_theta, &x, &y, &heading](TrajectoryPoint &p) {
+                  auto dx = p.path_point().x() - x;
+                  auto dy = p.path_point().y() - y;
+                  auto theta = p.path_point().theta();
+                  auto x_new = cos_theta * dy - sin_theta * dx;
+                  auto y_new = sin_theta * dy + cos_theta * dx;
+                  auto theta_new =
+                      common::math::NormalizeAngle(theta - heading);
+                  p.mutable_path_point()->set_x(x_new);
+                  p.mutable_path_point()->set_y(y_new);
+                  p.mutable_path_point()->set_theta(theta_new);
+                });
+}
+
+Vec2d TrajectoryAnalyzer::ComputeFrenetCoord(const PathPoint &p,
+                                             const Vec2d &com) const {
+  const double x = p.x();
+  const double y = p.y();
+  const double heading = p.theta();
+  const double cos_theta = std::cos(heading);
+  const double sin_theta = std::sin(heading);
+  const auto dx = com.x() - x;
+  const auto dy = com.y() - y;
+  const auto x_new = cos_theta * dy - sin_theta * dx;
+  const auto y_new = sin_theta * dy + cos_theta * dx;
+  return Vec2d(x_new, y_new);
+}
+
+std::vector<TrajectoryPoint> TrajectoryAnalyzer::Local2Map(
+    const double tx, const double ty, const double heading,
+    const std::vector<TrajectoryPoint> *ptr_trajectory_points) const{
+  std::vector<TrajectoryPoint> ret(ptr_trajectory_points->begin(),
+                                   ptr_trajectory_points->end());
+  const double cos_theta = std::cos(heading);
+  const double sin_theta = std::sin(heading);
+
+  std::for_each(
+      ret.begin(), ret.end(),
+      [&cos_theta, &sin_theta, &tx, &ty, &heading](TrajectoryPoint &p) {
+        auto x = p.path_point().x();
+        auto y = p.path_point().y();
+        auto theta = p.path_point().theta();
+
+        auto x_new = cos_theta * y - sin_theta * x + tx;
+        auto y_new = sin_theta * y + cos_theta * x + ty;
+        auto theta_new = common::math::NormalizeAngle(theta + heading);
+
+        p.mutable_path_point()->set_x(x_new);
+        p.mutable_path_point()->set_y(y_new);
+        p.mutable_path_point()->set_theta(theta_new);
+      });
+  return ret;
 }
 
 void TrajectoryAnalyzer::SampleByRelativeTime(

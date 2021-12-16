@@ -7,10 +7,9 @@
 #include "common/vehicle_state/vehicle_state_provider.h"
 #include "control/common/interpolation_1d.h"
 #include "control/common/interpolation_2d.h"
+#include "control/common/pid_controller.h"
 #include "control/common/trajectory_analyzer.h"
 #include "control/controller/controller.h"
-#include "control/common/pid_controller.h"
-
 
 namespace autoagric {
 namespace control {
@@ -79,15 +78,11 @@ class MPCController : public Controller {
    */
   std::string Name() const override;
 
-  const std::vector<autoagric::common::TrajectoryPoint>& resampled_trajectory()
-      const {
-    return resampled_trajectory_;
-  }
+  std::vector<autoagric::common::TrajectoryPoint> resampled_trajectory()
+      const;
 
-  const std::vector<autoagric::common::TrajectoryPoint>& warmstart_solution()
-      const {
-    return warmstart_solution_;
-  }
+  std::vector<autoagric::common::TrajectoryPoint> warmstart_solution()
+      const;
 
  private:
   bool LoadControlConf(const ControlConf* control_conf);
@@ -97,7 +92,7 @@ class MPCController : public Controller {
 
   void LoadMPCGainScheduler(const MPCControllerConf& mpc_controller_conf);
 
-  void UpdateState();
+  void UpdateState(const autoagric::common::PathPoint& matched_point);
 
   inline double Wheel2SteerPct(const double wheel_angle) {
     return wheel_angle / wheel_single_direction_max_degree_ * 100;
@@ -245,7 +240,10 @@ class MPCController : public Controller {
 
   std::shared_ptr<MPCController> ConstPtr_;
 
-  std::unique_ptr<autoagric::control::common::PIDController> brake_pid_controller_;
+  std::unique_ptr<autoagric::control::common::PIDController>
+      brake_pid_controller_;
+
+  autoagric::common::PathPoint matched_point_;
 };
 
 }  // namespace control

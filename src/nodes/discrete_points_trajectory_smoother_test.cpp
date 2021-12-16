@@ -225,8 +225,11 @@ void ADCTrajectoryToLane(const autoagric::planning::ADCTrajectory& trajectory,
     autoware_msgs::Waypoint wp;
     wp.pose.pose.position.x = point.path_point().x();
     wp.pose.pose.position.y = point.path_point().y();
-    wp.pose.pose.orientation =
-        tf2::toMsg(tf2::Quaternion(0.0, 0.0, point.path_point().theta()));
+
+    auto q = tf2::Quaternion();
+    q.setRPY(0, 0, point.path_point().theta());
+    wp.pose.pose.orientation = tf2::toMsg(q);
+
     lane.waypoints.push_back(wp);
   }
 }
@@ -288,7 +291,7 @@ int main(int argc, char** argv) {
   scale.z = 0.01;
 
   auto old_markers =
-      autoagric::control::common::TrajectoryVisualizer::LaneToMarkerArray(
+      autoagric::control::common::TrajectoryVisualizer::toMarkerArray(
           old_lane, scale, o_color);
   auto new_markers = old_markers;
 
@@ -310,7 +313,7 @@ int main(int argc, char** argv) {
   if (status) {
     ADCTrajectoryToLane(smoothed_trajectory, new_lane);
     new_markers =
-        autoagric::control::common::TrajectoryVisualizer::LaneToMarkerArray(
+        autoagric::control::common::TrajectoryVisualizer::toMarkerArray(
             new_lane, scale, n_color);
   }
   for (int i = 0; i < old_markers.first.markers.size(); i++) {

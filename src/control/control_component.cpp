@@ -5,7 +5,7 @@
 #include "common/macro.h"
 #include "common/util/file.h"
 #include "control/common/control_gflags.h"
-#include "control/common/msg_to_proto.h"
+#include "control/common/pb3_ros_msgs.h"
 #include "control/controller/mpc_controller.h"
 #include "geometry_msgs/Vector3.h"
 #include "planning/common/planning_gflags.h"
@@ -23,23 +23,27 @@ ControlComponent::ControlComponent(ros::NodeHandle& nh) : nh_(nh) {}
 bool ControlComponent::Init() {
   spinner_ = std::make_unique<ros::AsyncSpinner>(0);
 
-  chassis_reader_ = std::make_shared<ros::Subscriber>(nh_.subscribe(
+  chassis_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
       FLAGS_chassis_message_name, FLAGS_chassis_pending_queue_size,
       &ControlComponent::OnChassis, this));
 
-  planning_reader_ = std::make_shared<ros::Subscriber>(nh_.subscribe(
-      FLAGS_planning_message_name, FLAGS_planning_pending_queue_size,
-      &ControlComponent::OnPlanning, this));
+  // planning_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
+  //     FLAGS_planning_message_name, FLAGS_planning_pending_queue_size,
+  //     &ControlComponent::OnPlanning, this));
 
-  localization_reader_ = std::make_shared<ros::Subscriber>(nh_.subscribe(
+  planning_test_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
+      "/trajectory_loader/static_trajectory", FLAGS_planning_pending_queue_size,
+      &ControlComponent::OnPlanningTest, this));
+
+  localization_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
       FLAGS_localization_message_name, FLAGS_localization_pending_queue_size,
       &ControlComponent::Onlocalization, this));
 
-  imu_reader_ = std::make_shared<ros::Subscriber>(
+  imu_reader_ = std::make_unique<ros::Subscriber>(
       nh_.subscribe(FLAGS_imu_message_name, FLAGS_imu_pending_queue_size,
                     &ControlComponent::OnIMU, this));
 
-  control_cmd_writer_ = std::make_shared<ros::Publisher>(
+  control_cmd_writer_ = std::make_unique<ros::Publisher>(
       nh_.advertise<geometry_msgs::TwistStamped>(
           FLAGS_control_cmd_message_name,
           FLAGS_control_cmd_pending_queue_size));
@@ -97,9 +101,9 @@ Status ControlComponent::CheckInput(LocalView* local_view) {
 
   for (auto& trajectory_point :
        *local_view->mutable_trajectory()->mutable_trajectory_point()) {
-    if (std::abs(trajectory_point.v()) <
+    if (std::fabs(trajectory_point.v()) <
             control_conf_.minimum_speed_resolution() &&
-        std::abs(trajectory_point.a()) <
+        std::fabs(trajectory_point.a()) <
             control_conf_.max_acceleration_when_stopped()) {
       trajectory_point.set_v(0.0);
       trajectory_point.set_a(0.0);
@@ -300,7 +304,7 @@ void ControlComponent::OnChassis(
   std::unique_lock<std::timed_mutex> locker(chassis_copy_done_,
                                             std::defer_lock);
   if (locker.try_lock_for(std::chrono::milliseconds(40))) {
-    GetProtoFromMsg(msg, &latest_chassis_);
+    pb3::fromMsg(msg, &latest_chassis_);
   }
 }
 
@@ -308,7 +312,15 @@ void ControlComponent::OnPlanning(const autoware_msgs::LaneConstPtr& msg) {
   std::unique_lock<std::timed_mutex> locker(trajectory_copy_done_,
                                             std::defer_lock);
   if (locker.try_lock_for(std::chrono::milliseconds(40))) {
-    GetProtoFromMsg(msg, &latest_trajectory_);
+    pb3::fromMsg(msg, &latest_trajectory_);
+  }
+}
+
+void ControlComponent::OnPlanningTest(const hlbc::TrajectoryConstPtr& msg) {
+  std::unique_lock<std::timed_mutex> locker(trajectory_copy_done_,
+                                            std::defer_lock);
+  if (locker.try_lock_for(std::chrono::milliseconds(40))) {
+    pb3::fromMsg(*msg, &latest_trajectory_);
   }
 }
 
@@ -317,7 +329,7 @@ void ControlComponent::Onlocalization(
   std::unique_lock<std::timed_mutex> locker(localization_copy_done_,
                                             std::defer_lock);
   if (locker.try_lock_for(std::chrono::milliseconds(40))) {
-    GetProtoFromMsg(msg, &latest_localization_);
+    pb3::fromMsg(msg, &latest_localization_);
   }
 }
 
@@ -325,7 +337,7 @@ void ControlComponent::OnIMU(const geometry_msgs::TwistStampedConstPtr& msg) {
   std::unique_lock<std::timed_mutex> locker(localization_copy_done_,
                                             std::defer_lock);
   if (locker.try_lock_for(std::chrono::milliseconds(40))) {
-    GetProtoFromMsg(msg, &latest_localization_);
+    pb3::fromMsg(msg, &latest_localization_);
   }
 }
 

@@ -20,40 +20,42 @@
 
 #include <string>
 
+#include "absl/strings/str_cat.h"
+
 DEFINE_string(control_conf_file,
-              std::string(std::getenv("HOME")) +
-                  "/autoware.ai/src/autoware/common/"
-                  "hlbc/conf/control_conf.pb.txt",
+              absl::StrCat(std::string(std::getenv("HOME")),
+                           "/autoware.ai/src/autoware/common/"
+                           "hlbc/conf/control_conf.pb.txt"),
               "default control conf data file");
 
 DEFINE_string(control_common_conf_file,
-              std::string(std::getenv("HOME")) +
-                  "/autoware.ai/src/autoware/common/"
-                  "hlbc/conf/control_common_conf.pb.txt",
+              absl::StrCat(std::string(std::getenv("HOME")),
+                           "/autoware.ai/src/autoware/common/"
+                           "hlbc/conf/control_common_conf.pb.txt"),
               "common control conf data file");
 
 DEFINE_string(mpc_controller_conf_file,
-              std::string(std::getenv("HOME")) +
-                  "/autoware.ai/src/autoware/common/"
-                  "hlbc/conf/mpc_controller_conf.pb.txt",
+              absl::StrCat(std::string(std::getenv("HOME")),
+                           "/autoware.ai/src/autoware/common/"
+                           "hlbc/conf/mpc_controller_conf.pb.txt"),
               "mpc controller conf data file");
 
 DEFINE_string(lateral_controller_conf_file,
-              std::string(std::getenv("HOME")) +
-                  "/autoware.ai/src/autoware/common/"
-                  "hlbc/conf/lateral_controller_conf.pb.txt",
+              absl::StrCat(std::string(std::getenv("HOME")),
+                           "/autoware.ai/src/autoware/common/"
+                           "hlbc/conf/lateral_controller_conf.pb.txt"),
               "lateral controller conf data file");
 
 DEFINE_string(longitudinal_controller_conf_file,
-              std::string(std::getenv("HOME")) +
-                  "/autoware.ai/src/autoware/common/"
-                  "hlbc/conf/longitudinal_controller_conf.pb.txt",
+              absl::StrCat(std::string(std::getenv("HOME")),
+                           "/autoware.ai/src/autoware/common/"
+                           "hlbc/conf/longitudinal_controller_conf.pb.txt"),
               "longitudinal controller conf data file");
 
 DEFINE_string(calibration_table_file,
-              std::string(std::getenv("HOME")) +
-                  "/autoware.ai/src/autoware/common/"
-                  "hlbc/conf/calibration_table.pb.txt",
+              absl::StrCat(std::string(std::getenv("HOME")),
+                           "/autoware.ai/src/autoware/common/"
+                           "hlbc/conf/calibration_table.pb.txt"),
               "calibration table file");
 
 DEFINE_bool(enable_csv_debug, false, "True to write out csv debug file.");
@@ -95,8 +97,7 @@ DEFINE_bool(enable_navigation_mode_position_update, true,
             "Enable position update for navigation mode");
 
 DEFINE_int32(chassis_pending_queue_size, 1, "Max chassis pending queue size");
-DEFINE_int32(planning_pending_queue_size, 1,
-             "Max planning pending queue size");
+DEFINE_int32(planning_pending_queue_size, 1, "Max planning pending queue size");
 DEFINE_int32(localization_pending_queue_size, 1,
              "Max localization pending queue size");
 DEFINE_int32(pad_msg_pending_queue_size, 1,
@@ -142,8 +143,7 @@ DEFINE_string(planning_message_name, "/final_path", "planning ros topic name");
 DEFINE_string(chassis_message_name, "/vehicle/feedback",
               "chassis ros topic name");
 
-DEFINE_string(imu_message_name, "/vehicle/twist",
-              "imu ros topic name");
+DEFINE_string(imu_message_name, "/vehicle/twist", "imu ros topic name");
 
 DEFINE_string(control_cmd_message_name, "/control/cmd",
               "control command rostopic name");
@@ -158,3 +158,6 @@ DEFINE_bool(enable_trajectory_smoother, false,
 
 DEFINE_int32(control_cmd_frequency, 10,
              "How frequent control command will be generated");
+
+DEFINE_bool(enable_frenet_conversion, true,
+            "Enable convert from Cartesian to Frenet");

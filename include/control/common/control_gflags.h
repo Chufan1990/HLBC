@@ -96,3 +96,5 @@ DECLARE_bool(enable_trajectory_visualizer);
 DECLARE_bool(enable_trajectory_smoother);
 
 DECLARE_int32(control_cmd_frequency);
+
+DECLARE_bool(enable_frenet_conversion);

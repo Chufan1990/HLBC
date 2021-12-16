@@ -1,4 +1,4 @@
-#include "control/common/msg_to_proto.h"
+#include "control/common/pb3_ros_msgs.h"
 
 #include <algorithm>
 #include <cmath>
@@ -6,6 +6,7 @@
 #include "common/macro.h"
 #include "common/math/math_utils.h"
 #include "common/math/vec2d.h"
+#include "hlbc/TrajectoryPoint.h"
 #include "ros/ros.h"
 #include "tf2/utils.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
@@ -32,13 +33,12 @@ double PointDistanceSquare(const TrajectoryPoint& point, const double x,
   return dx * dx + dy * dy;
 }
 
-double sign(const double x){
-    return x < 0 ? -1.0 : 1.0;
-}
+double sign(const double x) { return x < 0 ? -1.0 : 1.0; }
 }  // namespace
 
-void GetProtoFromMsg(const autoware_msgs::LaneConstPtr& msg,
-                     ADCTrajectory* trajectory) {
+namespace pb3 {
+void fromMsg(const autoware_msgs::LaneConstPtr& msg,
+             ADCTrajectory* trajectory) {
   trajectory->Clear();
   trajectory->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
   trajectory->mutable_header()->set_sequence_num(msg->header.seq);
@@ -88,8 +88,8 @@ void GetProtoFromMsg(const autoware_msgs::LaneConstPtr& msg,
   trajectory->mutable_header()->set_frame_id("map");
 }
 
-void GetProtoFromMsg(const geometry_msgs::PoseStampedConstPtr& msg,
-                     LocalizationEstimate* localization) {
+void fromMsg(const geometry_msgs::PoseStampedConstPtr& msg,
+             LocalizationEstimate* localization) {
   localization->mutable_pose()->mutable_position()->set_x(msg->pose.position.x);
   localization->mutable_pose()->mutable_position()->set_y(msg->pose.position.y);
   localization->mutable_pose()->mutable_position()->set_z(msg->pose.position.z);
@@ -110,8 +110,8 @@ void GetProtoFromMsg(const geometry_msgs::PoseStampedConstPtr& msg,
   localization->mutable_header()->set_sequence_num(msg->header.seq);
 }
 
-void GetProtoFromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
-                     LocalizationEstimate* localization) {
+void fromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
+             LocalizationEstimate* localization) {
   localization->mutable_pose()->mutable_linear_velocity()->set_x(
       msg->twist.linear.x);
   localization->mutable_pose()->mutable_linear_velocity()->set_y(
@@ -135,8 +135,8 @@ void GetProtoFromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
       msg->twist.angular.z);
 }
 
-void GetProtoFromMsg(const autoware_msgs::ControlCommandStampedConstPtr& msg,
-                     Chassis* chassis) {
+void fromMsg(const autoware_msgs::ControlCommandStampedConstPtr& msg,
+             Chassis* chassis) {
   chassis->Clear();
   chassis->set_steering_percentage(msg->cmd.steering_angle / 26.0);
   chassis->set_speed_mps(msg->cmd.linear_velocity / 100.0);
@@ -147,8 +147,8 @@ void GetProtoFromMsg(const autoware_msgs::ControlCommandStampedConstPtr& msg,
   chassis->mutable_header()->set_sequence_num(msg->header.seq);
 }
 
-void GetProtoFromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
-                     canbus::Chassis* chassis) {
+void fromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
+             canbus::Chassis* chassis) {
   chassis->Clear();
   chassis->set_steering_percentage(msg->twist.angular.z);
   chassis->set_speed_mps(msg->twist.linear.x);
@@ -158,6 +158,77 @@ void GetProtoFromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
   chassis->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
   chassis->mutable_header()->set_frame_id(msg->header.frame_id);
   chassis->mutable_header()->set_sequence_num(msg->header.seq);
+}
+
+void fromMsg(const hlbc::TrajectoryConstPtr& msg,
+             planning::ADCTrajectory* trajectory) {
+  trajectory->Clear();
+  trajectory->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
+  trajectory->mutable_header()->set_frame_id(msg->header.frame_id);
+  trajectory->mutable_header()->set_sequence_num(msg->header.seq);
+
+  for (int i = 0; i < msg->trajectory_point.size(); i++) {
+    auto& msg_point = msg->trajectory_point[i];
+    auto&& trajectory_point = trajectory->add_trajectory_point();
+
+    trajectory_point->mutable_path_point()->set_x(msg_point.path_point.x);
+    trajectory_point->mutable_path_point()->set_y(msg_point.path_point.y);
+    trajectory_point->mutable_path_point()->set_s(msg_point.path_point.s);
+    trajectory_point->mutable_path_point()->set_kappa(
+        msg_point.path_point.kappa);
+    trajectory_point->mutable_path_point()->set_theta(
+        msg_point.path_point.theta);
+    trajectory_point->set_v(msg_point.v);
+    trajectory_point->set_a(msg_point.a);
+    trajectory_point->set_relative_time(msg_point.relative_time);
+  }
+}
+
+void fromMsg(const hlbc::Trajectory& msg, planning::ADCTrajectory* trajectory) {
+  trajectory->Clear();
+  trajectory->mutable_header()->set_timestamp_sec(msg.header.stamp.toSec());
+  trajectory->mutable_header()->set_frame_id(msg.header.frame_id);
+  trajectory->mutable_header()->set_sequence_num(msg.header.seq);
+
+  for (int i = 0; i < msg.trajectory_point.size(); i++) {
+    auto& msg_point = msg.trajectory_point[i];
+    auto&& trajectory_point = trajectory->add_trajectory_point();
+
+    trajectory_point->mutable_path_point()->set_x(msg_point.path_point.x);
+    trajectory_point->mutable_path_point()->set_y(msg_point.path_point.y);
+    trajectory_point->mutable_path_point()->set_s(msg_point.path_point.s);
+    trajectory_point->mutable_path_point()->set_kappa(
+        msg_point.path_point.kappa);
+    trajectory_point->mutable_path_point()->set_theta(
+        msg_point.path_point.theta);
+    trajectory_point->set_v(msg_point.v);
+    trajectory_point->set_a(msg_point.a);
+    trajectory_point->set_relative_time(msg_point.relative_time);
+  }
+}
+
+hlbc::Trajectory toMsg(const planning::ADCTrajectory& trajectory) {
+  hlbc::Trajectory msg;
+  msg.header.stamp.sec = std::floor(trajectory.header().timestamp_sec());
+  msg.header.stamp.nsec = (trajectory.header().timestamp_sec() -
+                           msg.header.stamp.sec) *
+                          1e9;
+  msg.header.frame_id = trajectory.header().frame_id();
+  msg.header.seq = trajectory.header().sequence_num();
+
+  for (const auto& trajectory_point : trajectory.trajectory_point()) {
+    hlbc::TrajectoryPoint point;
+    point.path_point.x = trajectory_point.path_point().x();
+    point.path_point.y = trajectory_point.path_point().y();
+    point.path_point.s = trajectory_point.path_point().s();
+    point.path_point.theta = trajectory_point.path_point().theta();
+    point.path_point.kappa = trajectory_point.path_point().kappa();
+    point.v = trajectory_point.v();
+    point.a = trajectory_point.a();
+    point.relative_time = trajectory_point.relative_time();
+    msg.trajectory_point.emplace_back(point);
+  }
+  return msg;
 }
 
 // void UpdateTrajectoryPoint(const LocalizationEstimate* localization,
@@ -210,6 +281,6 @@ void GetProtoFromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
 //       trajectory->trajectory_point(2).path_point().kappa());
 //   ADEBUG("updated trajectory: " << trajectory->DebugString());
 // }
-
+}  // namespace pb3
 }  // namespace control
 }  // namespace autoagric
