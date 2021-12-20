@@ -49,7 +49,7 @@ class DiscretePointsTrajectorySmoother : public TrajectorySmoother {
   bool GenerateTrajectoryPointProfile(
       const ADCTrajectory& raw_trajectory,
       const std::vector<std::pair<double, double>>& xy_points,
-      std::vector<autoagric::common::TrajectoryPoint>* reference_points);
+      std::vector<common::TrajectoryPoint>* reference_points);
 
   std::vector<AnchorPoint> anchor_points_;
 

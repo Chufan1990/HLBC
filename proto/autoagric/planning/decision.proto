@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package autoagric.planning;
+
+import "autoagric/common/geometry.proto";
+
+message TargetLane {
+  // lane id
+  string id = 1;
+  double start_s = 2;     // in meters
+  double end_s = 3;       // in meters
+  double speed_limit = 4; // in m/s
+}
+
+message ObjectIgnore {}
+
+enum StopReasonCode {
+  STOP_REASON_UNKNOWN = 0;
+  STOP_REASON_HEAD_VEHICLE = 1;
+  STOP_REASON_DESTINATION = 2;
+  STOP_REASON_PEDESTRIAN = 3;
+  STOP_REASON_OBSTACLE = 4;
+  STOP_REASON_PREPARKING = 5;
+  STOP_REASON_SIGNAL = 100; // only for red signal
+  STOP_REASON_STOP_SIGN = 101;
+  STOP_REASON_YIELD_SIGN = 102;
+  STOP_REASON_CLEAR_ZONE = 103;
+  STOP_REASON_CROSSWALK = 104;
+  STOP_REASON_CREEPER = 105;
+  STOP_REASON_REFERENCE_END = 106; // end of the reference_line
+  STOP_REASON_YELLOW_SIGNAL = 107; // yellow signal
+  STOP_REASON_PULL_OVER = 108;     // pull over
+  STOP_REASON_SIDEPASS_SAFETY = 109;
+  STOP_REASON_PRE_OPEN_SPACE_STOP = 200;
+  STOP_REASON_LANE_CHANGE_URGENCY = 201;
+  STOP_REASON_EMERGENCY = 202;
+}
+
+message ObjectStop {
+  StopReasonCode reason_code = 1;
+  double distance_s = 2; // in meters
+  // When stopped, the front center of vehicle should be at this point.
+  autoagric.common.PointENU stop_point = 3;
+  // When stopped, the heading of the vehicle should be stop_heading.
+  double stop_heading = 4;
+  repeated string wait_for_obstacle = 5;
+}
+
+// dodge the obstacle in lateral direction when driving
+message ObjectNudge {
+  enum Type {
+    UNKNOWN = 0;
+    LEFT_NUDGE = 1;  // drive from the left side to nudge a static obstacle
+    RIGHT_NUDGE = 2; // drive from the right side to nudge a static obstacle
+    DYNAMIC_LEFT_NUDGE =
+        3; // drive from the left side to nudge a dynamic obstacle
+    DYNAMIC_RIGHT_NUDGE =
+        4; // drive from the right side to nudge a dynamic obstacle
+  };
+  Type type = 1;
+  // minimum lateral distance in meters. positive if type = LEFT_NUDGE
+  // negative if type = RIGHT_NUDGE
+  double distance_l = 2;
+}
+
+message ObjectYield {
+  double distance_s = 1; // minimum longitudinal distance in meters
+  autoagric.common.PointENU fence_point = 2;
+  double fence_heading = 3;
+  double time_buffer = 4; // minimum time buffer required after the
+                          // obstacle reaches the intersect point.
+}
+
+message ObjectFollow {
+  double distance_s = 1; // minimum longitudinal distance in meters
+  autoagric.common.PointENU fence_point = 2;
+  double fence_heading = 3;
+}
+
+message ObjectOvertake {
+  double distance_s = 1; // minimum longitudinal distance in meters
+  autoagric.common.PointENU fence_point = 2;
+  double fence_heading = 3;
+  double time_buffer = 4; // minimum time buffer required before the
+                          // obstacle reaches the intersect point.
+}
+
+message ObjectSidePass {
+  enum Type {
+    UNKNOWN = 0;
+    LEFT = 1;
+    RIGHT = 2;
+  };
+  Type type = 1;
+}
+
+// unified object decision while estop
+message ObjectAvoid {}
+
+message ObjectStatus {
+  ObjectMotionType motion_type = 1;
+  ObjectDecisionType decision_type = 2;
+}
+
+message ObjectStatic {}
+
+message ObjectDynamic {}
+
+message ObjectMotionType {
+  oneof motion_tag {
+    ObjectStatic static = 1;
+    ObjectDynamic dynamic = 2;
+  }
+}
+
+message ObjectDecisionType {
+  oneof object_tag {
+    ObjectIgnore ignore = 1;
+    ObjectStop stop = 2;
+    ObjectFollow follow = 3;
+    ObjectYield yield = 4;
+    ObjectOvertake overtake = 5;
+    ObjectNudge nudge = 6;
+    ObjectAvoid avoid = 7;
+    ObjectSidePass side_pass = 8;
+  }
+}
+
+message ObjectDecision {
+  string id = 1;
+  int32 perception_id = 2;
+  repeated ObjectDecisionType object_decision = 3;
+}
+
+message ObjectDecisions { repeated ObjectDecision decision = 1; }

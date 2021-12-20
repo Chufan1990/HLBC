@@ -16,11 +16,11 @@
 namespace autoagric {
 namespace control {
 
-using autoagric::common::ErrorCode;
-using autoagric::common::Status;
+using common::ErrorCode;
+using common::Status;
 using Matrix = Eigen::MatrixXd;
-using autoagric::common::PathPoint;
-using autoagric::common::TrajectoryPoint;
+using common::PathPoint;
+using common::TrajectoryPoint;
 
 LatController::LatController() : name_("LQR-based Lateral Controller") {
   AINFO("Using " << name_);
@@ -248,7 +248,7 @@ Status LatController::ComputeControlCommand(
       std::for_each(
           ptr_trajectory_points->begin(), ptr_trajectory_points->end(),
           [&cos_theta_diff, &sin_theta_diff, &tx, &ty,
-           &theta_diff](autoagric::common::TrajectoryPoint& p) {
+           &theta_diff](common::TrajectoryPoint& p) {
             auto x = p.path_point().x();
             auto y = p.path_point().y();
             auto theta = p.path_point().theta();

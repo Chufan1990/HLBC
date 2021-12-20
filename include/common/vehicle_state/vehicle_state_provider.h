@@ -31,8 +31,8 @@
 #include "common/status/status.h"
 
 /**
- * @namespace autoagric::common
- * @brief autoagric::common
+ * @namespace common
+ * @brief common
  */
 namespace autoagric {
 namespace common {

@@ -29,7 +29,6 @@
  */
 namespace autoagric {
 namespace control {
-namespace common {
 /**
  * @class PIDController
  * @brief A proportional-integral-derivative controller for speed and steering
@@ -104,6 +103,5 @@ class PIDController {
   int output_saturation_status_ = 0;
 };
 
-}  // namespace common
 }  // namespace control
 }  // namespace autoagric

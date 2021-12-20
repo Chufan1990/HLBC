@@ -19,9 +19,9 @@ namespace autoagric {
 namespace control {
 
 using autoagric::canbus::Chassis;
-using autoagric::common::PathPoint;
-using autoagric::common::TrajectoryPoint;
-using autoagric::common::math::Vec2d;
+using common::PathPoint;
+using common::TrajectoryPoint;
+using common::math::Vec2d;
 using autoagric::localization::LocalizationEstimate;
 using autoagric::planning::ADCTrajectory;
 

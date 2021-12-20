@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 
   geometry_msgs::Vector3 scale;
   std_msgs::ColorRGBA color;
-  
+
   scale.x = 0.05;
   scale.y = 0.05;
   color.r = 0.0;

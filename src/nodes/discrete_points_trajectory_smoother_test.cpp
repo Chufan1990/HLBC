@@ -44,7 +44,7 @@
 namespace autoagric {
 namespace planning {
 
-using autoagric::common::TrajectoryPoint;
+using common::TrajectoryPoint;
 
 class DiscretePointTrajectorySmootherTest {
  public:
@@ -291,7 +291,7 @@ int main(int argc, char** argv) {
   scale.z = 0.01;
 
   auto old_markers =
-      autoagric::control::common::TrajectoryVisualizer::toMarkerArray(
+      autoagric::control::TrajectoryVisualizer::toMarkerArray(
           old_lane, scale, o_color);
   auto new_markers = old_markers;
 
@@ -313,7 +313,7 @@ int main(int argc, char** argv) {
   if (status) {
     ADCTrajectoryToLane(smoothed_trajectory, new_lane);
     new_markers =
-        autoagric::control::common::TrajectoryVisualizer::toMarkerArray(
+        autoagric::control::TrajectoryVisualizer::toMarkerArray(
             new_lane, scale, n_color);
   }
   for (int i = 0; i < old_markers.first.markers.size(); i++) {

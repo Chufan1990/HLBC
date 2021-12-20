@@ -12,9 +12,9 @@
 namespace autoagric {
 namespace control {
 
-using autoagric::common::PathPoint;
-using autoagric::common::TrajectoryPoint;
-using autoagric::common::math::Vec2d;
+using common::PathPoint;
+using common::TrajectoryPoint;
+using common::math::Vec2d;
 
 namespace {
 
@@ -321,7 +321,7 @@ std::vector<TrajectoryPoint> TrajectoryAnalyzer::Local2Map(
 
 void TrajectoryAnalyzer::SampleByRelativeTime(
     const double start_time, const double dt, const size_t trajectory_size,
-    std::vector<autoagric::common::TrajectoryPoint> &resampled_trajectory)
+    std::vector<common::TrajectoryPoint> &resampled_trajectory)
     const {
   AERROR_IF(trajectory_points_.size() == 0, "Empty original trajectory");
 

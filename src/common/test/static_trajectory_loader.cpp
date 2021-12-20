@@ -12,12 +12,12 @@ namespace autoagric {
 namespace common {
 namespace test {
 
-using autoagric::common::math::Vec2d;
-using autoagric::control::common::TrajectoryVisualizer;
+using autoagric::control::TrajectoryVisualizer;
 using autoagric::planning::ADCTrajectory;
 using autoagric::planning::AnchorPoint;
 using autoagric::planning::DiscretePointsTrajectorySmoother;
 using autoagric::planning::TrajectorySmootherConfig;
+using common::math::Vec2d;
 
 StaticTrajectoryLoader::StaticTrajectoryLoader(ros::NodeHandle& nh,
                                                std::string& file_path)
@@ -99,8 +99,14 @@ void StaticTrajectoryLoader::Smooth(const TrajectorySmootherConfig& config) {
 
 void StaticTrajectoryLoader::OnLocalization(
     const geometry_msgs::PoseStampedConstPtr& msg) {
-  current_start_index_ = QueryNearestPointByPoistion(
-      msg->pose.position.x, msg->pose.position.y, current_start_index_ - 2);
+  auto matched_index_and_distance = QueryNearestPointByPoistion(
+      msg->pose.position.x, msg->pose.position.y, current_start_index_ - 1);
+
+  current_start_index_ =
+      (matched_index_and_distance.second > 0.6) &&
+              (matched_index_and_distance.first == current_start_index_ - 1)
+          ? 0
+          : matched_index_and_distance.first;
 
   hlbc::Trajectory local_trajectory;
 
@@ -120,10 +126,10 @@ void StaticTrajectoryLoader::OnLocalization(
   // visualizer_->Proc({markers_});
 }
 
-int StaticTrajectoryLoader::QueryNearestPointByPoistion(const double x,
-                                                        const double y,
-                                                        int index) {
-  if (index >= trajectory_length_) return trajectory_length_ - 1;
+std::pair<int, double> StaticTrajectoryLoader::QueryNearestPointByPoistion(
+    const double x, const double y, int index) {
+  if (index >= trajectory_length_)
+    return std::make_pair(trajectory_length_ - 1, 1e9);
   if (index < 0) index = 0;
 
   double min_index = index;
@@ -142,7 +148,7 @@ int StaticTrajectoryLoader::QueryNearestPointByPoistion(const double x,
     }
   }
 
-  return min_index;
+  return std::make_pair(min_index, min_dist);
 }
 
 }  // namespace test

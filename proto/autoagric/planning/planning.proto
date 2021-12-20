@@ -6,6 +6,8 @@ package autoagric.planning;
 // import "hlbc/proto/geometry.proto";
 import "autoagric/common/header.proto";
 import "autoagric/common/pnc_point.proto";
+import "autoagric/canbus/chassis.proto";
+import "autoagric/planning/decision.proto";
 
 message ADCTrajectory {
   autoagric.common.Header header = 1;
@@ -22,7 +24,7 @@ message ADCTrajectory {
   bool is_replan = 9;
 
   // Specify trajectory gear
-  //   autoagric.canbus.Chassis.GearPosition gear = 10;
+  autoagric.canbus.Chassis.GearPosition gear = 10;
 
   // path data + speed data
   repeated autoagric.common.TrajectoryPoint trajectory_point = 12;
@@ -30,7 +32,7 @@ message ADCTrajectory {
   // path point without speed info
   repeated autoagric.common.PathPoint path_point = 13;
 
-  //   autoagric.planning.DecisionResult decision = 14;
+  autoagric.planning.DecisionResult decision = 14;
 
   //   LatencyStats latency_stats = 15;
 

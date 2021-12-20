@@ -27,12 +27,12 @@ class DependencyInjector {
 
   ~DependencyInjector() = default;
 
-  autoagric::common::VehicleStateProvider* vehicle_state() {
+  common::VehicleStateProvider* vehicle_state() {
     return &vehicle_state_;
   }
 
  private:
-  autoagric::common::VehicleStateProvider vehicle_state_;
+  common::VehicleStateProvider vehicle_state_;
 };
 
 }  // namespace control

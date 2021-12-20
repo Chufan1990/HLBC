@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package autoagric.prediction;
+
+import "autoagric/common/error_code.proto";
+import "autoagric/common/header.proto";
+import "autoagric/prediction/scenario.proto";
+import "autoagric/perception/perception_obstacle.proto";
+import "autoagric/prediction/feature.proto";
+
+// estimated obstacle intent
+message ObstacleIntent {
+  enum Type {
+    UNKNOWN = 0;
+    STOP = 1;
+    STATIONARY = 2;
+    MOVING = 3;
+    CHANGE_LANE = 4;
+    LOW_ACCELERATION = 5;
+    HIGH_ACCELERATION = 6;
+    LOW_DECELERATION = 7;
+    HIGH_DECELERATION = 8;
+  }
+  Type type = 1;
+}
+
+// self driving car intent
+message Intent {
+  enum Type {
+    UNKNOWN = 0;
+    STOP = 1;
+    CRUISE = 2;
+    CHANGE_LANE = 3;
+  }
+  Type type = 1;
+}
+
+message PredictionObstacle {
+  autoagric.perception.PerceptionObstacle perception_obstacle = 1;
+  double timestamp = 2; // GPS time in seconds
+                        // the length of the time for this prediction (e.g. 10s)
+  double predicted_period = 3;
+  // can have multiple trajectories per obstacle
+  repeated Trajectory trajectory = 4;
+
+  // estimated obstacle intent
+  ObstacleIntent intent = 5;
+
+  ObstaclePriority priority = 6;
+
+  ObstacleInteractiveTag interactive_tag = 9;
+
+  bool is_static = 7;
+
+  // Feature history latest -> earliest sequence
+  repeated Feature feature = 8;
+}
+
+message PredictionObstacles {
+  // timestamp is included in header
+  autoagric.common.Header header = 1;
+
+  // make prediction for multiple obstacles
+  repeated PredictionObstacle prediction_obstacle = 2;
+
+  // perception error code
+  autoagric.common.ErrorCode perception_error_code = 3;
+
+  // start timestamp
+  double start_timestamp = 4;
+
+  // end timestamp
+  double end_timestamp = 5;
+
+  // self driving car intent
+  Intent intent = 6;
+
+  // Scenario
+  Scenario scenario = 7;
+}

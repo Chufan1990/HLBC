@@ -11,8 +11,8 @@
 #include "autoagric/common/error_code.pb.h"
 
 /**
- * @namespace autoagric::common
- * @brief autoagric::common
+ * @namespace common
+ * @brief common
  */
 namespace autoagric {
 namespace common {

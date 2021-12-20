@@ -10,7 +10,7 @@
 namespace autoagric {
 namespace planning {
 
-using autoagric::common::TrajectoryPoint;
+using common::TrajectoryPoint;
 
 DiscretePointsTrajectorySmoother::DiscretePointsTrajectorySmoother(
     const TrajectorySmootherConfig& config)
@@ -191,7 +191,7 @@ bool DiscretePointsTrajectorySmoother::GenerateTrajectoryPointProfile(
     point.mutable_path_point()->set_x(xy_points[i].first);
     point.mutable_path_point()->set_y(xy_points[i].second);
     point.mutable_path_point()->set_theta(
-        autoagric::common::math::NormalizeAngle(
+        common::math::NormalizeAngle(
             headings[i] +
             (mean_v < 0 ? M_PI : 0)));
     point.mutable_path_point()->set_kappa(kappas[i]);

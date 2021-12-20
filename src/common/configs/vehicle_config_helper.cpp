@@ -35,7 +35,7 @@ void VehicleConfigHelper::Init() { Init(FLAGS_vehicle_config_path); }
 
 void VehicleConfigHelper::Init(const std::string &config_file) {
   VehicleConfig params;
-  AERROR_IF(!autoagric::common::util::GetProtoFromFile(config_file, &params),
+  AERROR_IF(!common::util::GetProtoFromFile(config_file, &params),
             "Unable to parse vehicle config file " << config_file);
   Init(params);
 }

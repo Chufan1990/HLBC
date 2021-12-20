@@ -69,7 +69,7 @@ class TrajectoryAnalyzer {
    * @param t absolute time for query
    * @return a point of trajectory
    */
-  autoagric::common::TrajectoryPoint QueryNearestPointByAbsoluteTime(
+  common::TrajectoryPoint QueryNearestPointByAbsoluteTime(
       const double t) const;
 
   /**
@@ -78,7 +78,7 @@ class TrajectoryAnalyzer {
    * @param t relative time for query
    * @return a point of trajetory
    */
-  autoagric::common::TrajectoryPoint QueryNearestPointByRelativeTime(
+  common::TrajectoryPoint QueryNearestPointByRelativeTime(
       const double t) const;
 
   /**
@@ -88,7 +88,7 @@ class TrajectoryAnalyzer {
    * @param y value of y-coordination in the given position
    * @return a point of trajectory
    */
-  autoagric::common::TrajectoryPoint QueryNearestPointByPoistion(
+  common::TrajectoryPoint QueryNearestPointByPoistion(
       const double x, const double y) const;
 
   /**
@@ -99,7 +99,7 @@ class TrajectoryAnalyzer {
    * @return a point on trajectory. The point may be a point of trajectory or
    * interpolated by two adjacent points of trajectory
    */
-  autoagric::common::PathPoint QueryMatchedPathPoint(const double x,
+  common::PathPoint QueryMatchedPathPoint(const double x,
                                                      const double y) const;
   /**
    * @brief qurey a point on trajectory that its positin is closest to the given
@@ -109,7 +109,7 @@ class TrajectoryAnalyzer {
    * @return a point on trajectory. The point may be a point of trajectory or
    * interpolated by two adjacent points of trajectory
    */
-  autoagric::common::TrajectoryPoint QueryMatchedTrajectoryPoint(
+  common::TrajectoryPoint QueryMatchedTrajectoryPoint(
       const double x, const double y) const;
 
   /**
@@ -127,7 +127,7 @@ class TrajectoryAnalyzer {
    */
   void ToTrajectoryFrame(const double x, const double y, const double theta,
                          const double v,
-                         const autoagric::common::PathPoint& matched_point,
+                         const common::PathPoint& matched_point,
                          double* ptr_s, double* ptr_s_dot, double* ptr_d,
                          double* ptr_d_dot) const;
 
@@ -147,9 +147,9 @@ class TrajectoryAnalyzer {
    * @param path_point PathPoint along the published planning trajectory
    * @return the position of the vehicle's center of mass
    */
-  autoagric::common::math::Vec2d ComputeCOMPosition(
+  common::math::Vec2d ComputeCOMPosition(
       const double rear_to_com_distance,
-      const autoagric::common::PathPoint& path_point) const;
+      const common::PathPoint& path_point) const;
 
   /**
    * @brief convert a position to trajectory frame
@@ -158,14 +158,14 @@ class TrajectoryAnalyzer {
    * @param y y-value of the position
    * @note depracated for lat_controller
    */
-  void ToTrajectoryFrame(const autoagric::common::PathPoint& ref_point,
+  void ToTrajectoryFrame(const common::PathPoint& ref_point,
                          const double x, const double y) const;
 
   /**
    * @brief get all points of trjactory
    * @return a vector of trajectory points
    */
-  const std::vector<autoagric::common::TrajectoryPoint>& trajectory_points()
+  const std::vector<common::TrajectoryPoint>& trajectory_points()
       const;
 
   /**
@@ -178,7 +178,7 @@ class TrajectoryAnalyzer {
    */
   void SampleByRelativeTime(const double start_time, const double dt,
                             const size_t trajectory_size,
-                            std::vector<autoagric::common::TrajectoryPoint>&
+                            std::vector<common::TrajectoryPoint>&
                                 resampled_trajectory) const;
   /**
    * @brief convert Cartesian coordinates of trajectory points to Frenet
@@ -191,7 +191,7 @@ class TrajectoryAnalyzer {
    */
   void Map2Local(
       const double x, const double y, const double heading,
-      std::vector<autoagric::common::TrajectoryPoint>* ptr_trajectory_points);
+      std::vector<common::TrajectoryPoint>* ptr_trajectory_points);
 
   /**
    * @brief convert Frenet coordinates of trajectory points to Cartesian
@@ -203,18 +203,18 @@ class TrajectoryAnalyzer {
    * @return vector of trajectory points in Cartesian coordinates
    * @note deprecate for lat_controller
    */
-  std::vector<autoagric::common::TrajectoryPoint> Local2Map(
+  std::vector<common::TrajectoryPoint> Local2Map(
       const double tx, const double ty, const double heading,
-      const std::vector<autoagric::common::TrajectoryPoint>*
+      const std::vector<common::TrajectoryPoint>*
           ptr_trajectory_points) const;
 
-  autoagric::common::math::Vec2d ComputeFrenetCoord(
-      const autoagric::common::PathPoint& p, const autoagric::common::math::Vec2d& com) const;
+  common::math::Vec2d ComputeFrenetCoord(
+      const common::PathPoint& p, const common::math::Vec2d& com) const;
 
  private:
-  autoagric::common::TrajectoryPoint FindMinDistancePoint(
-      const autoagric::common::TrajectoryPoint& p0,
-      const autoagric::common::TrajectoryPoint& p1, const double x,
+  common::TrajectoryPoint FindMinDistancePoint(
+      const common::TrajectoryPoint& p0,
+      const common::TrajectoryPoint& p1, const double x,
       const double y) const;
 
   /**
@@ -226,8 +226,8 @@ class TrajectoryAnalyzer {
    * @param theta heading anglue of vehicle
    * @return path point on odometry frame
    */
-  // autoagric::common::PathPoint ToOdometryFrame(const
-  // autoagric::common::PathPoint point,
+  // common::PathPoint ToOdometryFrame(const
+  // common::PathPoint point,
   //                                   const double x, const double y,
   //                                   const double theta) const;
 
@@ -238,7 +238,7 @@ class TrajectoryAnalyzer {
    */
   // void UpdateRelativeTime(const common::Trajectory& published_trajectory);
 
-  std::vector<autoagric::common::TrajectoryPoint> trajectory_points_;
+  std::vector<common::TrajectoryPoint> trajectory_points_;
 
   double header_time_;
   size_t seq_num_ = 0;

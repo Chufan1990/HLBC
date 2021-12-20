@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package autoagric.planning;
+
+message STDrivableBoundaryInstance{
+    double t = 1;
+    double s_lower = 2;
+    double s_upper = 3;
+    double v_obs_lower = 4;
+    double v_obs_upper = 5;
+}
+
+message STDrivableBoundary{
+    repeated STDrivableBoundaryInstance st_boundary = 1;
+}

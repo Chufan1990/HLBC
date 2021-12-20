@@ -16,8 +16,8 @@
 #include <utility>
 
 /**
- * @namespace autoagric::common::util
- * @brief autoagric::common::util
+ * @namespace common::util
+ * @brief common::util
  */
 namespace autoagric {
 namespace common {

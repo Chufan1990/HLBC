@@ -6,7 +6,6 @@
 
 namespace autoagric {
 namespace control {
-namespace common {
 
 using autoware_msgs::LaneConstPtr;
 using visualization_msgs::Marker;
@@ -203,6 +202,5 @@ MarkerType TrajectoryVisualizer::toMarkerArray(const autoware_msgs::Lane& msg) {
   return std::make_pair(arrows, points_and_line);
 }
 
-}  // namespace common
 }  // namespace control
 }  // namespace autoagric

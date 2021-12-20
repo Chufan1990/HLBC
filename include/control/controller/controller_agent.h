@@ -31,10 +31,10 @@ class ControllerAgent {
    * @param control_conf control configurations
    * @return Status initialization status
    */
-  // autoagric::common::Status Init(std::shared_ptr<DependencyInjector> injector,
+  // common::Status Init(std::shared_ptr<DependencyInjector> injector,
   //                     const ControlConf *control_conf);
 
-  autoagric::common::Status Init(std::shared_ptr<DependencyInjector> injector,
+  common::Status Init(std::shared_ptr<DependencyInjector> injector,
                       const ControlConf *control_conf);
 
   /**
@@ -46,7 +46,7 @@ class ControllerAgent {
    * @param cmd control command
    * @return Status computation status
    */
-  autoagric::common::Status ComputeControlCommand(
+  common::Status ComputeControlCommand(
       const localization::LocalizationEstimate *localization,
       const canbus::Chassis *chassis, const planning::ADCTrajectory *trajectory,
       control::ControlCommand *cmd);
@@ -55,7 +55,7 @@ class ControllerAgent {
    * @brief reset ControllerAgent
    * @return Status reset status
    */
-  autoagric::common::Status Reset();
+  common::Status Reset();
 
 
   const std::shared_ptr<MPCController> controller() const {
@@ -70,12 +70,12 @@ class ControllerAgent {
    */
   // void RegisterControllers(const ControlConf *control_conf);
 
-  autoagric::common::Status InitializeConf(const ControlConf *control_conf);
+  common::Status InitializeConf(const ControlConf *control_conf);
 
   const ControlConf *control_conf_ = nullptr;
 
   std::shared_ptr<Controller> controller_ = nullptr;
-  //   autoagric::common::util::Factory<ControlConf::ControllerType, Controller>
+  //   common::util::Factory<ControlConf::ControllerType, Controller>
   //       controller_factory_;
   //   std::vector<std::unique_ptr<Controller>> controller_list_;
   std::shared_ptr<DependencyInjector> injector_ = nullptr;

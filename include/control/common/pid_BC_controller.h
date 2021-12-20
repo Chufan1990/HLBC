@@ -30,8 +30,6 @@
  */
 namespace autoagric {
 namespace control {
-namespace common {
-
 /**
  * @class PIDBCController
  * @brief A proportional-integral-derivative controller for speed and steering
@@ -54,6 +52,6 @@ class PIDBCController : public PIDController {
  private:
 };
 
-}  // namespace common
+
 }  // namespace control
 }  // namespace autoagric

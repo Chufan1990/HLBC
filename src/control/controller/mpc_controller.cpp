@@ -14,15 +14,15 @@
 namespace autoagric {
 namespace control {
 
-using autoagric::common::ErrorCode;
-using autoagric::common::Status;
+using common::ErrorCode;
+using common::Status;
 using Matrix = Eigen::MatrixXd;
-using autoagric::common::PathPoint;
-using autoagric::common::TrajectoryPoint;
-using autoagric::common::VehicleConfigHelper;
-using autoagric::common::math::MpcIpopt;
-using autoagric::control::common::PIDBCController;
-using autoagric::control::common::PIDController;
+using common::PathPoint;
+using common::TrajectoryPoint;
+using common::VehicleConfigHelper;
+using common::math::MpcIpopt;
+using autoagric::control::PIDBCController;
+using autoagric::control::PIDController;
 
 MPCController::MPCController() : name_("MPC-based controller") {
   AINFO("Using " << name_);
@@ -491,12 +491,12 @@ void MPCController::UpdateState(const PathPoint &matched_point) {
   if (injector_->vehicle_state()->pose().has_heading()) {
     heading = injector_->vehicle_state()->pose().heading();
   } else {
-    heading = autoagric::common::math::QuaternionToHeading(
+    heading = common::math::QuaternionToHeading(
         orientation.qw(), orientation.qx(), orientation.qy(), orientation.qz());
   }
 
   const auto new_heading =
-      autoagric::common::math::NormalizeAngle(heading - matched_point.theta());
+      common::math::NormalizeAngle(heading - matched_point.theta());
 
   vars_[heading_start_] = new_heading;
   vars_lowerbound_[heading_start_] = new_heading;

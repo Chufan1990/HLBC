@@ -42,7 +42,7 @@ class MPCController : public Controller {
    * @param control_conf control_configuration
    * @return Status initialization status
    */
-  autoagric::common::Status Init(std::shared_ptr<DependencyInjector> injector,
+  common::Status Init(std::shared_ptr<DependencyInjector> injector,
                                  const ControlConf* control_conf) override;
 
   /**
@@ -54,7 +54,7 @@ class MPCController : public Controller {
    * @param cmd control command
    * @return Status computation Status
    */
-  autoagric::common::Status ComputeControlCommand(
+  common::Status ComputeControlCommand(
       const localization::LocalizationEstimate* localization,
       const canbus::Chassis* chassis,
       const planning::ADCTrajectory* planning_published_trajectory,
@@ -64,7 +64,7 @@ class MPCController : public Controller {
    * @brief reset lateral controller
    * @return Status reset status
    */
-  autoagric::common::Status Reset() override;
+  common::Status Reset() override;
 
   /**
    * @brief stop lateral controller
@@ -78,10 +78,10 @@ class MPCController : public Controller {
    */
   std::string Name() const override;
 
-  std::vector<autoagric::common::TrajectoryPoint> resampled_trajectory()
+  std::vector<common::TrajectoryPoint> resampled_trajectory()
       const;
 
-  std::vector<autoagric::common::TrajectoryPoint> warmstart_solution()
+  std::vector<common::TrajectoryPoint> warmstart_solution()
       const;
 
  private:
@@ -92,7 +92,7 @@ class MPCController : public Controller {
 
   void LoadMPCGainScheduler(const MPCControllerConf& mpc_controller_conf);
 
-  void UpdateState(const autoagric::common::PathPoint& matched_point);
+  void UpdateState(const common::PathPoint& matched_point);
 
   inline double Wheel2SteerPct(const double wheel_angle) {
     return wheel_angle / wheel_single_direction_max_degree_ * 100;
@@ -105,7 +105,7 @@ class MPCController : public Controller {
   const ControlConf* control_conf_ = nullptr;
 
   // vehicle parameter
-  autoagric::common::VehicleParam vehicle_param_;
+  common::VehicleParam vehicle_param_;
 
   // a proxy to analyze the planning trajectory
   TrajectoryAnalyzer trajectory_analyzer_;
@@ -122,7 +122,7 @@ class MPCController : public Controller {
 
   std::shared_ptr<DependencyInjector> injector_;
 
-  std::shared_ptr<autoagric::common::math::MpcIpopt> mpc_ipopt_solver_;
+  std::shared_ptr<common::math::MpcIpopt> mpc_ipopt_solver_;
 
   // the following parameters are vehicle physics related.
   // control time interval
@@ -234,16 +234,16 @@ class MPCController : public Controller {
   // updated state weighting matrix
   Eigen::MatrixXd matrix_q_updated_;
 
-  std::vector<autoagric::common::TrajectoryPoint> resampled_trajectory_;
+  std::vector<common::TrajectoryPoint> resampled_trajectory_;
 
-  std::vector<autoagric::common::TrajectoryPoint> warmstart_solution_;
+  std::vector<common::TrajectoryPoint> warmstart_solution_;
 
   std::shared_ptr<MPCController> ConstPtr_;
 
-  std::unique_ptr<autoagric::control::common::PIDController>
+  std::unique_ptr<autoagric::control::PIDController>
       brake_pid_controller_;
 
-  autoagric::common::PathPoint matched_point_;
+  common::PathPoint matched_point_;
 };
 
 }  // namespace control

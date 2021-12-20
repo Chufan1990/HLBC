@@ -14,8 +14,8 @@
 namespace autoagric {
 namespace control {
 
-using autoagric::common::ErrorCode;
-using autoagric::common::Status;
+using common::ErrorCode;
+using common::Status;
 
 // void ControllerAgent::RegisterControllers(const ControlConf *control_conf) {
 //   AINFO << "Only support MPC controller or Lat + Lon controllers as of now";

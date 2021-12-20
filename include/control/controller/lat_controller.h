@@ -41,7 +41,7 @@ class LatController final : public Controller {
    * @param control_conf control_configuration
    * @return Status initialization status
    */
-  autoagric::common::Status Init(std::shared_ptr<DependencyInjector> injector,
+  common::Status Init(std::shared_ptr<DependencyInjector> injector,
                       const ControlConf* control_conf) override;
 
   /**
@@ -53,7 +53,7 @@ class LatController final : public Controller {
    * @param cmd control command
    * @return Status computation Status
    */
-  autoagric::common::Status ComputeControlCommand(
+  common::Status ComputeControlCommand(
       const localization::LocalizationEstimate* localization,
       const canbus::Chassis* chassis,
       const planning::ADCTrajectory* planning_published_trajectory,
@@ -63,7 +63,7 @@ class LatController final : public Controller {
    * @brief reset lateral controller
    * @return Status reset status
    */
-  autoagric::common::Status Reset() override;
+  common::Status Reset() override;
 
   /**
    * @brief stop lateral controller
@@ -104,7 +104,7 @@ class LatController final : public Controller {
   const ControlConf* control_conf_ = nullptr;
 
   // vehicle parameter
-  autoagric::common::VehicleParam vehicle_param_;
+  common::VehicleParam vehicle_param_;
 
   // a proxy to analyze the planning trajectory
   TrajectoryAnalyzer trajectory_analyzer_;

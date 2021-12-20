@@ -24,7 +24,7 @@ class ControllerInterface {
 
   bool Init();
 
-  autoagric::common::Status ComputeControlCommand(
+  common::Status ComputeControlCommand(
       const localization::LocalizationEstimate* localization,
       const canbus::Chassis* chassis, const planning::ADCTrajectory* trajectory,
       control::ControlCommand* cmd);
@@ -63,7 +63,7 @@ class ControllerInterface {
       AERROR_EVERY(100,
                    "Control input data failed: " << status.error_message());
     } else {
-      autoagric::common::Status status_ts = CheckTimestamp(local_view_);
+      common::Status status_ts = CheckTimestamp(local_view_);
       if (!status_ts.ok()) {
         AERROR("Input messages timeout");
         status = status_ts;
@@ -78,7 +78,7 @@ class ControllerInterface {
       return false;
     }
     auto vehicle_param =
-        autoagric::common::VehicleConfigHelper::Instance()->GetConfig().vehicle_param();
+        common::VehicleConfigHelper::Instance()->GetConfig().vehicle_param();
     ret = control_command_.steering_target() / 100.0 *
           vehicle_param.max_steer_angle();
 
@@ -92,8 +92,8 @@ class ControllerInterface {
  private:
   ControllerAgent controller_agent_;
 
-  autoagric::common::Status CheckInput(LocalView* local_view);
-  autoagric::common::Status CheckTimestamp(const LocalView& local_view);
+  common::Status CheckInput(LocalView* local_view);
+  common::Status CheckTimestamp(const LocalView& local_view);
 
   LocalView local_view_;
   ControlCommand control_command_;

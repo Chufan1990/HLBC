@@ -7,8 +7,8 @@
 #include <string>
 
 /**
- * @namespace autoagric::common::math
- * @brief autoagric::common::math
+ * @namespace common::math
+ * @brief common::math
  */
 namespace autoagric {
 namespace common {

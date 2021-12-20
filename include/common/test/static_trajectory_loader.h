@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "autoagric/common/pnc_point.pb.h"
 #include "autoagric/planning/planning.pb.h"
@@ -36,7 +37,8 @@ class StaticTrajectoryLoader {
 
   void OnLocalization(const geometry_msgs::PoseStampedConstPtr& msg);
 
-  int QueryNearestPointByPoistion(const double x, const double y, int index);
+  std::pair<int, double> QueryNearestPointByPoistion(const double x,
+                                                     const double y, int index);
 
   int current_start_index_;
 
@@ -60,9 +62,9 @@ class StaticTrajectoryLoader {
 
   std::unique_ptr<planning::TrajectorySmoother> smoother_;
 
-  std::unique_ptr<control::common::TrajectoryVisualizer> visualizer_;
+  std::unique_ptr<control::TrajectoryVisualizer> visualizer_;
 
-  control::common::TrajectoryVisualizer::MarkerType markers_;
+  control::TrajectoryVisualizer::MarkerType markers_;
 };
 }  // namespace test
 }  // namespace common

@@ -29,10 +29,10 @@ class MpcIpopt {
   void Update(Dvector* vars, Dvector* vars_lowerbound, Dvector* vars_upperbound,
               Dvector* constraints_lowerbound, Dvector* constraints_upperbound,
               Eigen::MatrixXd* matrix_q, Eigen::MatrixXd* matrix_r,
-              std::vector<autoagric::common::TrajectoryPoint>* ref_trajectory);
+              std::vector<common::TrajectoryPoint>* ref_trajectory);
 
   static bool Solve(std::shared_ptr<MpcIpopt>& mpc_ipopt,
-                    std::vector<autoagric::common::TrajectoryPoint>& solution);
+                    std::vector<common::TrajectoryPoint>& solution);
 
   void operator()(ADvector& fg, const ADvector& vars);
 
@@ -43,7 +43,7 @@ class MpcIpopt {
   const double horizon_;
   const double dt_;
   std::string options_;
-  std::vector<autoagric::common::TrajectoryPoint>* ref_trajectory_;
+  std::vector<common::TrajectoryPoint>* ref_trajectory_;
   const size_t x_index_;
   const size_t y_index_;
   const size_t heading_index_;

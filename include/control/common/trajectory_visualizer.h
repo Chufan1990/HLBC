@@ -17,7 +17,6 @@
 
 namespace autoagric {
 namespace control {
-namespace common {
 
 class TrajectoryVisualizer {
  public:
@@ -111,6 +110,5 @@ class TrajectoryVisualizer {
   std::vector<std::pair<ros::Publisher, ros::Publisher>> publisher_queue_;
 };
 
-}  // namespace common
 }  // namespace control
 }  // namespace autoagric

@@ -40,13 +40,13 @@ class ControlComponent final {
 
   void OnIMU(const geometry_msgs::TwistStampedConstPtr& msg);
 
-  autoagric::common::Status ProduceControlCommand(
+  common::Status ProduceControlCommand(
       ControlCommand* control_command);
 
  private:
-  autoagric::common::Status CheckInput(LocalView* local_view);
+  common::Status CheckInput(LocalView* local_view);
 
-  autoagric::common::Status CheckTimestamp(const LocalView& local_view);
+  common::Status CheckTimestamp(const LocalView& local_view);
 
   ros::NodeHandle nh_;
 
@@ -72,7 +72,7 @@ class ControlComponent final {
 
   std::shared_ptr<DependencyInjector> injector_;
 
-  std::unique_ptr<common::TrajectoryVisualizer> visualizer_;
+  std::unique_ptr<TrajectoryVisualizer> visualizer_;
 
   ControlConf control_conf_;
 

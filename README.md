@@ -138,7 +138,7 @@ HLBC的入口在*controller_interface.cpp*, 处理的流程在 `bool::Controller
 
     // 2. 读取 configuration 文件并写入control_conf
     ACHECK(
-        !autoagric::common::util::GetProtoFromFile(FLAGS_control_conf_file, &control_conf_),
+        !common::util::GetProtoFromFile(FLAGS_control_conf_file, &control_conf_),
         "Unable to load control conf file: " << FLAGS_control_conf_file);
 
     AINFO("Conf file: " << FLAGS_control_conf_file << " is loaded.");

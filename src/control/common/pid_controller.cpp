@@ -22,7 +22,6 @@
 
 namespace autoagric {
 namespace control {
-namespace common {
 
 double PIDController::Control(const double error, const double dt) {
   if (dt <= 0) {
@@ -101,6 +100,5 @@ bool PIDController::IntegratorHold() const { return integrator_hold_; }
 
 void PIDController::SetIntegratorHold(bool hold) { integrator_hold_ = hold; }
 
-}  // namespace common
 }  // namespace control
 }  // namespace autoagric

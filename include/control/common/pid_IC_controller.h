@@ -25,12 +25,11 @@
 #include "control/common/pid_controller.h"
 
 /**
- * @namespace autoagric::control::common
- * @brief autoagric::control::common
+ * @namespace autoagric::control
+ * @brief autoagric::control
  */
 namespace autoagric {
 namespace control {
-namespace common {
 
 /**
  * @class PIDICController
@@ -54,6 +53,6 @@ class PIDICController : public PIDController {
  private:
 };
 
-}  // namespace common
+
 }  // namespace control
 }  // namespace autoagric

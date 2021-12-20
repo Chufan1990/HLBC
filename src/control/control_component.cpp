@@ -15,8 +15,8 @@
 namespace autoagric {
 namespace control {
 
-using autoagric::common::ErrorCode;
-using autoagric::common::Status;
+using common::ErrorCode;
+using common::Status;
 
 ControlComponent::ControlComponent(ros::NodeHandle& nh) : nh_(nh) {}
 
@@ -56,17 +56,17 @@ bool ControlComponent::Init() {
     std::vector<std::string> names = {"resampled_trajectory",
                                       "warmstart_solution"};
     visualizer_ =
-        std::make_unique<common::TrajectoryVisualizer>(visual_nh, names);
+        std::make_unique<TrajectoryVisualizer>(visual_nh, names);
     visualizer_->Init();
   }
 
   injector_ = std::make_shared<DependencyInjector>();
 
-  AERROR_IF(!autoagric::common::util::GetProtoFromFile(FLAGS_control_conf_file,
+  AERROR_IF(!common::util::GetProtoFromFile(FLAGS_control_conf_file,
                                                        &control_conf_),
             "Unable to load control conf file: " << FLAGS_control_conf_file);
 
-  AERROR_IF(!autoagric::common::util::GetProtoFromFile(
+  AERROR_IF(!common::util::GetProtoFromFile(
                 FLAGS_discrete_points_smoother_config_filename,
                 &trajectory_smoother_conf_),
             "Unable to load control conf file: "
@@ -143,16 +143,14 @@ Status ControlComponent::CheckTimestamp(const LocalView& local_view) {
     return Status(ErrorCode::CONTROL_COMPUTE_ERROR, "chassis msg timeout");
   }
 
-  // double trajectory_diff =
-  //     current_timestamp - local_view.trajectory().header().timestamp_sec();
-  // if (trajectory_diff > (control_conf_.max_planning_miss_num() *
-  //                        control_conf_.trajectory_period())) {
-  //   AERROR("trajectory msg lost for " << std::setprecision(6) <<
-  //   trajectory_diff
-  //                                     << "s");
-  //   return Status(ErrorCode::CONTROL_COMPUTE_ERROR, "trajectory msg
-  //   timeout");
-  // }
+  double trajectory_diff =
+      current_timestamp - local_view.trajectory().header().timestamp_sec();
+  if (trajectory_diff > (control_conf_.max_planning_miss_num() *
+                         control_conf_.trajectory_period())) {
+    AERROR("trajectory msg lost for " << std::setprecision(6) << trajectory_diff
+                                      << "s");
+    return Status(ErrorCode::CONTROL_COMPUTE_ERROR, "trajectory msg timeout");
+  }
   return Status::OK();
 }
 
@@ -180,7 +178,7 @@ Status ControlComponent::ProduceControlCommand(
   Status status = CheckInput(&local_view_);
   estop_ = false;
   if (!status.ok()) {
-    AERROR_EVERY(100, "Control input data failed: " << status.error_message());
+    AERROR("Control input data failed: " << status.error_message());
     estop_ = true;
     estop_reason_ = status.error_message();
   } else {
@@ -275,14 +273,14 @@ bool ControlComponent::Proc() {
       const auto& controller = controller_agent_.controller();
 
       markers.emplace_back(
-          std::move(common::TrajectoryVisualizer::TrajectoryToMarkerArray<
-                    std::vector<autoagric::common::TrajectoryPoint>>(
+          std::move(TrajectoryVisualizer::TrajectoryToMarkerArray<
+                    std::vector<common::TrajectoryPoint>>(
               controller->resampled_trajectory(),
               local_view_.trajectory().header().frame_id(),
               ros::Time::now().toSec(), scale_1, color_1)));
       markers.emplace_back(
-          std::move(common::TrajectoryVisualizer::TrajectoryToMarkerArray<
-                    std::vector<autoagric::common::TrajectoryPoint>>(
+          std::move(TrajectoryVisualizer::TrajectoryToMarkerArray<
+                    std::vector<common::TrajectoryPoint>>(
               controller->warmstart_solution(),
               local_view_.trajectory().header().frame_id(),
               ros::Time::now().toSec(), scale_2, color_2)));
@@ -321,6 +319,8 @@ void ControlComponent::OnPlanningTest(const hlbc::TrajectoryConstPtr& msg) {
                                             std::defer_lock);
   if (locker.try_lock_for(std::chrono::milliseconds(40))) {
     pb3::fromMsg(*msg, &latest_trajectory_);
+  } else {
+    AWARN("Giving up new trajectory");
   }
 }
 

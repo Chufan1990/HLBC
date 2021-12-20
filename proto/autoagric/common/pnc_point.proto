@@ -5,9 +5,27 @@ syntax = "proto3";
 
 package autoagric.common;
 
-message SLPoint{
+message SLPoint {
   double l = 1;
   double s = 2;
+}
+
+message FrenetFramePoint {
+  double s = 1;
+  double l = 2;
+  double dl = 3;
+  double ddl = 4;
+}
+
+message SpeedPoint {
+  double s = 1;
+  double t = 2;
+  // speed (m/s)
+  double v = 3;
+  // acceleration (m/s^2)
+  double a = 4;
+  // jerk (m/s^3)
+  double da = 5;
 }
 
 message PathPoint {
@@ -56,6 +74,18 @@ message TrajectoryPoint {
 message Trajectory {
   string name = 1;
   repeated TrajectoryPoint trajectory_point = 2;
+}
+
+message VehicleMotionPoint {
+  // trajectory point
+  TrajectoryPoint trajectory_point = 1;
+  // The angle between vehicle front wheel and vehicle longitudinal axis
+  double steer = 2;
+}
+
+message VehicleMotion {
+  string name = 1;
+  repeated VehicleMotionPoint vehicle_motion_point = 2;
 }
 
 message GaussianInfo {

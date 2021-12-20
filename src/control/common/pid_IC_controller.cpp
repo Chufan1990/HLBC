@@ -24,7 +24,6 @@
 
 namespace autoagric {
 namespace control {
-namespace common {
 
 double PIDICController::Control(const double error, const double dt) {
   if (dt <= 0) {
@@ -63,7 +62,7 @@ double PIDICController::Control(const double error, const double dt) {
     output_saturation_status_ = 0;
   }
 
-  output = autoagric::common::math::Clamp(error * kp_ + integral_ + diff * kd_,
+  output = common::math::Clamp(error * kp_ + integral_ + diff * kd_,
                                output_saturation_high_,
                                output_saturation_low_);  // Ki already applied
   previous_output_ = output;
@@ -74,6 +73,5 @@ int PIDICController::OutputSaturationStatus() {
   return output_saturation_status_;
 }
 
-}  // namespace common
 }  // namespace control
 }  // namespace autoagric

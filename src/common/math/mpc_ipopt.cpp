@@ -51,7 +51,7 @@ void MpcIpopt::Update(
     Dvector* vars, Dvector* vars_lowerbound, Dvector* vars_upperbound,
     Dvector* constraints_lowerbound, Dvector* constraints_upperbound,
     Matrix* matrix_q, Matrix* matrix_r,
-    std::vector<autoagric::common::TrajectoryPoint>* ref_trajectory) {
+    std::vector<common::TrajectoryPoint>* ref_trajectory) {
   vars_lowerbound_ = vars_lowerbound;
   vars_upperbound_ = vars_upperbound;
   constraints_lowerbound_ = constraints_lowerbound;
@@ -64,7 +64,7 @@ void MpcIpopt::Update(
 
 bool MpcIpopt::Solve(
     std::shared_ptr<MpcIpopt>& mpc_ipopt,
-    std::vector<autoagric::common::TrajectoryPoint>& solution) {
+    std::vector<common::TrajectoryPoint>& solution) {
   CppAD::ipopt::solve_result<Dvector> ret;
 
   CppAD::ipopt::solve<Dvector, MpcIpopt>(

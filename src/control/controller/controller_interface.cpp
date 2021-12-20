@@ -9,17 +9,17 @@
 namespace autoagric {
 namespace control {
 
-using autoagric::common::ErrorCode;
-using autoagric::common::Status;
+using common::ErrorCode;
+using common::Status;
 
 bool ControllerInterface::Init() {
   injector_ = std::make_shared<DependencyInjector>();
 
   AERROR_IF(
-      !autoagric::common::util::GetProtoFromFile(FLAGS_control_conf_file, &control_conf_),
+      !common::util::GetProtoFromFile(FLAGS_control_conf_file, &control_conf_),
       "Unable to load control conf file: " << FLAGS_control_conf_file);
 
-  AERROR_IF(!autoagric::common::util::GetProtoFromFile(
+  AERROR_IF(!common::util::GetProtoFromFile(
                 FLAGS_discrete_points_smoother_config_filename,
                 &trajectory_smoother_conf_),
             "Unable to load control conf file: "

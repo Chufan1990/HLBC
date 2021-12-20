@@ -12,8 +12,8 @@
 // #include "modules/common/math/box2d.h"
 
 /**
- * @namespace autoagric::common
- * @brief autoagric::common
+ * @namespace common
+ * @brief common
  */
 namespace autoagric {
 namespace common {
