@@ -27,7 +27,7 @@ active_controllers: LON_CONTROLLER
 max_steering_percentage_allowed: 100
 minimum_speed_resolution: 0.08
 query_relative_time: 0.8
-minimum_speed_protection: 0.1
+minimum_speed_protection: 0.08
 maximum_forward_speed: 5.0;
 maximum_backward_speed: -5.0;
 maximum_driving_acceleration: 3.0;
@@ -132,18 +132,23 @@ mpc_controller_conf {
   mass_rr: 520
   eps: 0.01
   matrix_q: 100.0
+  matrix_q: 50.0
   matrix_q: 20.0
-  matrix_q: 10.0
   matrix_q: 1.0
-  matrix_r: 2.25
+  matrix_r: 2.0
   matrix_r: 10.0
-  matrix_r: 50.0
-  matrix_r: 50.0
+  matrix_r: 30.0
+  matrix_r: 10.0
+  matrix_endstate: 300.0
+  matrix_endstate: 50.0
+  matrix_endstate: 100.0
+  matrix_endstate: 10.0
   cutoff_freq: 10
   mean_filter_window_size: 10
   max_iteration: 150
   max_lateral_acceleration: 5.0
-  standstill_acceleration: -0.3
+  max_longitudinal_jerk: 2.0
+  standstill_acceleration: 0.8
   brake_minimum_action: 0.0
   throttle_minimum_action: 0.0
   enable_mpc_feedforward_compensation: false

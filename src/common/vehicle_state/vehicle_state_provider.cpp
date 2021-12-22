@@ -259,7 +259,11 @@ math::Vec2d VehicleStateProvider::ComputeCOMPosition(
   // set length as distance between rear wheel and center of mass.
   Eigen::Vector3d v;
 
-  AERROR("\nFLAGS_state_transform_to_com_reverse: " << FLAGS_state_transform_to_com_reverse << "\nFLAGS_state_transform_to_com_drive: " << FLAGS_state_transform_to_com_drive << "\nvehicle_state_.gear(): " << vehicle_state_.gear());
+  // AERROR("\nFLAGS_state_transform_to_com_reverse: " <<
+  // FLAGS_state_transform_to_com_reverse <<
+  // "\nFLAGS_state_transform_to_com_drive: " <<
+  // FLAGS_state_transform_to_com_drive << "\nvehicle_state_.gear(): " <<
+  // vehicle_state_.gear());
 
   if ((FLAGS_state_transform_to_com_reverse &&
        vehicle_state_.gear() == canbus::Chassis::GEAR_REVERSE) ||

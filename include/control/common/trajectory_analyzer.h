@@ -69,8 +69,7 @@ class TrajectoryAnalyzer {
    * @param t absolute time for query
    * @return a point of trajectory
    */
-  common::TrajectoryPoint QueryNearestPointByAbsoluteTime(
-      const double t) const;
+  common::TrajectoryPoint QueryNearestPointByAbsoluteTime(const double t) const;
 
   /**
    * @brief query a point of trajectory that its relative time is closest to the
@@ -78,8 +77,7 @@ class TrajectoryAnalyzer {
    * @param t relative time for query
    * @return a point of trajetory
    */
-  common::TrajectoryPoint QueryNearestPointByRelativeTime(
-      const double t) const;
+  common::TrajectoryPoint QueryNearestPointByRelativeTime(const double t) const;
 
   /**
    * @brief query a point of trajectory that its position is closest to the
@@ -88,8 +86,8 @@ class TrajectoryAnalyzer {
    * @param y value of y-coordination in the given position
    * @return a point of trajectory
    */
-  common::TrajectoryPoint QueryNearestPointByPoistion(
-      const double x, const double y) const;
+  common::TrajectoryPoint QueryNearestPointByPoistion(const double x,
+                                                      const double y) const;
 
   /**
    * @brief qurey a point on trajectory that its positin is closest to the given
@@ -99,8 +97,7 @@ class TrajectoryAnalyzer {
    * @return a point on trajectory. The point may be a point of trajectory or
    * interpolated by two adjacent points of trajectory
    */
-  common::PathPoint QueryMatchedPathPoint(const double x,
-                                                     const double y) const;
+  common::PathPoint QueryMatchedPathPoint(const double x, const double y) const;
   /**
    * @brief qurey a point on trajectory that its positin is closest to the given
    * position
@@ -109,8 +106,8 @@ class TrajectoryAnalyzer {
    * @return a point on trajectory. The point may be a point of trajectory or
    * interpolated by two adjacent points of trajectory
    */
-  common::TrajectoryPoint QueryMatchedTrajectoryPoint(
-      const double x, const double y) const;
+  common::TrajectoryPoint QueryMatchedTrajectoryPoint(const double x,
+                                                      const double y) const;
 
   /**
    * @brief convert a position with theta and speed to trajectory frame,
@@ -126,8 +123,7 @@ class TrajectoryAnalyzer {
    * @param ptr_d_dot lateral speed
    */
   void ToTrajectoryFrame(const double x, const double y, const double theta,
-                         const double v,
-                         const common::PathPoint& matched_point,
+                         const double v, const common::PathPoint& matched_point,
                          double* ptr_s, double* ptr_s_dot, double* ptr_d,
                          double* ptr_d_dot) const;
 
@@ -158,15 +154,14 @@ class TrajectoryAnalyzer {
    * @param y y-value of the position
    * @note depracated for lat_controller
    */
-  void ToTrajectoryFrame(const common::PathPoint& ref_point,
-                         const double x, const double y) const;
+  void ToTrajectoryFrame(const common::PathPoint& ref_point, const double x,
+                         const double y) const;
 
   /**
    * @brief get all points of trjactory
    * @return a vector of trajectory points
    */
-  const std::vector<common::TrajectoryPoint>& trajectory_points()
-      const;
+  const std::vector<common::TrajectoryPoint>& trajectory_points() const;
 
   /**
    * @brief re-sample trajectory points on relative time
@@ -176,67 +171,78 @@ class TrajectoryAnalyzer {
    * time step
    * @note deprecate for lat_controller
    */
-  void SampleByRelativeTime(const double start_time, const double dt,
-                            const size_t trajectory_size,
-                            std::vector<common::TrajectoryPoint>&
-                                resampled_trajectory) const;
+  void SampleByRelativeTime(
+      const double start_time, const double dt, const size_t trajectory_size,
+      std::vector<common::TrajectoryPoint>& resampled_trajectory) const;
+
+  /**
+   * @brief interpolat trajectory points by relative time
+   * @param start_time  starting time
+   * @param dt time step
+   * @param trajectory_size number of points on interpolated trajectory
+   * @return result trajectory that sampled on isometric time step
+   * @note deprecate for lat_controller
+   */
+  std::vector<common::TrajectoryPoint> InterpolateByTime(
+      const double start_time, const double dt,
+      const size_t trajectory_size) const;
   /**
    * @brief convert Cartesian coordinates of trajectory points to Frenet
    * coordinates
-   * @param x x Cartesian coordinate of Frenet origin
-   * @param y y Cartesian coordinate of Frenet origin
-   * @param heading heading angle Cartesian coordinate of Frenet origin
+   * @param rx x Cartesian coordinate of Frenet origin
+   * @param ry y Cartesian coordinate of Frenet origin
+   * @param rtheta heading angle Cartesian coordinate of Frenet origin
    * @param ptr_trajectory_points trajectory in Cartesian coordinates
    * @note deprecate for lat_controller
    */
-  void Map2Local(
-      const double x, const double y, const double heading,
-      std::vector<common::TrajectoryPoint>* ptr_trajectory_points);
+  static std::vector<common::TrajectoryPoint> ToLoc(
+      const double rx, const double ry, const double rtheta,
+      const std::vector<common::TrajectoryPoint>* ptr_trajectory_points);
 
   /**
    * @brief convert Frenet coordinates of trajectory points to Cartesian
    * coordinates
-   * @param x x Cartesian coordinate of Frenet origin
-   * @param y y Cartesian coordinate of Frenet origin
-   * @param heading heading angle Cartesian coordinate of Frenet origin
+   * @param rx x Cartesian coordinate of Frenet origin
+   * @param ry y Cartesian coordinate of Frenet origin
+   * @param rtheta heading angle Cartesian coordinate of Frenet origin
    * @param ptr_trajectory_points trajectory in Frenet coordinates
    * @return vector of trajectory points in Cartesian coordinates
    * @note deprecate for lat_controller
    */
-  std::vector<common::TrajectoryPoint> Local2Map(
-      const double tx, const double ty, const double heading,
-      const std::vector<common::TrajectoryPoint>*
-          ptr_trajectory_points) const;
+  static std::vector<common::TrajectoryPoint> ToMap(
+      const double rx, const double ry, const double rtheta,
+      const std::vector<common::TrajectoryPoint>* ptr_trajectory_points);
 
-  common::math::Vec2d ComputeFrenetCoord(
-      const common::PathPoint& p, const common::math::Vec2d& com) const;
+  template <typename T>
+  static common::math::Vec2d Map2Loc(const double rx, const double ry,
+                                     const double rtheta, const T& map_point) {
+    auto dx = map_point.x() - rx;
+    auto dy = map_point.y() - ry;
+    auto cos_theta_r = std::cos(rtheta);
+    auto sin_theta_r = std::sin(rtheta);
+    auto x = cos_theta_r * dy - sin_theta_r * dx;
+    auto y = sin_theta_r * dy + cos_theta_r * dx;
+    return common::math::Vec2d(x, y);
+  }
+
+  template <typename T>
+  static common::math::Vec2d Loc2Map(const double rx, const double ry,
+                                     const double rtheta, const T& loc_point) {
+    auto cos_theta_r = std::cos(rtheta);
+    auto sin_theta_r = std::sin(rtheta);
+
+    auto x = loc_point.x();
+    auto y = loc_point.y();
+
+    auto x_map = cos_theta_r * y - sin_theta_r * x + rx;
+    auto y_map = sin_theta_r * y + cos_theta_r * x + ry;
+    return common::math::Vec2d(x_map, y_map);
+  }
 
  private:
   common::TrajectoryPoint FindMinDistancePoint(
-      const common::TrajectoryPoint& p0,
-      const common::TrajectoryPoint& p1, const double x,
-      const double y) const;
-
-  /**
-   * @brief tranform a path point to the center of rear wheels
-   * of the vehicle, given the position and heading angle of the center of rear
-   * wheels on map frame
-   * @param x x-value of center of rear wheels
-   * @param y y-value of center of rear wheels
-   * @param theta heading anglue of vehicle
-   * @return path point on odometry frame
-   */
-  // common::PathPoint ToOdometryFrame(const
-  // common::PathPoint point,
-  //                                   const double x, const double y,
-  //                                   const double theta) const;
-
-  /**
-   * @brief compute relative time of trajectory points. The time is relative to
-   * the first point of trajectory
-   * @param published_trajectory planning published trajectory
-   */
-  // void UpdateRelativeTime(const common::Trajectory& published_trajectory);
+      const common::TrajectoryPoint& p0, const common::TrajectoryPoint& p1,
+      const double x, const double y) const;
 
   std::vector<common::TrajectoryPoint> trajectory_points_;
 

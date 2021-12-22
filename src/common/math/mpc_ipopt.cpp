@@ -50,21 +50,22 @@ MpcIpopt::MpcIpopt(const std::string options, const int horizon,
 void MpcIpopt::Update(
     Dvector* vars, Dvector* vars_lowerbound, Dvector* vars_upperbound,
     Dvector* constraints_lowerbound, Dvector* constraints_upperbound,
-    Matrix* matrix_q, Matrix* matrix_r,
-    std::vector<common::TrajectoryPoint>* ref_trajectory) {
+    Matrix* matrix_q, Matrix* matrix_r, Matrix* matrix_endstate,
+    std::vector<autoagric::common::TrajectoryPoint>* ref_trajectory) {
   vars_lowerbound_ = vars_lowerbound;
   vars_upperbound_ = vars_upperbound;
   constraints_lowerbound_ = constraints_lowerbound;
   constraints_upperbound_ = constraints_upperbound;
   matrix_q_ = matrix_q;
   matrix_r_ = matrix_r;
+  matrix_endstate_ = matrix_endstate;
   vars_ = vars;
   ref_trajectory_ = ref_trajectory;
 }
 
 bool MpcIpopt::Solve(
     std::shared_ptr<MpcIpopt>& mpc_ipopt,
-    std::vector<common::TrajectoryPoint>& solution) {
+    std::vector<autoagric::common::TrajectoryPoint>& solution) {
   CppAD::ipopt::solve_result<Dvector> ret;
 
   CppAD::ipopt::solve<Dvector, MpcIpopt>(
@@ -108,7 +109,7 @@ bool MpcIpopt::Solve(
 void MpcIpopt::operator()(ADvector& fg, const ADvector& vars) {
   fg[0] = 0;
 
-  for (int i = 0; i < horizon_; i++) {
+  for (int i = 0; i < horizon_ - 1; i++) {
     fg[0] +=
         pow(vars[x_index_ + i] - (*ref_trajectory_)[i].path_point().x(), 2) *
         (*matrix_q_)(0, 0);
@@ -121,9 +122,7 @@ void MpcIpopt::operator()(ADvector& fg, const ADvector& vars) {
              (*matrix_q_)(2, 2);
     fg[0] += pow(vars[speed_index_ + i] - (*ref_trajectory_)[i].v(), 2) *
              (*matrix_q_)(3, 3);
-  }
 
-  for (size_t i = 0; i < horizon_ - 2; i++) {
     fg[0] += pow(vars[steer_index_ + i], 2) * (*matrix_r_)(0, 0);
     fg[0] += pow(vars[accel_index_ + i], 2) * (*matrix_r_)(1, 1);
   }
@@ -134,6 +133,23 @@ void MpcIpopt::operator()(ADvector& fg, const ADvector& vars) {
     fg[0] += pow(vars[accel_index_ + i] - vars[accel_index_ + i - 1], 2) *
              (*matrix_r_)(3, 3);
   }
+
+  fg[0] += pow(vars[x_index_ + horizon_ - 1] -
+                   (*ref_trajectory_)[horizon_ - 1].path_point().x(),
+               2) *
+           ((*matrix_q_)(0, 0) + (*matrix_endstate_)(0, 0));
+  fg[0] += pow(vars[y_index_ + horizon_ - 1] -
+                   (*ref_trajectory_)[horizon_ - 1].path_point().y(),
+               2) *
+           ((*matrix_q_)(1, 1) + (*matrix_endstate_)(1, 1));
+  fg[0] += pow(vars[heading_index_ + horizon_ - 1] -
+                   (*ref_trajectory_)[horizon_ - 1].path_point().theta(),
+               2) *
+           ((*matrix_q_)(2, 2) + (*matrix_endstate_)(2, 2));
+  fg[0] += pow(vars[speed_index_ + horizon_ - 1] -
+                   (*ref_trajectory_)[horizon_ - 1].v(),
+               2) *
+           ((*matrix_q_)(3, 3) + (*matrix_endstate_)(3, 3));
 
   fg[1 + x_index_] = vars[x_index_];
   fg[1 + y_index_] = vars[y_index_];

@@ -36,8 +36,8 @@
 #include "common/math/vec2d.h"
 
 /**
- * @namespace autoagric::common::util
- * @brief autoagric::common::util
+ * @namespace common::util
+ * @brief common::util
  */
 namespace autoagric {
 namespace common {
@@ -142,8 +142,8 @@ class FunctionInfo {
 template <typename T, size_t count>
 bool ExcuteAllFunctions(T* obj, FunctionInfo<T> fun_list[]) {
   for (size_t i = 0; i < count; i++) {
-    if ((obj->*(fun_list[i].function_))() != autoagric::cyber::SUCC) {
-      AERROR << fun_list[i].fun_name_ << " failed.";
+    if ((obj->*(fun_list[i].function_))() != 1) {
+      AERROR(fun_list[i].fun_name_ << " failed.");
       return false;
     }
   }

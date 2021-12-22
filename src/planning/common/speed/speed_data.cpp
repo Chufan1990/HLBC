@@ -6,18 +6,21 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+#include "common/math/linear_interpolation.h"
 #include "common/util/point_factory.h"
+#include "common/util/string_util.h"
 #include "common/util/util.h"
+#include "planning/common/planning_gflags.h"
 
 namespace autoagric {
 namespace planning {
-using autoagric::common::SpeedPoint;
+using common::SpeedPoint;
 
 SpeedData::SpeedData(std::vector<SpeedPoint> speed_points)
     : std::vector<SpeedPoint>(std::move(speed_points)) {
   std::sort(begin(), end(), [](const SpeedPoint& p1, const SpeedPoint& p2) {
-    return p1.t() < p2.t()
-  })
+    return p1.t() < p2.t();
+  });
 }
 
 void SpeedData::AppendSpeedPoint(const double s, const double time,
@@ -33,7 +36,7 @@ void SpeedData::AppendSpeedPoint(const double s, const double time,
 }
 
 bool SpeedData::EvaluateByTime(const double t,
-                               common::SpeedData* const speed_point) const {
+                               SpeedPoint* const speed_point) const {
   if (size() < 2) {
     return false;
   }
@@ -120,7 +123,7 @@ std::string SpeedData::DebugString() const {
   return absl::StrCat(
       "[\n",
       absl::StrJoin(begin(), begin() + limit, ",\n",
-                    apollo::common::util::DebugStringFormatter()),
+                    common::util::DebugStringFormatter()),
       "]\n");
 }
 

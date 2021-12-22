@@ -50,7 +50,7 @@ class EgoInfo {
 
   void CalculateEgoBox(const common::VehicleState& vehicle_state);
 
-  common::Trajectory start_point_;
+  common::TrajectoryPoint start_point_;
 
   common::VehicleState vehicle_state_;
 

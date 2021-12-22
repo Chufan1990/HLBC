@@ -71,6 +71,9 @@
         "valarray": "cpp",
         "any": "cpp",
         "variant": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "core": "cpp",
+        "splines": "cpp",
+        "*.ipp": "cpp"
     }
 }

@@ -1,12 +1,18 @@
 #include "common/test/static_trajectory_loader.h"
 
+#include <geometry_msgs/Vector3.h>
+#include <message_filters/subscriber.h>
+#include <std_msgs/ColorRGBA.h>
+
+#include <chrono>
+#include <memory>
+
 #include "common/macro.h"
 #include "common/math/vec2d.h"
 #include "control/common/pb3_ros_msgs.h"
-#include "geometry_msgs/Vector3.h"
 #include "hlbc/TrajectoryPoint.h"
+#include "planning/common/speed_profile_generator.h"
 #include "planning/reference_line/discrete_points_trajectory_smoother.h"
-#include "std_msgs/ColorRGBA.h"
 
 namespace autoagric {
 namespace common {
@@ -18,6 +24,8 @@ using autoagric::planning::AnchorPoint;
 using autoagric::planning::DiscretePointsTrajectorySmoother;
 using autoagric::planning::TrajectorySmootherConfig;
 using common::math::Vec2d;
+using message_filters::Synchronizer;
+using message_filters::sync_policies::ApproximateTime;
 
 StaticTrajectoryLoader::StaticTrajectoryLoader(ros::NodeHandle& nh,
                                                std::string& file_path)
@@ -26,14 +34,34 @@ StaticTrajectoryLoader::StaticTrajectoryLoader(ros::NodeHandle& nh,
 }
 
 void StaticTrajectoryLoader::Init() {
-  pose_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
-      "/current_pose", 1, &StaticTrajectoryLoader::OnLocalization, this));
+  spinner_ = std::make_unique<ros::AsyncSpinner>(0);
+
+  chassis_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
+      "/vehicle/feedback", 1, &StaticTrajectoryLoader::OnChassis, this));
+
+  loc_message_filter_.reset(
+      new message_filters::Subscriber<geometry_msgs::PoseStamped>(
+          nh_, "/current_pose", 10));
+  imu_message_filter_.reset(
+      new message_filters::Subscriber<geometry_msgs::TwistStamped>(
+          nh_, "/vehicle/twist", 10));
+
+  localization_reader_.reset(new Synchronizer<ApproximateSyncPolicy>(
+      ApproximateSyncPolicy(10), *loc_message_filter_, *imu_message_filter_));
+
+  localization_reader_->registerCallback(
+      boost::bind(&StaticTrajectoryLoader::OnLocalization, this, _1, _2));
+
+  // localization_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
+  //     "/current_pose", 1, &StaticTrajectoryLoader::OnLocalization, this));
 
   local_trajectory_writer_ = std::make_unique<ros::Publisher>(
       nh_.advertise<hlbc::Trajectory>("static_trajectory", 1));
 
   global_trajectory_writer_ = std::make_unique<ros::Timer>(nh_.createTimer(
       ros::Duration(1), &StaticTrajectoryLoader::Visualize, this));
+
+  vehicle_state_provider_.reset(new common::VehicleStateProvider());
 
   loader_.reset(new TrajectoryLoader());
 
@@ -97,33 +125,122 @@ void StaticTrajectoryLoader::Smooth(const TrajectorySmootherConfig& config) {
   global_trajectory_ = control::pb3::toMsg(smoothed_trajectory);
 }
 
-void StaticTrajectoryLoader::OnLocalization(
-    const geometry_msgs::PoseStampedConstPtr& msg) {
-  auto matched_index_and_distance = QueryNearestPointByPoistion(
-      msg->pose.position.x, msg->pose.position.y, current_start_index_ - 1);
-
-  current_start_index_ =
-      (matched_index_and_distance.second > 0.6) &&
-              (matched_index_and_distance.first == current_start_index_ - 1)
-          ? 0
-          : matched_index_and_distance.first;
-
-  hlbc::Trajectory local_trajectory;
-
-  double now_time =
-      global_trajectory_.trajectory_point[current_start_index_].relative_time;
-
-  for (int i = std::max<int>(current_start_index_ - 1, 0);
-       i < std::min<int>(current_start_index_ + 20, trajectory_length_); i++) {
-    auto& point = global_trajectory_.trajectory_point[i];
-    point.relative_time -= now_time;
-    local_trajectory.trajectory_point.push_back(point);
+void StaticTrajectoryLoader::Proc() {
+  spinner_->start();
+  ros::Rate loop_rate(10);
+  // AINFO("latest_localization_.IsInitialized(): "
+  //       << latest_localization_.has_header());
+  // AINFO("latest_chassis_.IsInitialized(): " << latest_chassis_.has_header());
+  while (ros::ok() && (!latest_localization_.has_header() ||
+                       !latest_chassis_.has_header())) {
+    AINFO_EVERY(1000, "Waiting for localization and chassis message ...");
+    AWARN_IF(!latest_localization_.has_header(),
+             "Localization message not received.");
+    AWARN_IF(!latest_chassis_.has_header(), "Chassis message not received.");
+    AWARN_EVERY(1000, latest_localization_.DebugString());
+    AWARN_EVERY(1000, latest_chassis_.DebugString());
+    loop_rate.sleep();
   }
 
-  local_trajectory.header = msg->header;
+  while (ros::ok()) {
+    {
+      std::lock(localization_copy_done_, chassis_copy_done_);
+      // make sure both already-locked mutexes are unlocked at the end of
+      // scope
+      std::lock_guard<std::timed_mutex> lock2(localization_copy_done_,
+                                              std::adopt_lock);
+      std::lock_guard<std::timed_mutex> lock3(chassis_copy_done_,
+                                              std::adopt_lock);
+      vehicle_state_provider_->Update(latest_localization_, latest_chassis_);
+    }
 
-  local_trajectory_writer_->publish(local_trajectory);
-  // visualizer_->Proc({markers_});
+    auto matched_index_and_distance = QueryNearestPointByPoistion(
+        vehicle_state_provider_->x(), vehicle_state_provider_->y(),
+        current_start_index_ - 1);
+
+    current_start_index_ =
+        (matched_index_and_distance.second > 0.6) &&
+                (matched_index_and_distance.first == current_start_index_ - 1)
+            ? 0
+            : matched_index_and_distance.first;
+
+    size_t starting_index = std::max<int>(current_start_index_ - 1, 0);
+
+    size_t num_of_knots =
+        std::min<size_t>(20, trajectory_length_ - starting_index);
+
+    auto matched_point =
+        global_trajectory_.trajectory_point[current_start_index_];
+    // auto start_point = global_trajectory_.trajectory_point[starting_index];
+    // auto end_point =
+    //     global_trajectory_.trajectory_point[starting_index + num_of_knots];
+
+    // /// based on if vehicle feedback gives negative speed value when vehicle
+    // /// moving backward. Calculation requires semi-positive speed value.
+    // start_point.v = std::fabs(start_point.v);
+    // end_point.v = std::fabs(end_point.v);
+    // matched_point.v = std::fabs(matched_point.v);
+
+    const double now_time = matched_point.relative_time;
+
+    // const double trajectory_length =
+    //     end_point.path_point.s - start_point.path_point.s;
+
+    // common::TrajectoryPoint matched_point_pb;
+    // control::pb3::fromMsg(matched_point, &matched_point_pb);
+    // ego_info_.Update(matched_point_pb,
+    //                  vehicle_state_provider_->vehicle_state());
+
+    // planning::SpeedData speed_data =
+    //     std::move(std::fabs(end_point.v) < 1e-3
+    //                   ?
+    //                   planning::SpeedProfileGenerator::GenerateFallbackSpeed(
+    //                         &ego_info_, trajectory_length)
+    //                   : planning::SpeedProfileGenerator::
+    //                         GenerateFixedDistanceCreepProfile(
+    //                             trajectory_length, std::fabs(end_point.v)));
+
+    hlbc::Trajectory local_trajectory;
+    // common::SpeedPoint sp;
+
+    for (size_t i = starting_index; i < starting_index + num_of_knots; i++) {
+      auto& point = global_trajectory_.trajectory_point[i];
+      point.relative_time -= now_time;
+      // speed_data.EvaluateByTime(point.relative_time, &sp);
+      // AWARN(sp.v());
+      // point.v = sp.v();
+      local_trajectory.trajectory_point.push_back(point);
+    }
+
+    local_trajectory.header.stamp = ros::Time::now();
+    local_trajectory.header.frame_id = "map";
+
+    local_trajectory_writer_->publish(local_trajectory);
+
+    visualizer_->Proc({markers_});
+    loop_rate.sleep();
+  }
+  spinner_->stop();
+}
+
+void StaticTrajectoryLoader::OnChassis(
+    const geometry_msgs::TwistStampedConstPtr& msg) {
+  std::unique_lock<std::timed_mutex> locker(chassis_copy_done_,
+                                            std::defer_lock);
+  if (locker.try_lock_for(std::chrono::milliseconds(40))) {
+    control::pb3::fromMsg(msg, &latest_chassis_);
+  }
+}
+
+void StaticTrajectoryLoader::OnLocalization(
+    const geometry_msgs::PoseStamped::ConstPtr& msg1,
+    const geometry_msgs::TwistStamped::ConstPtr& msg2) {
+  std::unique_lock<std::timed_mutex> locker(localization_copy_done_,
+                                            std::defer_lock);
+  if (locker.try_lock_for(std::chrono::milliseconds(40))) {
+    control::pb3::fromMsg(msg1, &latest_localization_);
+    control::pb3::fromMsg(msg2, &latest_localization_);
+  }
 }
 
 std::pair<int, double> StaticTrajectoryLoader::QueryNearestPointByPoistion(

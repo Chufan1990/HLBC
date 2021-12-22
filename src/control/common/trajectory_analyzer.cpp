@@ -258,75 +258,55 @@ Vec2d TrajectoryAnalyzer::ComputeCOMPosition(
   return Vec2d(com_pos_3d[0], com_pos_3d[1]);
 }
 
-void TrajectoryAnalyzer::Map2Local(
-    const double x, const double y, const double heading,
-    std::vector<TrajectoryPoint> *ptr_trajectory_points) {
-  const double cos_theta = std::cos(heading);
-  const double sin_theta = std::sin(heading);
-
-  std::for_each(ptr_trajectory_points->begin(), ptr_trajectory_points->end(),
-                [&cos_theta, &sin_theta, &x, &y, &heading](TrajectoryPoint &p) {
-                  auto dx = p.path_point().x() - x;
-                  auto dy = p.path_point().y() - y;
-                  auto theta = p.path_point().theta();
-                  auto x_new = cos_theta * dy - sin_theta * dx;
-                  auto y_new = sin_theta * dy + cos_theta * dx;
-                  auto theta_new =
-                      common::math::NormalizeAngle(theta - heading);
-                  p.mutable_path_point()->set_x(x_new);
-                  p.mutable_path_point()->set_y(y_new);
-                  p.mutable_path_point()->set_theta(theta_new);
-                });
-}
-
-Vec2d TrajectoryAnalyzer::ComputeFrenetCoord(const PathPoint &p,
-                                             const Vec2d &com) const {
-  const double x = p.x();
-  const double y = p.y();
-  const double heading = p.theta();
-  const double cos_theta = std::cos(heading);
-  const double sin_theta = std::sin(heading);
-  const auto dx = com.x() - x;
-  const auto dy = com.y() - y;
-  const auto x_new = cos_theta * dy - sin_theta * dx;
-  const auto y_new = sin_theta * dy + cos_theta * dx;
-  return Vec2d(x_new, y_new);
-}
-
-std::vector<TrajectoryPoint> TrajectoryAnalyzer::Local2Map(
-    const double tx, const double ty, const double heading,
-    const std::vector<TrajectoryPoint> *ptr_trajectory_points) const{
+std::vector<TrajectoryPoint> TrajectoryAnalyzer::ToLoc(
+    const double rx, const double ry, const double rtheta,
+    const std::vector<TrajectoryPoint> *ptr_trajectory_points) {
   std::vector<TrajectoryPoint> ret(ptr_trajectory_points->begin(),
                                    ptr_trajectory_points->end());
-  const double cos_theta = std::cos(heading);
-  const double sin_theta = std::sin(heading);
-
-  std::for_each(
-      ret.begin(), ret.end(),
-      [&cos_theta, &sin_theta, &tx, &ty, &heading](TrajectoryPoint &p) {
-        auto x = p.path_point().x();
-        auto y = p.path_point().y();
-        auto theta = p.path_point().theta();
-
-        auto x_new = cos_theta * y - sin_theta * x + tx;
-        auto y_new = sin_theta * y + cos_theta * x + ty;
-        auto theta_new = common::math::NormalizeAngle(theta + heading);
-
-        p.mutable_path_point()->set_x(x_new);
-        p.mutable_path_point()->set_y(y_new);
-        p.mutable_path_point()->set_theta(theta_new);
-      });
+  std::for_each(begin(ret), end(ret), [&rx, &ry, &rtheta](TrajectoryPoint &p) {
+    auto pos_loc = TrajectoryAnalyzer::Map2Loc(rx, ry, rtheta, p.path_point());
+    auto theta_loc =
+        common::math::NormalizeAngle(p.path_point().theta() - rtheta);
+    p.mutable_path_point()->set_x(pos_loc.x());
+    p.mutable_path_point()->set_y(pos_loc.y());
+    p.mutable_path_point()->set_theta(theta_loc);
+  });
   return ret;
 }
 
-void TrajectoryAnalyzer::SampleByRelativeTime(
-    const double start_time, const double dt, const size_t trajectory_size,
-    std::vector<common::TrajectoryPoint> &resampled_trajectory)
-    const {
-  AERROR_IF(trajectory_points_.size() == 0, "Empty original trajectory");
+std::vector<TrajectoryPoint> TrajectoryAnalyzer::ToMap(
+    const double rx, const double ry, const double rtheta,
+    const std::vector<TrajectoryPoint> *ptr_trajectory_points) {
+  std::vector<TrajectoryPoint> ret(ptr_trajectory_points->begin(),
+                                   ptr_trajectory_points->end());
+  std::for_each(begin(ret), end(ret), [&rx, &ry, &rtheta](TrajectoryPoint &p) {
+    auto pos_map = TrajectoryAnalyzer::Loc2Map(rx, ry, rtheta, p.path_point());
+    auto theta_map =
+        common::math::NormalizeAngle(p.path_point().theta() + rtheta);
 
-  if (resampled_trajectory.size() != trajectory_size)
-    resampled_trajectory.resize(trajectory_size);
+    p.mutable_path_point()->set_x(pos_map.x());
+    p.mutable_path_point()->set_y(pos_map.y());
+    p.mutable_path_point()->set_theta(theta_map);
+  });
+  return ret;
+}
+
+std::vector<TrajectoryPoint> TrajectoryAnalyzer::InterpolateByTime(
+    const double start_time, const double dt,
+    const size_t trajectory_size) const {
+  if (trajectory_points_.size() == 0) {
+    AERROR("Empty original trajectory");
+    return std::vector<TrajectoryPoint>(0);
+  }
+
+  if (trajectory_points_.size() == 1) {
+    AWARN("End point on trajectory");
+    return std::vector<TrajectoryPoint>(trajectory_size,
+                                        trajectory_points_.front());
+  }
+
+  std::vector<TrajectoryPoint> resampled_trajectory;
+  resampled_trajectory.resize(trajectory_size);
 
   auto func_comp = [](const TrajectoryPoint &point,
                       const double relative_time) {
@@ -334,23 +314,16 @@ void TrajectoryAnalyzer::SampleByRelativeTime(
   };
 
   auto p0 = trajectory_points_.begin();
-  auto p1 = p0;
-
+  auto p1 = trajectory_points_.begin();
   double t = start_time;
 
   for (auto &p : resampled_trajectory) {
     p1 = std::lower_bound(p1, trajectory_points_.end(), t, func_comp);
-    if (p1 == trajectory_points_.begin())
-      p0 = p1;
-    else if (p1 == trajectory_points_.end()) {
-      p1 -= 1;
-      p0 = p1;
-    } else {
-      p0 = p1 - 1;
-    }
+
+    p1 = p1 == trajectory_points_.end() ? p1 - 1 : p1;
+    p0 = p1 == trajectory_points_.begin() ? p1 : p1 - 1;
 
     auto path_point = p.mutable_path_point();
-
     path_point->set_s(
         common::math::lerp(p0->path_point().s(), p0->relative_time(),
                            p1->path_point().s(), p1->relative_time(), t));
@@ -363,27 +336,19 @@ void TrajectoryAnalyzer::SampleByRelativeTime(
     path_point->set_theta(
         common::math::slerp(p0->path_point().theta(), p0->relative_time(),
                             p1->path_point().theta(), p1->relative_time(), t));
-    // approximate the curvature at the intermediate point
     path_point->set_kappa(
         common::math::lerp(p0->path_point().kappa(), p0->relative_time(),
                            p1->path_point().kappa(), p1->relative_time(), t));
-
     p.set_a(common::math::lerp(p0->a(), p0->relative_time(), p1->a(),
                                p1->relative_time(), t));
-
     p.set_v(common::math::lerp(p0->v(), p0->relative_time(), p1->v(),
                                p1->relative_time(), t));
-
     p.set_relative_time(t - start_time);
-
-    // ADEBUG("=============================================");
-    // AWARN(p0->DebugString());
-    // ADEBUG(p.DebugString());
-    // AWARN(p1->DebugString());
 
     t += dt;
   }
-  // ADEBUG("=============================================");
+
+  return resampled_trajectory;
 }
 
 }  // namespace control

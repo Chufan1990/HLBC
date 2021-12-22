@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "Eigen/Core"
 #include "autoagric/common/pnc_point.pb.h"
@@ -29,16 +29,18 @@ class MpcIpopt {
   void Update(Dvector* vars, Dvector* vars_lowerbound, Dvector* vars_upperbound,
               Dvector* constraints_lowerbound, Dvector* constraints_upperbound,
               Eigen::MatrixXd* matrix_q, Eigen::MatrixXd* matrix_r,
-              std::vector<common::TrajectoryPoint>* ref_trajectory);
+              Eigen::MatrixXd* matrix_endstate,
+              std::vector<autoagric::common::TrajectoryPoint>* ref_trajectory);
 
   static bool Solve(std::shared_ptr<MpcIpopt>& mpc_ipopt,
-                    std::vector<common::TrajectoryPoint>& solution);
+                    std::vector<autoagric::common::TrajectoryPoint>& solution);
 
   void operator()(ADvector& fg, const ADvector& vars);
 
  private:
   Eigen::MatrixXd* matrix_q_;
   Eigen::MatrixXd* matrix_r_;
+  Eigen::MatrixXd* matrix_endstate_;
   const double lf_;
   const double horizon_;
   const double dt_;

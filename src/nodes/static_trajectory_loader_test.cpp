@@ -13,7 +13,7 @@
 int main(int argc, char **argv) {
   ros::init(argc, argv, "trajectory_loader");
 
-  ros::NodeHandle nh("~");
+  ros::NodeHandle nh;
 
   std::string path = absl::StrCat(std::string(std::getenv("HOME")),
                                   "/autoware.ai/src/autoware/common/"
@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 
   loader.InitVisualizer("global", scale, color);
 
-  ros::spin();
+  loader.Proc();
 
   return 0;
 }

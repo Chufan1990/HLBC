@@ -43,7 +43,7 @@ class MPCController : public Controller {
    * @return Status initialization status
    */
   common::Status Init(std::shared_ptr<DependencyInjector> injector,
-                                 const ControlConf* control_conf) override;
+                      const ControlConf* control_conf) override;
 
   /**
    * @brief compute steering target based on current vehicle status and target
@@ -78,11 +78,9 @@ class MPCController : public Controller {
    */
   std::string Name() const override;
 
-  std::vector<common::TrajectoryPoint> resampled_trajectory()
-      const;
+  std::vector<common::TrajectoryPoint> resampled_trajectory() const;
 
-  std::vector<common::TrajectoryPoint> warmstart_solution()
-      const;
+  std::vector<common::TrajectoryPoint> warmstart_solution() const;
 
  private:
   bool LoadControlConf(const ControlConf* control_conf);
@@ -158,7 +156,7 @@ class MPCController : public Controller {
 
   const int controls_ = 2;
 
-  const int horizon_ = 10;
+  const int horizon_ = 11;
 
   const std::string name_;
 
@@ -175,6 +173,10 @@ class MPCController : public Controller {
   double steer_angle_feedforwardterm_ = 0.0;
 
   double steer_angle_feedforwardterm_updated_ = 0.0;
+
+  double max_steer_angle_rate_ = 0.0;
+
+  double max_longitudinal_jerk_ = 0.0;
 
   double max_acceleration_ = 0.0;
 
@@ -233,6 +235,10 @@ class MPCController : public Controller {
   Eigen::MatrixXd matrix_q_;
   // updated state weighting matrix
   Eigen::MatrixXd matrix_q_updated_;
+  // state weighting matrix
+  Eigen::MatrixXd matrix_endstate_;
+  // updated state weighting matrix
+  Eigen::MatrixXd matrix_endstate_updated_;
 
   std::vector<common::TrajectoryPoint> resampled_trajectory_;
 
@@ -240,8 +246,7 @@ class MPCController : public Controller {
 
   std::shared_ptr<MPCController> ConstPtr_;
 
-  std::unique_ptr<autoagric::control::PIDController>
-      brake_pid_controller_;
+  std::unique_ptr<autoagric::control::PIDController> brake_pid_controller_;
 
   common::PathPoint matched_point_;
 };

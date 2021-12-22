@@ -7,7 +7,6 @@ package autoagric.planning;
 import "autoagric/common/header.proto";
 import "autoagric/common/pnc_point.proto";
 import "autoagric/canbus/chassis.proto";
-import "autoagric/planning/decision.proto";
 
 message ADCTrajectory {
   autoagric.common.Header header = 1;
@@ -32,7 +31,7 @@ message ADCTrajectory {
   // path point without speed info
   repeated autoagric.common.PathPoint path_point = 13;
 
-  autoagric.planning.DecisionResult decision = 14;
+  // autoagric.planning.DecisionResult decision = 14;
 
   //   LatencyStats latency_stats = 15;
 

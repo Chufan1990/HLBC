@@ -26,6 +26,7 @@ message MPCControllerConf {
   // (steer, acceleration)
   repeated double matrix_r = 10;
 
+
   int32 cutoff_freq = 11;             // cutoff frequency
   int32 mean_filter_window_size = 12; // window size of mean filter
   // for a normal car, it should be in range[16, 18]
@@ -47,4 +48,8 @@ message MPCControllerConf {
   autoagric.control.PidConf brake_pid_conf = 27;
   string ipopt_warm_start = 28;
   string ipopt_same_structure = 29;
+
+  double max_longitudinal_jerk = 30; 
+
+  repeated double matrix_endstate = 31;
 }

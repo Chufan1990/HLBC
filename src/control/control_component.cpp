@@ -32,12 +32,12 @@ bool ControlComponent::Init() {
   //     &ControlComponent::OnPlanning, this));
 
   planning_test_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
-      "/trajectory_loader/static_trajectory", FLAGS_planning_pending_queue_size,
+      "/static_trajectory", FLAGS_planning_pending_queue_size,
       &ControlComponent::OnPlanningTest, this));
 
   localization_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
       FLAGS_localization_message_name, FLAGS_localization_pending_queue_size,
-      &ControlComponent::Onlocalization, this));
+      &ControlComponent::OnLocalization, this));
 
   imu_reader_ = std::make_unique<ros::Subscriber>(
       nh_.subscribe(FLAGS_imu_message_name, FLAGS_imu_pending_queue_size,
@@ -55,16 +55,15 @@ bool ControlComponent::Init() {
     auto visual_nh = ros::NodeHandle(nh_, "visual");
     std::vector<std::string> names = {"resampled_trajectory",
                                       "warmstart_solution"};
-    visualizer_ =
-        std::make_unique<TrajectoryVisualizer>(visual_nh, names);
+    visualizer_ = std::make_unique<TrajectoryVisualizer>(visual_nh, names);
     visualizer_->Init();
   }
 
   injector_ = std::make_shared<DependencyInjector>();
 
-  AERROR_IF(!common::util::GetProtoFromFile(FLAGS_control_conf_file,
-                                                       &control_conf_),
-            "Unable to load control conf file: " << FLAGS_control_conf_file);
+  AERROR_IF(
+      !common::util::GetProtoFromFile(FLAGS_control_conf_file, &control_conf_),
+      "Unable to load control conf file: " << FLAGS_control_conf_file);
 
   AERROR_IF(!common::util::GetProtoFromFile(
                 FLAGS_discrete_points_smoother_config_filename,
@@ -324,7 +323,7 @@ void ControlComponent::OnPlanningTest(const hlbc::TrajectoryConstPtr& msg) {
   }
 }
 
-void ControlComponent::Onlocalization(
+void ControlComponent::OnLocalization(
     const geometry_msgs::PoseStampedConstPtr& msg) {
   std::unique_lock<std::timed_mutex> locker(localization_copy_done_,
                                             std::defer_lock);

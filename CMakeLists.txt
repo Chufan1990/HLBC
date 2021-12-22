@@ -12,6 +12,10 @@ set(CMAKE_CXX_FLAGS_DEBUG
 set(CMAKE_CXX_FLAGS_RELEASE
     "-std=c++14 -march=native -pipe -Wextra -fopenmp -fPIC -pthread -Wall -O0")
 
+# set(ABSL_PROPAGATE_CXX_STD ON)
+
+add_subdirectory(third_party)
+
 # Find catkin macros and libraries if COMPONENTS list like find_package(catkin
 # REQUIRED COMPONENTS xyz) is used, also find other catkin packages
 find_package(
@@ -22,10 +26,17 @@ find_package(
              std_msgs
              rospy
              message_generation
-             autoware_msgs)
+             autoware_msgs
+             message_filters
+             )
 
-set(THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
+set(THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party") 
 set(Protobuf_DIR "${THIRDPARTY_DIR}/protobuf")
+set(OSQP_DIR "${THIRDPARTY_DIR}/osqp")
+
+find_package(osqp REQUIRED PATHS ${OSQP_DIR})
+
+message(WARNING "osqp_VERSION : ${osqp_VERSION}")
 
 # message(WARNING "CMAKE_SYSTEM_PREFIX_PATH: ${CMAKE_SYSTEM_PREFIX_PATH}")
 # message(WARNING "CMAKE_SYSTEM_FRAMEWORK_PATH: ${CMAKE_SYSTEM_FRAMEWORK_PATH}")
@@ -67,7 +78,6 @@ find_path(
 if("${Protobuf_LIBRARIES}" STREQUAL "Protobuf_LIBRARIES-NOTFOUND")
   message(WARNING "Protobuf package not found")
 else()
-  message(WARNING "Protobuf version : ${Protobuf_VERSION}")
   message(WARNING "Protobuf include path : ${Protobuf_INCLUDE_DIRS}")
   message(WARNING "Protobuf libraries : ${Protobuf_LIBRARIES}")
 endif()
@@ -177,8 +187,6 @@ foreach(FIL ${PROTO_FILES})
       ${PROTOBUF_PROTOC_EXECUTABLE} ${PROTO_FLAGS}
       --cpp_out=${PROTO_META_BASE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/proto/${FIL})
 endforeach()
-
-add_subdirectory(third_party)
 
 # message(WARNING "GFLAGS_INCLUDE_DIR=${GFLAGS_INCLUDE_DIR}") message(WARNING
 # "GFLAGS_LIBRARIES=${GFLAGS_LIBRARIES}") message(WARNING
@@ -290,11 +298,17 @@ add_library(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCE_FILES}
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 0.0.1 SOVERSION 1)
 
-target_link_libraries(${PROJECT_NAME} glog::glog absl::base
-                      absl::synchronization absl::strings)
+target_link_libraries(${PROJECT_NAME} 
+  glog::glog absl::base
+  absl::synchronization 
+  absl::strings 
+  absl::str_format
+  osqp::osqp
+  )
 
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS}
-# ${catkin_EXPORTED_TARGETS})
+# ##############################################################################
+# control_node ##
+# ##############################################################################
 
 add_executable(control_node src/nodes/control_node.cpp)
 
@@ -307,7 +321,12 @@ target_link_libraries(
   ${catkin_LIBRARIES}
   ${Ipopt_LIBRARIES}
   ${GFLAGS_LIBRARIES}
-  glog::glog)
+  glog::glog
+  osqp::osqp)
+
+# ##############################################################################
+# trajectory_visualizer_test ##
+# ##############################################################################
 
 add_executable(trajectory_visualizer_test
                src/nodes/trajectory_visualizer_test.cpp)
@@ -323,21 +342,22 @@ target_link_libraries(
   ${GFLAGS_LIBRARIES}
   glog::glog)
 
-add_executable(discrete_points_trajectory_smoother_test
-               src/nodes/discrete_points_trajectory_smoother_test.cpp)
+# ##############################################################################
+# discrete_points_trajectory_smoother_test ##
+# ##############################################################################
+# add_executable(discrete_points_trajectory_smoother_test
+# src/nodes/discrete_points_trajectory_smoother_test.cpp)
 
-add_dependencies(discrete_points_trajectory_smoother_test
-                 ${catkin_EXPORTED_TARGETS})
+# add_dependencies(discrete_points_trajectory_smoother_test
+# ${catkin_EXPORTED_TARGETS})
 
-target_link_libraries(
-  discrete_points_trajectory_smoother_test
-  ${PROJECT_NAME}
-  ${Protobuf_LIBRARIES}
-  ${catkin_LIBRARIES}
-  ${Ipopt_LIBRARIES}
-  ${GFLAGS_LIBRARIES}
-  glog::glog)
+# target_link_libraries( discrete_points_trajectory_smoother_test
+# ${PROJECT_NAME} ${Protobuf_LIBRARIES} ${catkin_LIBRARIES} ${Ipopt_LIBRARIES}
+# ${GFLAGS_LIBRARIES} glog::glog)
 
+# ##############################################################################
+# static_trajectory_loader_test ##
+# ##############################################################################
 add_executable(static_trajectory_loader_test
                src/nodes/static_trajectory_loader_test.cpp)
 
@@ -383,7 +403,7 @@ target_link_libraries(
 
 install(
   TARGETS ${PROJECT_NAME} control_node trajectory_visualizer_test
-          discrete_points_trajectory_smoother_test
+          # discrete_points_trajectory_smoother_test
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

@@ -12,7 +12,7 @@ namespace planning {
 class SpeedProfileGenerator {
  public:
   SpeedProfileGenerator() = default;
-  static SpeedData GenerateFallbaclSpeed(const EgoInfo* ego_info,
+  static SpeedData GenerateFallbackSpeed(const EgoInfo* ego_info,
                                          const double stop_distance = 0.0);
 
   static void FillEnoughSpeedPoints(SpeedData* const speed_data);
@@ -23,6 +23,7 @@ class SpeedProfileGenerator {
  private:
   static SpeedData GenerateStopProfile(const double init_speed,
                                        const double init_acc);
-}
+};
+
 }  // namespace planning
 }  // namespace autoagric

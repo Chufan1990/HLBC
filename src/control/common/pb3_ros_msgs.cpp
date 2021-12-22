@@ -19,11 +19,11 @@ namespace autoagric {
 namespace control {
 
 using autoagric::canbus::Chassis;
+using autoagric::localization::LocalizationEstimate;
+using autoagric::planning::ADCTrajectory;
 using common::PathPoint;
 using common::TrajectoryPoint;
 using common::math::Vec2d;
-using autoagric::localization::LocalizationEstimate;
-using autoagric::planning::ADCTrajectory;
 
 namespace {
 double PointDistanceSquare(const TrajectoryPoint& point, const double x,
@@ -37,12 +37,15 @@ double sign(const double x) { return x < 0 ? -1.0 : 1.0; }
 }  // namespace
 
 namespace pb3 {
+
+void fromMsg(const std_msgs::Header& msg, common::Header* header) {
+  header->set_timestamp_sec(msg.stamp.toSec());
+  header->set_sequence_num(msg.seq);
+  header->set_frame_id(msg.frame_id);
+}
 void fromMsg(const autoware_msgs::LaneConstPtr& msg,
              ADCTrajectory* trajectory) {
   trajectory->Clear();
-  trajectory->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
-  trajectory->mutable_header()->set_sequence_num(msg->header.seq);
-  trajectory->mutable_header()->set_frame_id(msg->header.frame_id);
 
   double pv = std::fabs(msg->waypoints[0].twist.twist.linear.x) < 1e-2
                   ? sign(msg->waypoints[0].twist.twist.linear.x) * 1e-2
@@ -83,7 +86,7 @@ void fromMsg(const autoware_msgs::LaneConstPtr& msg,
 
   //   ADEBUG("trajectory->trajectory_point(): " <<
   //   trajectory->DebugString());
-
+  fromMsg(msg->header, trajectory->mutable_header());
   trajectory->mutable_header()->set_timestamp_sec(ros::Time::now().toSec());
   trajectory->mutable_header()->set_frame_id("map");
 }
@@ -105,9 +108,8 @@ void fromMsg(const geometry_msgs::PoseStampedConstPtr& msg,
       common::math::NormalizeAngle(tf2::getYaw(
           tf2::Quaternion(msg->pose.orientation.x, msg->pose.orientation.y,
                           msg->pose.orientation.z, msg->pose.orientation.w))));
-  localization->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
-  localization->mutable_header()->set_frame_id(msg->header.frame_id);
-  localization->mutable_header()->set_sequence_num(msg->header.seq);
+
+  fromMsg(msg->header, localization->mutable_header());
 }
 
 void fromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
@@ -142,9 +144,7 @@ void fromMsg(const autoware_msgs::ControlCommandStampedConstPtr& msg,
   chassis->set_speed_mps(msg->cmd.linear_velocity / 100.0);
   chassis->set_gear_location(Chassis::GEAR_DRIVE);
   chassis->set_driving_mode(Chassis::COMPLETE_AUTO_DRIVE);
-  chassis->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
-  chassis->mutable_header()->set_frame_id(msg->header.frame_id);
-  chassis->mutable_header()->set_sequence_num(msg->header.seq);
+  fromMsg(msg->header, chassis->mutable_header());
 }
 
 void fromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
@@ -155,18 +155,12 @@ void fromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
   chassis->set_gear_location(msg->twist.linear.x >= 0 ? Chassis::GEAR_DRIVE
                                                       : Chassis::GEAR_REVERSE);
   chassis->set_driving_mode(Chassis::COMPLETE_AUTO_DRIVE);
-  chassis->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
-  chassis->mutable_header()->set_frame_id(msg->header.frame_id);
-  chassis->mutable_header()->set_sequence_num(msg->header.seq);
+  fromMsg(msg->header, chassis->mutable_header());
 }
 
 void fromMsg(const hlbc::TrajectoryConstPtr& msg,
              planning::ADCTrajectory* trajectory) {
   trajectory->Clear();
-  trajectory->mutable_header()->set_timestamp_sec(msg->header.stamp.toSec());
-  trajectory->mutable_header()->set_frame_id(msg->header.frame_id);
-  trajectory->mutable_header()->set_sequence_num(msg->header.seq);
-
   for (int i = 0; i < msg->trajectory_point.size(); i++) {
     auto& msg_point = msg->trajectory_point[i];
     auto&& trajectory_point = trajectory->add_trajectory_point();
@@ -182,37 +176,25 @@ void fromMsg(const hlbc::TrajectoryConstPtr& msg,
     trajectory_point->set_a(msg_point.a);
     trajectory_point->set_relative_time(msg_point.relative_time);
   }
+  fromMsg(msg->header, trajectory->mutable_header());
 }
 
 void fromMsg(const hlbc::Trajectory& msg, planning::ADCTrajectory* trajectory) {
   trajectory->Clear();
-  trajectory->mutable_header()->set_timestamp_sec(msg.header.stamp.toSec());
-  trajectory->mutable_header()->set_frame_id(msg.header.frame_id);
-  trajectory->mutable_header()->set_sequence_num(msg.header.seq);
 
   for (int i = 0; i < msg.trajectory_point.size(); i++) {
     auto& msg_point = msg.trajectory_point[i];
     auto&& trajectory_point = trajectory->add_trajectory_point();
-
-    trajectory_point->mutable_path_point()->set_x(msg_point.path_point.x);
-    trajectory_point->mutable_path_point()->set_y(msg_point.path_point.y);
-    trajectory_point->mutable_path_point()->set_s(msg_point.path_point.s);
-    trajectory_point->mutable_path_point()->set_kappa(
-        msg_point.path_point.kappa);
-    trajectory_point->mutable_path_point()->set_theta(
-        msg_point.path_point.theta);
-    trajectory_point->set_v(msg_point.v);
-    trajectory_point->set_a(msg_point.a);
-    trajectory_point->set_relative_time(msg_point.relative_time);
+    fromMsg(msg_point, trajectory_point);
   }
+  fromMsg(msg.header, trajectory->mutable_header());
 }
 
 hlbc::Trajectory toMsg(const planning::ADCTrajectory& trajectory) {
   hlbc::Trajectory msg;
   msg.header.stamp.sec = std::floor(trajectory.header().timestamp_sec());
-  msg.header.stamp.nsec = (trajectory.header().timestamp_sec() -
-                           msg.header.stamp.sec) *
-                          1e9;
+  msg.header.stamp.nsec =
+      (trajectory.header().timestamp_sec() - msg.header.stamp.sec) * 1e9;
   msg.header.frame_id = trajectory.header().frame_id();
   msg.header.seq = trajectory.header().sequence_num();
 
@@ -231,56 +213,20 @@ hlbc::Trajectory toMsg(const planning::ADCTrajectory& trajectory) {
   return msg;
 }
 
-// void UpdateTrajectoryPoint(const LocalizationEstimate* localization,
-//                            ADCTrajectory* trajectory) {
-//   std::vector<std::pair<double, double>> xy;
+void fromMsg(const hlbc::TrajectoryPoint& msg, common::TrajectoryPoint* point) {
+  fromMsg(msg.path_point, point->mutable_path_point());
+  point->set_v(msg.v);
+  point->set_a(msg.a);
+  point->set_relative_time(msg.relative_time);
+}
 
-//   auto p0 = trajectory->trajectory_point(1);
-
-//   double init_time = 0.0;
-//   double init_s = 0.0;
-
-//   for (int i = 2; i < trajectory->trajectory_point_size(); i++) {
-//     auto&& mutable_p = trajectory->mutable_trajectory_point(i);
-//     auto& p1 = trajectory->trajectory_point(i);
-
-//     /**
-//      * @note estimate longitudinal distance (station) by Euclidean distance
-//      * between two consecutive points, i.e, s = sqrt((x0 - x1)^2 + (y0 -
-//      y1)^2)
-//      */
-//     const double dist_between_2_points = std::sqrt(
-//         PointDistanceSquare(p1, p0.path_point().x(), p0.path_point().y()));
-
-//     /**
-//      * @note estimate relative time (station) by Euclidean distance dividing
-//      * linear speed of former point, i.e, relative_time = s / v
-//      */
-//     const double relative_time_between_2_points =
-//         dist_between_2_points / p0.v();
-
-//     const double heading_diff =
-//         p1.path_point().theta() - p0.path_point().theta();
-
-//     init_s += dist_between_2_points;
-//     init_time += relative_time_between_2_points;
-
-//     mutable_p->mutable_path_point()->set_s(init_s);
-
-//     mutable_p->set_relative_time(init_time);
-
-//     mutable_p->mutable_path_point()->set_kappa(heading_diff /
-//                                                dist_between_2_points);
-
-//     p0 = p1;
-//   }
-
-//   trajectory->mutable_trajectory_point(1)->mutable_path_point()->set_s(.00);
-//   trajectory->mutable_trajectory_point(1)->set_relative_time(0.0);
-//   trajectory->mutable_trajectory_point(1)->mutable_path_point()->set_kappa(
-//       trajectory->trajectory_point(2).path_point().kappa());
-//   ADEBUG("updated trajectory: " << trajectory->DebugString());
-// }
+void fromMsg(const hlbc::PathPoint& msg, common::PathPoint* point) {
+  point->set_x(msg.x);
+  point->set_y(msg.y);
+  point->set_s(msg.s);
+  point->set_kappa(msg.kappa);
+  point->set_theta(msg.theta);
+}
 }  // namespace pb3
 }  // namespace control
 }  // namespace autoagric

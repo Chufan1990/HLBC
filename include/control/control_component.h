@@ -12,9 +12,9 @@
 #include "control/controller/controller_agent.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/TwistStamped.h"
+#include "hlbc/Trajectory.h"
 #include "planning/reference_line/trajectory_smoother.h"
 #include "ros/ros.h"
-#include "hlbc/Trajectory.h"
 
 namespace autoagric {
 namespace control {
@@ -36,12 +36,11 @@ class ControlComponent final {
 
   void OnPlanningTest(const hlbc::TrajectoryConstPtr& msg);
 
-  void Onlocalization(const geometry_msgs::PoseStampedConstPtr& msg);
+  void OnLocalization(const geometry_msgs::PoseStampedConstPtr& msg);
 
   void OnIMU(const geometry_msgs::TwistStampedConstPtr& msg);
 
-  common::Status ProduceControlCommand(
-      ControlCommand* control_command);
+  common::Status ProduceControlCommand(ControlCommand* control_command);
 
  private:
   common::Status CheckInput(LocalView* local_view);

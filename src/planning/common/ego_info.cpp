@@ -5,8 +5,8 @@
 
 namespace autoagric {
 namespace planning {
-using autoagric::common::math::Box2d;
-using autoagric::common::math::Vec2d;
+using common::math::Box2d;
+using common::math::Vec2d;
 
 EgoInfo::EgoInfo() {
   ego_vehicle_config_ = common::VehicleConfigHelper::GetConfig();
@@ -27,14 +27,13 @@ void EgoInfo::CalculateEgoBox(const common::VehicleState& vehicle_state) {
   Vec2d vec_to_center(
       (param.front_edge_to_center() - param.back_edge_to_center()) / 2.0,
       (param.left_edge_to_center() - param.right_edge_to_center()) / 2.0);
-    )
 
-    Vec2d position(vehicle_state.x(), vehicle_state.y());
+  Vec2d position(vehicle_state.x(), vehicle_state.y());
 
-    Vec2d center(position + vec_to_center.rotate(vehicle_state.heading()));
+  Vec2d center(position + vec_to_center.rotate(vehicle_state.heading()));
 
-    ego_box =
-        Box2d(center, vehicle_state.heading(), param.length(), param.width());
+  ego_box_ =
+      Box2d(center, vehicle_state.heading(), param.length(), param.width());
 }
 
 void EgoInfo::Clear() {

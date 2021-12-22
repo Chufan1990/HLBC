@@ -30,7 +30,7 @@ class SpeedData : public std::vector<common::SpeedPoint> {
   double TotalLength() const;
 
   virtual std::string DebugString() const;
-}
+};
 
 }  // namespace planning
 }  // namespace autoagric

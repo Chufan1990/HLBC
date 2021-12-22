@@ -82,17 +82,17 @@ class STBoundary : public common::math::Polygon2d {
 
   std::vector<STPoint> lower_points() const { return lower_points_; }
 
-  bool IsPointBoundary(const STPoint& st_point) const;
+  bool IsPointInBoundary(const STPoint& st_point) const;
 
   STBoundary ExpandByS(const double s) const;
   STBoundary ExpandByT(const double t) const;
 
   STBoundary CutOffByT(const double t) const;
 
-  STPoint upper_left_point(STPoint st_point);
-  STPoint upper_right_point(STPoint st_point);
-  STPoint bottom_left_point(STPoint st_point);
-  STPoint bottom_right_points(STPoint st_point);
+  STPoint upper_left_point() const;
+  STPoint upper_right_point() const;
+  STPoint bottom_left_point() const;
+  STPoint bottom_right_point() const;
 
   void set_upper_left_point(STPoint st_point);
   void set_upper_right_point(STPoint st_point);
@@ -121,7 +121,8 @@ class STBoundary : public common::math::Polygon2d {
                    const common::math::Vec2d& point, const double max_dist);
 
   void RemoveRedundantPoints(
-      std::vector<std::pair<STPoint, STPoint>>* point_pairs) = delete;
+      std::vector<std::pair<STPoint, STPoint>>* point_pairs)
+      __attribute__((deprecated));
 
   /**
    * @brief Given time t, find a segment denoted by left and right idx, that
@@ -145,7 +146,7 @@ class STBoundary : public common::math::Polygon2d {
   double max_t_ = std::numeric_limits<double>::lowest();
 
   STPoint bottom_left_point_;
-  STPoint bottom_right_points_;
+  STPoint bottom_right_point_;
   STPoint upper_left_point_;
   STPoint upper_right_point_;
 
