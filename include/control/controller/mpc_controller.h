@@ -1,7 +1,7 @@
 #pragma once
+#include <Eigen/Core>
 #include <memory>
 
-#include "Eigen/Core"
 #include "autoagric/common/vehicle_config.pb.h"
 #include "common/math/mpc_ipopt.h"
 #include "common/vehicle_state/vehicle_state_provider.h"
@@ -78,9 +78,9 @@ class MPCController : public Controller {
    */
   std::string Name() const override;
 
-  std::vector<common::TrajectoryPoint> resampled_trajectory() const;
+  const std::vector<common::TrajectoryPoint>& reference_trajectory() const;
 
-  std::vector<common::TrajectoryPoint> warmstart_solution() const;
+  const std::vector<common::TrajectoryPoint>& predicted_solution() const;
 
  private:
   bool LoadControlConf(const ControlConf* control_conf);
@@ -240,15 +240,15 @@ class MPCController : public Controller {
   // updated state weighting matrix
   Eigen::MatrixXd matrix_endstate_updated_;
 
-  std::vector<common::TrajectoryPoint> resampled_trajectory_;
+  std::vector<common::TrajectoryPoint> reference_trajectory_;
 
-  std::vector<common::TrajectoryPoint> warmstart_solution_;
+  std::vector<common::TrajectoryPoint> predicted_solution_;
 
   std::shared_ptr<MPCController> ConstPtr_;
 
   std::unique_ptr<autoagric::control::PIDController> brake_pid_controller_;
 
-  common::PathPoint matched_point_;
+  common::PathPoint matched_path_point_;
 };
 
 }  // namespace control

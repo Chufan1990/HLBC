@@ -126,10 +126,10 @@ Status MPCController::Init(std::shared_ptr<DependencyInjector> injector,
     constraints_upperbound_[i] = 0;
   }
 
-  resampled_trajectory_ =
+  reference_trajectory_ =
       std::vector<TrajectoryPoint>(horizon_, TrajectoryPoint());
 
-  warmstart_solution_ =
+  predicted_solution_ =
       std::vector<TrajectoryPoint>(horizon_, TrajectoryPoint());
 
   LoadMPCGainScheduler(control_conf->mpc_controller_conf());
@@ -335,16 +335,18 @@ Status MPCController::ComputeControlCommand(
   auto matched_point =
       trajectory_analyzer_.QueryMatchedTrajectoryPoint(com.x(), com.y());
 
-  matched_point_ = matched_point.path_point();
+  matched_path_point_.Clear();
+  matched_path_point_.CopyFrom(matched_point.path_point());
 
-  resampled_trajectory_ = std::move(trajectory_analyzer_.InterpolateByTime(
+  reference_trajectory_.clear();
+  reference_trajectory_ = std::move(trajectory_analyzer_.InterpolateByTime(
       matched_point.relative_time(), ts_, horizon_));
 
   // ADEBUG("Comparing: \n matched_point "
   //        << matched_point.path_point().x() << " "
   //        << matched_point.path_point().y() << "\n resampled"
-  //        << resampled_trajectory_.front().path_point().x() << " "
-  //        << resampled_trajectory_.front().path_point().y());
+  //        << reference_trajectory_.front().path_point().x() << " "
+  //        << reference_trajectory_.front().path_point().y());
 
   // ADEBUG("Comparing: \n com " << com.x() << " " << com.y() <<
   // "\nlocalization"
@@ -353,21 +355,21 @@ Status MPCController::ComputeControlCommand(
 
   // ADEBUG(planning_published_trajectory->DebugString());
 
-  // for (size_t i = 0; i < resampled_trajectory_.size(); i++) {
+  // for (size_t i = 0; i < reference_trajectory_.size(); i++) {
   //   ADEBUG(std::setprecision(3)
   //          << std::fixed << " x: " <<
-  //          resampled_trajectory_[i].path_point().x()
-  //          << " y: " << resampled_trajectory_[i].path_point().y()
-  //          << " h: " << resampled_trajectory_[i].path_point().theta()
-  //          << " v: " << resampled_trajectory_[i].v()
-  //          << " a: " << resampled_trajectory_[i].a()
-  //          << " s: " << resampled_trajectory_[i].steer()
-  //          << " t: " << resampled_trajectory_[i].relative_time());
+  //          reference_trajectory_[i].path_point().x()
+  //          << " y: " << reference_trajectory_[i].path_point().y()
+  //          << " h: " << reference_trajectory_[i].path_point().theta()
+  //          << " v: " << reference_trajectory_[i].v()
+  //          << " a: " << reference_trajectory_[i].a()
+  //          << " s: " << reference_trajectory_[i].steer()
+  //          << " t: " << reference_trajectory_[i].relative_time());
   // }
 
   auto frenet_frame_trajectory = std::move(TrajectoryAnalyzer::ToLoc(
       matched_point.path_point().x(), matched_point.path_point().y(),
-      matched_point.path_point().theta(), &resampled_trajectory_));
+      matched_point.path_point().theta(), &reference_trajectory_));
 
   for (size_t i = 0; i < frenet_frame_trajectory.size(); i++) {
     ADEBUG(std::setprecision(3)
@@ -393,10 +395,11 @@ Status MPCController::ComputeControlCommand(
       &constraints_upperbound_, &matrix_q_updated_, &matrix_r_updated_,
       &matrix_endstate_updated_, &frenet_frame_trajectory);
 
-  if (MpcIpopt::Solve(mpc_ipopt_solver_, warmstart_solution_)) {
-    steer_angle_feedback = warmstart_solution_[1 + latency_steps_].steer();
-    linear_velocity_feedback = warmstart_solution_[1 + latency_steps_].v();
-    linear_acceleration_feedback = warmstart_solution_[1 + latency_steps_].a();
+  predicted_solution_.clear();
+  if (MpcIpopt::Solve(mpc_ipopt_solver_, predicted_solution_)) {
+    steer_angle_feedback = predicted_solution_[1 + latency_steps_].steer();
+    linear_velocity_feedback = predicted_solution_[1 + latency_steps_].v();
+    linear_acceleration_feedback = predicted_solution_[1 + latency_steps_].a();
     ADEBUG("MPC ipopt problem solved! ";);
   } else {
     AERROR("MPC ipopt problem failed! ";);
@@ -412,15 +415,19 @@ Status MPCController::ComputeControlCommand(
    * @todo(chufan) add steering angle and speed and acceleration saturation
    */
 
-  for (size_t i = 0; i < warmstart_solution_.size(); i++) {
+  for (size_t i = 0; i < predicted_solution_.size(); i++) {
     ADEBUG(std::setprecision(3)
-           << std::fixed << " x: " << warmstart_solution_[i].path_point().x()
-           << " y: " << warmstart_solution_[i].path_point().y()
-           << " h: " << warmstart_solution_[i].path_point().theta() << " v: "
-           << warmstart_solution_[i].v() << " a: " << warmstart_solution_[i].a()
-           << " s: " << warmstart_solution_[i].steer()
-           << " t: " << warmstart_solution_[i].relative_time());
+           << std::fixed << " x: " << predicted_solution_[i].path_point().x()
+           << " y: " << predicted_solution_[i].path_point().y()
+           << " h: " << predicted_solution_[i].path_point().theta() << " v: "
+           << predicted_solution_[i].v() << " a: " << predicted_solution_[i].a()
+           << " s: " << predicted_solution_[i].steer()
+           << " t: " << predicted_solution_[i].relative_time());
   }
+
+  predicted_solution_ = std::move(TrajectoryAnalyzer::ToMap(
+      matched_point.path_point().x(), matched_point.path_point().y(),
+      matched_point.path_point().theta(), &predicted_solution_));
 
   // braking command
   if ((linear_acceleration_feedback * chassis->speed_mps()) < -1e-3) {
@@ -442,12 +449,12 @@ Status MPCController::ComputeControlCommand(
 
   // Gear location
   if (linear_velocity_feedback > 1e-6 &&
-      resampled_trajectory_.back().v() > 1e-6) {
+      reference_trajectory_.back().v() > 1e-6) {
     cmd->set_gear_location(canbus::Chassis::GEAR_DRIVE);
   } else if (linear_velocity_feedback < -1e-6 &&
-             resampled_trajectory_.back().v() < -1e-6) {
+             reference_trajectory_.back().v() < -1e-6) {
     cmd->set_gear_location(canbus::Chassis::GEAR_REVERSE);
-  } else if ((linear_velocity_feedback * resampled_trajectory_.back().v()) <
+  } else if ((linear_velocity_feedback * reference_trajectory_.back().v()) <
              -1e-3) {
     cmd->set_gear_location(canbus::Chassis::GEAR_NEUTRAL);
   } else {
@@ -538,14 +545,12 @@ void MPCController::Stop() {
 
 std::string MPCController::Name() const { return name_; }
 
-std::vector<TrajectoryPoint> MPCController::resampled_trajectory() const {
-  return resampled_trajectory_;
+const std::vector<TrajectoryPoint>& MPCController::reference_trajectory() const {
+  return reference_trajectory_;
 }
 
-std::vector<TrajectoryPoint> MPCController::warmstart_solution() const {
-  return TrajectoryAnalyzer::ToMap(matched_point_.x(), matched_point_.y(),
-                                   matched_point_.theta(),
-                                   &warmstart_solution_);
+const std::vector<TrajectoryPoint>& MPCController::predicted_solution() const {
+  return predicted_solution_;
 }
 
 }  // namespace control

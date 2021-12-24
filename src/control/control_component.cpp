@@ -7,10 +7,8 @@
 #include "control/common/control_gflags.h"
 #include "control/common/pb3_ros_msgs.h"
 #include "control/controller/mpc_controller.h"
-#include "geometry_msgs/Vector3.h"
 #include "planning/common/planning_gflags.h"
 #include "planning/reference_line/discrete_points_trajectory_smoother.h"
-#include "std_msgs/ColorRGBA.h"
 
 namespace autoagric {
 namespace control {
@@ -21,6 +19,11 @@ using common::Status;
 ControlComponent::ControlComponent(ros::NodeHandle& nh) : nh_(nh) {}
 
 bool ControlComponent::Init() {
+  /**
+   * ##################################
+   * # ROS communication configuration
+   * ##################################
+   */
   spinner_ = std::make_unique<ros::AsyncSpinner>(0);
 
   chassis_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
@@ -31,9 +34,9 @@ bool ControlComponent::Init() {
   //     FLAGS_planning_message_name, FLAGS_planning_pending_queue_size,
   //     &ControlComponent::OnPlanning, this));
 
-  planning_test_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
-      "/static_trajectory", FLAGS_planning_pending_queue_size,
-      &ControlComponent::OnPlanningTest, this));
+  planning_test_reader_ = std::make_unique<ros::Subscriber>(
+      nh_.subscribe("/static_trajectory", FLAGS_planning_pending_queue_size,
+                    &ControlComponent::OnPlanningTest, this));
 
   localization_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
       FLAGS_localization_message_name, FLAGS_localization_pending_queue_size,
@@ -50,38 +53,66 @@ bool ControlComponent::Init() {
 
   ADEBUG("FLAGS_enable_trajectory_visualizer: "
          << FLAGS_enable_trajectory_visualizer);
-
+  /**
+   * ##################################
+   * # visualizor configuration
+   * ##################################
+   */
   if (FLAGS_enable_trajectory_visualizer) {
     auto visual_nh = ros::NodeHandle(nh_, "visual");
     std::vector<std::string> names = {"resampled_trajectory",
                                       "warmstart_solution"};
     visualizer_ = std::make_unique<TrajectoryVisualizer>(visual_nh, names);
     visualizer_->Init();
+    scale_1_.x = 0.5;
+    scale_1_.y = 0.05;
+    scale_1_.z = 0.05;
+    scale_2_.x = 0.5;
+    scale_2_.y = 0.05;
+    scale_2_.z = 0.05;
+    color_1_.r = 1.0;
+    color_1_.g = 0.5;
+    color_1_.b = 0.1;
+    color_1_.a = 0.5;
+    color_2_.r = 0.1;
+    color_2_.g = 0.5;
+    color_2_.b = 1.0;
+    color_2_.a = 1.0;
   }
-
-  injector_ = std::make_shared<DependencyInjector>();
-
-  AERROR_IF(
-      !common::util::GetProtoFromFile(FLAGS_control_conf_file, &control_conf_),
-      "Unable to load control conf file: " << FLAGS_control_conf_file);
-
-  AERROR_IF(!common::util::GetProtoFromFile(
-                FLAGS_discrete_points_smoother_config_filename,
-                &trajectory_smoother_conf_),
-            "Unable to load control conf file: "
-                << FLAGS_discrete_points_smoother_config_filename);
-
-  AINFO("Conf file: " << FLAGS_control_conf_file << " is loaded.");
-
-  ADEBUG(
-      "FLAGS_enable_trajectory_smoother: " << FLAGS_enable_trajectory_smoother);
+  /**
+   * ##################################
+   * # trajectory smoother configuration
+   * ##################################
+   */
 
   if (FLAGS_enable_trajectory_smoother) {
+    if (!common::util::GetProtoFromFile(
+            FLAGS_discrete_points_smoother_config_filename,
+            &trajectory_smoother_conf_)) {
+      AERROR("Unable to load control conf file: "
+             << FLAGS_discrete_points_smoother_config_filename);
+      return false;
+    } else {
+      AINFO("Trajectory smoother loaded");
+    }
     smoother_ = std::unique_ptr<planning::DiscretePointsTrajectorySmoother>(
         new planning::DiscretePointsTrajectorySmoother(
             trajectory_smoother_conf_));
   }
+  /**
+   * ##################################
+   * # ROS communication configuration
+   * ##################################
+   */
+  injector_ = std::make_shared<DependencyInjector>();
 
+  if (!common::util::GetProtoFromFile(FLAGS_control_conf_file,
+                                      &control_conf_)) {
+    AERROR("Unable to load control conf file: " << FLAGS_control_conf_file);
+    return false;
+  } else {
+    AINFO("Conf file: " << FLAGS_control_conf_file << " is loaded.");
+  }
   if (!controller_agent_.Init(injector_, &control_conf_).ok()) return false;
 
   ADEBUG("Control component init done");
@@ -224,23 +255,6 @@ Status ControlComponent::ProduceControlCommand(
 bool ControlComponent::Proc() {
   spinner_->start();
 
-  geometry_msgs::Vector3 scale_1, scale_2;
-  std_msgs::ColorRGBA color_1, color_2;
-  if (FLAGS_enable_trajectory_visualizer) {
-    scale_1.x = 0.2;
-    scale_1.y = 0.2;
-    color_1.r = 1.0;
-    color_1.g = 0.0;
-    color_1.b = 0.0;
-    color_1.a = 1.0;
-    scale_2.x = 0.2;
-    scale_2.y = 0.2;
-    color_2.r = 0.0;
-    color_2.g = 1.0;
-    color_2.b = 0.5;
-    color_2.a = 1.0;
-  }
-
   ControlCommand control_command;
 
   ros::Rate loop_rate(FLAGS_control_cmd_frequency);
@@ -264,6 +278,11 @@ bool ControlComponent::Proc() {
     cmd.twist.angular.z = control_command.steering_target();
     control_cmd_writer_->publish(cmd);
 
+    /**
+     * ############################
+     * # trajectory visualization #
+     * ############################
+     */
     if (FLAGS_enable_trajectory_visualizer) {
       std::vector<std::pair<visualization_msgs::MarkerArray,
                             visualization_msgs::MarkerArray>>
@@ -274,18 +293,23 @@ bool ControlComponent::Proc() {
       markers.emplace_back(
           std::move(TrajectoryVisualizer::TrajectoryToMarkerArray<
                     std::vector<common::TrajectoryPoint>>(
-              controller->resampled_trajectory(),
+              controller->reference_trajectory(),
               local_view_.trajectory().header().frame_id(),
-              ros::Time::now().toSec(), scale_1, color_1)));
+              ros::Time::now().toSec(), scale_1_, color_1_)));
       markers.emplace_back(
           std::move(TrajectoryVisualizer::TrajectoryToMarkerArray<
                     std::vector<common::TrajectoryPoint>>(
-              controller->warmstart_solution(),
+              controller->predicted_solution(),
               local_view_.trajectory().header().frame_id(),
-              ros::Time::now().toSec(), scale_2, color_2)));
+              ros::Time::now().toSec(), scale_2_, color_2_)));
 
       visualizer_->Proc(markers);
     }
+    /**
+     * ################################
+     * # trajectory visualization end #
+     * ################################
+     */
     const auto end_time = ros::Time::now();
     const double time_diff_ms = (end_time - start_time).toSec() * 1e3;
     ADEBUG("total control time spend: " << time_diff_ms << " ms.");

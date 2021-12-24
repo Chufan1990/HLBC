@@ -123,7 +123,7 @@ lon_controller_conf {
   switch_speed: 3.0
 }
 mpc_controller_conf {
-  ts: 0.1
+  ts: 0.2
   cf: 155494.663
   cr: 155494.663
   mass_fl: 520
@@ -132,16 +132,16 @@ mpc_controller_conf {
   mass_rr: 520
   eps: 0.01
   matrix_q: 100.0
-  matrix_q: 50.0
-  matrix_q: 20.0
-  matrix_q: 1.0
-  matrix_r: 2.0
+  matrix_q: 10.0
+  matrix_q: 0.0
+  matrix_q: 0.0
+  matrix_r: 1.0
+  matrix_r: 1.0
   matrix_r: 10.0
-  matrix_r: 30.0
   matrix_r: 10.0
   matrix_endstate: 300.0
   matrix_endstate: 50.0
-  matrix_endstate: 100.0
+  matrix_endstate: 50.0
   matrix_endstate: 10.0
   cutoff_freq: 10
   mean_filter_window_size: 10

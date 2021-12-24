@@ -305,8 +305,8 @@ std::vector<TrajectoryPoint> TrajectoryAnalyzer::InterpolateByTime(
                                         trajectory_points_.front());
   }
 
-  std::vector<TrajectoryPoint> resampled_trajectory;
-  resampled_trajectory.resize(trajectory_size);
+  std::vector<TrajectoryPoint> interpolated_trajectory;
+  interpolated_trajectory.resize(trajectory_size);
 
   auto func_comp = [](const TrajectoryPoint &point,
                       const double relative_time) {
@@ -317,7 +317,7 @@ std::vector<TrajectoryPoint> TrajectoryAnalyzer::InterpolateByTime(
   auto p1 = trajectory_points_.begin();
   double t = start_time;
 
-  for (auto &p : resampled_trajectory) {
+  for (auto &p : interpolated_trajectory) {
     p1 = std::lower_bound(p1, trajectory_points_.end(), t, func_comp);
 
     p1 = p1 == trajectory_points_.end() ? p1 - 1 : p1;
@@ -348,7 +348,7 @@ std::vector<TrajectoryPoint> TrajectoryAnalyzer::InterpolateByTime(
     t += dt;
   }
 
-  return resampled_trajectory;
+  return interpolated_trajectory;
 }
 
 }  // namespace control

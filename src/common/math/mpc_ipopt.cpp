@@ -127,7 +127,7 @@ void MpcIpopt::operator()(ADvector& fg, const ADvector& vars) {
     fg[0] += pow(vars[accel_index_ + i], 2) * (*matrix_r_)(1, 1);
   }
 
-  for (size_t i = 1; i < horizon_ - 2; i++) {
+  for (size_t i = 1; i < horizon_ - 1; i++) {
     fg[0] += pow(vars[steer_index_ + i] - vars[steer_index_ + i - 1], 2) *
              (*matrix_r_)(2, 2);
     fg[0] += pow(vars[accel_index_ + i] - vars[accel_index_ + i - 1], 2) *

@@ -1,5 +1,11 @@
 #pragma once
 
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/Vector3.h>
+#include <ros/ros.h>
+#include <std_msgs/ColorRGBA.h>
+
 #include <memory>
 #include <mutex>
 #include <string>
@@ -10,11 +16,8 @@
 #include "autoware_msgs/Lane.h"
 #include "control/common/trajectory_visualizer.h"
 #include "control/controller/controller_agent.h"
-#include "geometry_msgs/PoseStamped.h"
-#include "geometry_msgs/TwistStamped.h"
 #include "hlbc/Trajectory.h"
 #include "planning/reference_line/trajectory_smoother.h"
-#include "ros/ros.h"
 
 namespace autoagric {
 namespace control {
@@ -96,6 +99,10 @@ class ControlComponent final {
   std::timed_mutex localization_copy_done_;
 
   std::timed_mutex chassis_copy_done_;
+
+  geometry_msgs::Vector3 scale_1_, scale_2_;
+
+  std_msgs::ColorRGBA color_1_, color_2_;
 };
 
 }  // namespace control
