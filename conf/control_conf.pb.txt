@@ -126,29 +126,29 @@ mpc_controller_conf {
   ts: 0.2
   cf: 155494.663
   cr: 155494.663
-  mass_fl: 520
-  mass_fr: 520
+  mass_fl: 0
+  mass_fr: 0
   mass_rl: 520
   mass_rr: 520
   eps: 0.01
   matrix_q: 100.0
   matrix_q: 10.0
-  matrix_q: 0.0
-  matrix_q: 0.0
-  matrix_r: 1.0
-  matrix_r: 1.0
-  matrix_r: 10.0
+  matrix_q: 50.0
+  matrix_q: 1.0
+  matrix_r: 5.0
+  matrix_r: 5.0
+  matrix_r: 50.0
   matrix_r: 10.0
   matrix_endstate: 300.0
-  matrix_endstate: 50.0
-  matrix_endstate: 50.0
+  matrix_endstate: 80.0
+  matrix_endstate: 100.0
   matrix_endstate: 10.0
   cutoff_freq: 10
   mean_filter_window_size: 10
   max_iteration: 150
   max_lateral_acceleration: 5.0
   max_longitudinal_jerk: 2.0
-  standstill_acceleration: 0.8
+  standstill_acceleration: 5.0
   brake_minimum_action: 0.0
   throttle_minimum_action: 0.0
   enable_mpc_feedforward_compensation: false

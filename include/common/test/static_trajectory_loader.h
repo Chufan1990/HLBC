@@ -54,6 +54,9 @@ class StaticTrajectoryLoader {
 
   void OnChassis(const geometry_msgs::TwistStampedConstPtr& msg);
 
+  hlbc::Trajectory GenerateLocalProfile(const int begin, const int end,
+                                        const double now) const;
+
   std::pair<int, double> QueryNearestPointByPoistion(const double x,
                                                      const double y, int index);
 

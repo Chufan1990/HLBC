@@ -181,7 +181,7 @@ void StaticTrajectoryLoader::Proc() {
     // end_point.v = std::fabs(end_point.v);
     // matched_point.v = std::fabs(matched_point.v);
 
-    const double now_time = matched_point.relative_time;
+    const double time_now = matched_point.relative_time;
 
     // const double trajectory_length =
     //     end_point.path_point.s - start_point.path_point.s;
@@ -200,27 +200,26 @@ void StaticTrajectoryLoader::Proc() {
     //                         GenerateFixedDistanceCreepProfile(
     //                             trajectory_length, std::fabs(end_point.v)));
 
-    hlbc::Trajectory local_trajectory;
-    // common::SpeedPoint sp;
-
-    for (size_t i = starting_index; i < starting_index + num_of_knots; i++) {
-      auto& point = global_trajectory_.trajectory_point[i];
-      point.relative_time -= now_time;
-      // speed_data.EvaluateByTime(point.relative_time, &sp);
-      // AWARN(sp.v());
-      // point.v = sp.v();
-      local_trajectory.trajectory_point.push_back(point);
-    }
-
-    local_trajectory.header.stamp = ros::Time::now();
-    local_trajectory.header.frame_id = "map";
-
-    local_trajectory_writer_->publish(local_trajectory);
+    local_trajectory_writer_->publish(std::move(
+        GenerateLocalProfile(starting_index, starting_index + num_of_knots, time_now)));
 
     visualizer_->Proc({markers_});
     loop_rate.sleep();
   }
   spinner_->stop();
+}
+
+hlbc::Trajectory StaticTrajectoryLoader::GenerateLocalProfile(
+    const int begin, const int end, const double now) const {
+  hlbc::Trajectory trajectory;
+  for (size_t i = begin; i < end; i++) {
+    auto point = global_trajectory_.trajectory_point[i];
+    point.relative_time -= now;
+    trajectory.trajectory_point.push_back(point);
+  }
+  trajectory.header.stamp = ros::Time::now();
+  trajectory.header.frame_id = "map";
+  return trajectory;
 }
 
 void StaticTrajectoryLoader::OnChassis(

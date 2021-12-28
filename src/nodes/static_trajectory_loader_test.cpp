@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
 
   std::string path = absl::StrCat(std::string(std::getenv("HOME")),
                                   "/autoware.ai/src/autoware/common/"
-                                  "hlbc/data/saved_waypoints.csv");
+                                  "hlbc/data/saved_waypoints_SCSp.csv");
   autoagric::common::test::StaticTrajectoryLoader loader(nh, path);
 
   loader.Init();

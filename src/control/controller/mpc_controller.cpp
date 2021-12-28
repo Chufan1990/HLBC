@@ -440,7 +440,7 @@ Status MPCController::ComputeControlCommand(
 
   // standstill acceleration
   if (std::fabs(chassis->speed_mps()) < 1e-6 &&
-      std::fabs(linear_velocity_feedback) > 1e-6) {
+      std::fabs(linear_velocity_feedback) > 1e-2) {
     linear_velocity_feedback =
         std::copysign(std::fmax(std::fabs(linear_velocity_feedback),
                                 standstill_acceleration_ * ts_),
@@ -454,8 +454,8 @@ Status MPCController::ComputeControlCommand(
   } else if (linear_velocity_feedback < -1e-6 &&
              reference_trajectory_.back().v() < -1e-6) {
     cmd->set_gear_location(canbus::Chassis::GEAR_REVERSE);
-  } else if ((linear_velocity_feedback * reference_trajectory_.back().v()) <
-             -1e-3) {
+  } else if ((std::fabs(linear_velocity_feedback) < 1e-2) &&
+             (std::fabs(chassis->speed_mps()) < 1e-6)) {
     cmd->set_gear_location(canbus::Chassis::GEAR_NEUTRAL);
   } else {
     cmd->set_gear_location(canbus::Chassis::GEAR_PARKING);
@@ -545,11 +545,12 @@ void MPCController::Stop() {
 
 std::string MPCController::Name() const { return name_; }
 
-const std::vector<TrajectoryPoint>& MPCController::reference_trajectory() const {
+const std::vector<TrajectoryPoint> &MPCController::reference_trajectory()
+    const {
   return reference_trajectory_;
 }
 
-const std::vector<TrajectoryPoint>& MPCController::predicted_solution() const {
+const std::vector<TrajectoryPoint> &MPCController::predicted_solution() const {
   return predicted_solution_;
 }
 

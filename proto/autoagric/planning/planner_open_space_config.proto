@@ -1,0 +1,174 @@
+syntax = "proto3";
+
+import "autoagric/planning/task_config.proto";
+
+package autoagric.planning;
+
+enum DualWarmUpMode {
+  IPOPT = 0;
+  IPOPTQP = 1;
+  OSQP = 2;
+  DEBUG = 3;
+  SLACKQP = 4;
+}
+
+enum DistanceApproachMode {
+  DISTANCE_APPROACH_IPOPT = 0;
+  DISTANCE_APPROACH_IPOPT_CUDA = 1;
+  DISTANCE_APPROACH_IPOPT_FIXED_TS = 2;
+  DISTANCE_APPROACH_IPOPT_FIXED_DUAL = 3;
+  DISTANCE_APPROACH_IPOPT_RELAX_END = 4;
+  DISTANCE_APPROACH_IPOPT_RELAX_END_SLACK = 5;
+}
+
+message PlannerOpenSpaceConfig {
+  // Open Space ROIConfig
+  ROIConfig roi_config = 1;
+  // Hybrid A Star Warm Start
+  WarmStartConfig warm_start_config = 2;
+  // Dual Variable Warm Start
+  //   DualVariableWarmStartConfig dual_variable_warm_start_config = 3;
+  // Distance Approach Configs
+  //   DistanceApproachConfig distance_approach_config = 4;
+  // Iterative Anchoring Configs
+  //   IterativeAnchoringConfig iterative_anchoring_smoother_config = 5;
+  // Trajectory PartitionConfig Configs
+  //   TrajectoryPartitionConfig trajectory_partition_config = 6;
+  float delta_t = 7;
+  double is_near_destination_threshold = 8;
+  bool enable_check_parallel_trajectory = 9;
+  bool enable_linear_interpolation = 10;
+  double is_near_destination_theta_threshold = 11;
+}
+
+message ROIConfig {
+  // longitudinal range of parking roi backward
+  double roi_longitudinal_range_start = 1;
+  // longitudinal range of parking roi forward
+  double roi_longitudinal_range_end = 2;
+  // parking spot range detection threshold
+  double parking_start_range = 3;
+  // Parking orientation for reverse parking
+  bool parking_inwards = 4;
+}
+
+message WarmStartConfig {
+  // Hybrid a star for warm start
+  double xy_grid_resolution = 1;
+  double phi_grid_resolution = 2;
+  uint64 next_node_num = 3;
+  double step_size = 4;
+  double traj_forward_penalty = 5;
+  double traj_back_penalty = 6;
+  double traj_gear_switch_penalty = 7;
+  double traj_steer_penalty = 8;
+  double traj_steer_change_penalty = 9;
+  // Grid a star for heuristic
+  double grid_a_star_xy_resolution = 15;
+  double node_radius = 16;
+  PiecewiseJerkSpeedOptimizerConfig s_curve_config = 17;
+}
+
+// message DualVariableWarmStartConfig {
+//   // Dual variable Warm Start
+//   double weight_d = 1 [ default = 1.0 ];
+//   IpoptConfig ipopt_config = 2;
+//   DualWarmUpMode qp_format = 3;
+//   double min_safety_distance = 4 [ default = 0.0 ];
+//   bool debug_osqp = 5 [ default = false ];
+//   double beta = 6 [ default = 1.0 ];
+//   OSQPConfig osqp_config = 7;
+// }
+
+// message DistanceApproachConfig {
+//   // Distance approach weight configs
+//   double weight_steer = 1;
+//   double weight_a = 2;
+//   double weight_steer_rate = 3;
+//   double weight_a_rate = 4;
+//   double weight_x = 5;
+//   double weight_y = 6;
+//   double weight_phi = 7;
+//   double weight_v = 8;
+//   double weight_steer_stitching = 9;
+//   double weight_a_stitching = 10;
+//   double weight_first_order_time = 11;
+//   double weight_second_order_time = 12;
+//   double min_safety_distance = 13 [ default = 0.0 ];
+//   double max_speed_forward = 14 [ default = 3.0 ];
+//   double max_speed_reverse = 15 [ default = 2.0 ];
+//   double max_acceleration_forward = 16 [ default = 2.0 ];
+//   double max_acceleration_reverse = 17 [ default = 2.0 ];
+//   double min_time_sample_scaling = 18 [ default = 0.1 ];
+//   double max_time_sample_scaling = 19 [ default = 10.0 ];
+//   bool use_fix_time = 20 [ default = false ];
+//   IpoptConfig ipopt_config = 21;
+//   bool enable_constraint_check = 22;
+//   bool enable_hand_derivative = 23;
+//   // True to enable hand derived derivative inside open space planner
+//   bool enable_derivative_check = 24;
+//   // True to enable derivative check inside open space planner
+//   bool enable_initial_final_check = 25 [ default = false ];
+//   DistanceApproachMode distance_approach_mode = 26;
+//   bool enable_jacobian_ad = 27 [ default = false ];
+//   bool enable_check_initial_state = 28 [ default = false ];
+//   double weight_end_state = 29 [ default = 0.0 ];
+//   double weight_slack = 30 [ default = 0.0 ];
+// }
+
+// message IpoptConfig {
+//   // Ipopt configs
+//   int32 ipopt_print_level = 1;
+//   int32 mumps_mem_percent = 2;
+//   double mumps_pivtol = 3;
+//   int32 ipopt_max_iter = 4;
+//   double ipopt_tol = 5;
+//   double ipopt_acceptable_constr_viol_tol = 6;
+//   double ipopt_min_hessian_perturbation = 7;
+//   double ipopt_jacobian_regularization_value = 8;
+//   string ipopt_print_timing_statistics = 9;
+//   string ipopt_alpha_for_y = 10;
+//   string ipopt_recalc_y = 11;
+//   double ipopt_mu_init = 12 [ default = 0.1 ];
+//   // ipopt barrier parameter, default 0.1
+// }
+
+// // Dual variable configs for OSQP
+// message OSQPConfig {
+//   double alpha = 1 [ default = 1.0 ];
+//   double eps_abs = 2 [ default = 1.0e-3 ];
+//   double eps_rel = 3 [ default = 1.0e-3 ];
+//   int32 max_iter = 4 [ default = 10000 ];
+//   bool polish = 5 [ default = true ];
+//   bool osqp_debug_log = 6 [ default = false ];
+// }
+
+// message IterativeAnchoringConfig {
+//   // Ipopt configs
+//   double interpolated_delta_s = 1 [ default = 0.1 ];
+//   int32 reanchoring_trails_num = 2 [ default = 50 ];
+//   double reanchoring_pos_stddev = 3 [ default = 0.25 ];
+//   double reanchoring_length_stddev = 4 [ default = 1.0 ];
+//   bool estimate_bound = 5 [ default = false ];
+//   double default_bound = 6 [ default = 2.0 ];
+//   double vehicle_shortest_dimension = 7 [ default = 1.04 ];
+//   FemPosDeviationSmootherConfig fem_pos_deviation_smoother_config = 8;
+//   double collision_decrease_ratio = 9 [ default = 0.9 ];
+//   // TODO(QiL, Jinyun): Merge following with overall config for open space
+//   double max_forward_v = 10 [ default = 2.0 ];
+//   double max_reverse_v = 11 [ default = 2.0 ];
+//   double max_forward_acc = 12 [ default = 3.0 ];
+//   double max_reverse_acc = 13 [ default = 2.0 ];
+//   double max_acc_jerk = 14 [ default = 4.0 ];
+//   double delta_t = 15 [ default = 0.2 ];
+//   PiecewiseJerkSpeedOptimizerConfig s_curve_config = 16;
+// }
+
+// message TrajectoryPartitionConfig {
+//   uint64 interpolated_pieces_num = 1 [ default = 50 ];
+//   uint64 initial_gear_check_horizon = 2 [ default = 3 ];
+//   double heading_searching_range = 3 [ default = 0.3 ];
+//   double gear_shift_period_duration = 4 [ default = 2.0 ];
+//   double gear_shift_max_t = 5 [ default = 3.0 ];
+//   double gear_shift_unit_t = 6 [ default = 0.02 ];
+// }
