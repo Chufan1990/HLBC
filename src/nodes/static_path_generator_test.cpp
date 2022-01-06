@@ -1,5 +1,3 @@
-#include "common/test/static_trajectory_loader.h"
-
 #include <stdlib.h>
 
 #include <string>
@@ -7,20 +5,22 @@
 #include "absl/strings/str_cat.h"
 #include "common/macro.h"
 #include "common/util/file.h"
+#include "common/util/static_path_wrapper.h"
 #include "planning/common/planning_gflags.h"
 #include "ros/ros.h"
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "trajectory_loader");
 
-  ros::NodeHandle nh;
+  ros::NodeHandle nh("~");
 
-  std::string path = absl::StrCat(std::string(std::getenv("HOME")),
-                                  "/autoware.ai/src/autoware/common/"
-                                  "hlbc/data/saved_waypoints_SCSp.csv");
-  autoagric::common::test::StaticTrajectoryLoader loader(nh, path);
+  std::string filename;
 
-  loader.Init();
+  nh.getParam("filename", filename);
+
+  std::string path = absl::StrCat(std::string(std::getenv("HOME")), filename);
+
+  autoagric::common::util::StaticPathWrapper static_path_wrapper(nh, path);
 
   autoagric::planning::TrajectorySmootherConfig trajectory_smoother_conf;
 
@@ -31,7 +31,10 @@ int main(int argc, char **argv) {
            << FLAGS_discrete_points_smoother_config_filename);
   }
 
-  loader.Smooth(trajectory_smoother_conf);
+  if (!static_path_wrapper.Init(trajectory_smoother_conf)) {
+    AERROR("StaticPathWrapper init failed");
+    return 1;
+  }
 
   geometry_msgs::Vector3 scale;
   std_msgs::ColorRGBA color;
@@ -43,9 +46,12 @@ int main(int argc, char **argv) {
   color.b = 1.0;
   color.a = 1.0;
 
-  loader.InitVisualizer("global", scale, color);
+  static_path_wrapper.InitVisualizer("global", scale, color);
 
-  loader.Proc();
+  if (!static_path_wrapper.Proc()) {
+    AERROR("StaticPathWrapper process failed");
+    return 1;
+  }
 
   return 0;
 }

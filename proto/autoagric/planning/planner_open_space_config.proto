@@ -59,7 +59,7 @@ message WarmStartConfig {
   uint64 next_node_num = 3;
   double step_size = 4;
   double traj_forward_penalty = 5;
-  double traj_back_penalty = 6;
+  double traj_backward_penalty = 6;
   double traj_gear_switch_penalty = 7;
   double traj_steer_penalty = 8;
   double traj_steer_change_penalty = 9;

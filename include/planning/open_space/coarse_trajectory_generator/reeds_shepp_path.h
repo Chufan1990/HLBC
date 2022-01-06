@@ -47,13 +47,13 @@ class ReedsShepp {
                    const std::shared_ptr<Node3d> end_node,
                    std::vector<ReedsSheppPath>* all_possible_path);
 
-  bool GenerateRSPPar(const std::shared_ptr<Node3d> start_node,
-                      const std::shared_ptr<Node3d> end_node,
-                      std::vector<ReedsSheppPath>* all_possible_path);
+  // bool GenerateRSPPar(const std::shared_ptr<Node3d> start_node,
+  //                     const std::shared_ptr<Node3d> end_node,
+  //                     std::vector<ReedsSheppPath>* all_possible_path);
 
-  bool GenerateLocalConfiguration(const std::shared_ptr<Node3d> start_node,
+  bool GenerateLocalConfigurations(const std::shared_ptr<Node3d> start_node,
                                   const std::shared_ptr<Node3d> end_node,
-                                  ReedsSheppPth* shortest_path);
+                                  ReedsSheppPath* shortest_path);
 
   void Interpolation(const int index, const double pd, const char m,
                      const double ox, const double oy, const double ophi,
@@ -91,7 +91,7 @@ class ReedsShepp {
   void LRSL(const double x, const double y, const double phi, RSPParam* param);
   void LRSLR(const double x, const double y, const double phi, RSPParam* param);
 
-  std::pair<double, double> calc_tau_omege(const double u, const double v,
+  std::pair<double, double> calc_tau_omega(const double u, const double v,
                                            const double xi, const double eta,
                                            const double phi);
 

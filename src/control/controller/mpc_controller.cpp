@@ -8,6 +8,7 @@
 #include "common/macro.h"
 #include "common/math/math_utils.h"
 #include "common/math/quaternion.h"
+#include "common/math/vec2d.h"
 #include "control/common/control_gflags.h"
 #include "control/common/pid_BC_controller.h"
 
@@ -23,6 +24,16 @@ using common::PathPoint;
 using common::TrajectoryPoint;
 using common::VehicleConfigHelper;
 using common::math::MpcIpopt;
+
+namespace {
+constexpr double kDoubleEpsilon = 1e-6;
+double DistanceToVec2d(const common::math::Vec2d &point,
+                       const common::math::Vec2d &vec) {
+  const double vec_length = vec.Length();
+  if (vec_length < kDoubleEpsilon) return point.DistanceTo(vec);
+  return point.CrossProd(vec) / vec_length;
+}
+}  // namespace
 
 MPCController::MPCController() : name_("MPC-based controller") {
   AINFO("Using " << name_);
@@ -341,6 +352,15 @@ Status MPCController::ComputeControlCommand(
   reference_trajectory_.clear();
   reference_trajectory_ = std::move(trajectory_analyzer_.InterpolateByTime(
       matched_point.relative_time(), ts_, horizon_));
+
+  cmd->mutable_debug()->mutable_simple_lat_debug()->set_lateral_error(
+      DistanceToVec2d(
+          com - common::math::Vec2d(reference_trajectory_[0].path_point().x(),
+                                    reference_trajectory_[0].path_point().y()),
+          common::math::Vec2d(reference_trajectory_[1].path_point().x(),
+                              reference_trajectory_[1].path_point().y()) -
+              common::math::Vec2d(reference_trajectory_[0].path_point().x(),
+                                  reference_trajectory_[0].path_point().y())));
 
   // ADEBUG("Comparing: \n matched_point "
   //        << matched_point.path_point().x() << " "

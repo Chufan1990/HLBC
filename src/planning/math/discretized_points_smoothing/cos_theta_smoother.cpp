@@ -96,15 +96,15 @@ bool CosThetaSmoother::Solve(
 
   bool ok = solution.status == CppAD::ipopt::solve_result<Dvector>::success;
 
-  ADEBUG("found optimal solution: " << (solution.status == 1));
+  ADEBUG("found optimal solution: " << (solution.status == 1 ? "yes" : "no"));
 
   if (ok) {
     for (size_t i = 0; i < raw_point2d.size(); i++) {
       size_t index = i << 1;
       opt_x->push_back(solution.x[index]);
       opt_y->push_back(solution.x[index + 1]);
-    //   ADEBUG("new point " << i << " (" << opt_x->back() << ", "
-    //                           << opt_y->back() << ")");
+      //   ADEBUG("new point " << i << " (" << opt_x->back() << ", "
+      //                           << opt_y->back() << ")");
     }
   }
 

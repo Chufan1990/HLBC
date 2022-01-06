@@ -1,15 +1,16 @@
 #include "control/common/pb3_ros_msgs.h"
 
+#include <tf2/utils.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 #include <algorithm>
 #include <cmath>
 
 #include "common/macro.h"
 #include "common/math/math_utils.h"
 #include "common/math/vec2d.h"
+#include "common/util/point_factory.h"
 #include "hlbc/TrajectoryPoint.h"
-#include "ros/ros.h"
-#include "tf2/utils.h"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 /**
  * @namespace autoagric::control
@@ -19,6 +20,7 @@ namespace autoagric {
 namespace control {
 
 using autoagric::canbus::Chassis;
+using autoagric::common::util::PointFactory;
 using autoagric::localization::LocalizationEstimate;
 using autoagric::planning::ADCTrajectory;
 using common::PathPoint;
@@ -34,6 +36,8 @@ double PointDistanceSquare(const TrajectoryPoint& point, const double x,
 }
 
 double sign(const double x) { return x < 0 ? -1.0 : 1.0; }
+
+constexpr double kDoubleEpsilon = 1e-3;
 }  // namespace
 
 namespace pb3 {
@@ -43,52 +47,64 @@ void fromMsg(const std_msgs::Header& msg, common::Header* header) {
   header->set_sequence_num(msg.seq);
   header->set_frame_id(msg.frame_id);
 }
+
 void fromMsg(const autoware_msgs::LaneConstPtr& msg,
              ADCTrajectory* trajectory) {
   trajectory->Clear();
 
-  double pv = std::fabs(msg->waypoints[0].twist.twist.linear.x) < 1e-2
-                  ? sign(msg->waypoints[0].twist.twist.linear.x) * 1e-2
-                  : msg->waypoints[0].twist.twist.linear.x;
+  if (msg->waypoints.size() == 0U) return;
 
-  Vec2d pvec(msg->waypoints[0].pose.pose.position.x,
-             msg->waypoints[0].pose.pose.position.y);
+  double prev_x = msg->waypoints.front().pose.pose.position.x;
+  double prev_y = msg->waypoints.front().pose.pose.position.y;
+
+  double prev_heading = common::math::NormalizeAngle(tf2::getYaw(
+      tf2::Quaternion(msg->waypoints.front().pose.pose.orientation.x,
+                      msg->waypoints.front().pose.pose.orientation.y,
+                      msg->waypoints.front().pose.pose.orientation.z,
+                      msg->waypoints.front().pose.pose.orientation.w)));
+
+  double prev_speed = msg->waypoints.front().twist.twist.linear.x;
+
+  double s = 0.0;
   double relative_time = 0.0;
-  double distance = 0.0;
 
-  for (int i = 0; i < std::min<int>(msg->waypoints.size(), 21); i++) {
-    auto& waypoint = msg->waypoints[i];
+  for (size_t i = 0; i < msg->waypoints.size(); i++) {
+    const auto& waypoint = msg->waypoints[i];
+    auto trajectory_point = trajectory->add_trajectory_point();
 
-    auto&& trajectory_point = trajectory->add_trajectory_point();
-    trajectory_point->mutable_path_point()->set_x(
-        waypoint.pose.pose.position.x);
-    trajectory_point->mutable_path_point()->set_y(
-        waypoint.pose.pose.position.y);
-    trajectory_point->mutable_path_point()->set_z(
-        waypoint.pose.pose.position.z);
-    trajectory_point->mutable_path_point()->set_kappa(0.0);
-    trajectory_point->mutable_path_point()->set_theta(
+    const double x = waypoint.pose.pose.position.x;
+    const double y = waypoint.pose.pose.position.y;
+    const double z = waypoint.pose.pose.position.z;
+    const double heading =
         common::math::NormalizeAngle(tf2::getYaw(tf2::Quaternion(
             waypoint.pose.pose.orientation.x, waypoint.pose.pose.orientation.y,
             waypoint.pose.pose.orientation.z,
-            waypoint.pose.pose.orientation.w))));
-    trajectory_point->set_v(waypoint.twist.twist.linear.x);
-    trajectory_point->mutable_path_point()->set_s(distance);
-    trajectory_point->set_relative_time(relative_time);
-    Vec2d nvec(msg->waypoints[i].pose.pose.position.x,
-               msg->waypoints[i].pose.pose.position.y);
-    distance += pvec.DistanceTo(nvec);
-    relative_time += std::fabs(pvec.DistanceTo(nvec) / pv);
-    pv = std::fabs(waypoint.twist.twist.linear.x) < 1e-2
-             ? sign(waypoint.twist.twist.linear.x) * 1e-2
-             : waypoint.twist.twist.linear.x;
-  }
+            waypoint.pose.pose.orientation.w)));
+    const double v = waypoint.twist.twist.linear.x;
 
-  //   ADEBUG("trajectory->trajectory_point(): " <<
-  //   trajectory->DebugString());
-  fromMsg(msg->header, trajectory->mutable_header());
-  trajectory->mutable_header()->set_timestamp_sec(ros::Time::now().toSec());
-  trajectory->mutable_header()->set_frame_id("map");
+    Vec2d diff(x - prev_x, y - prev_y);
+
+    const double ds = diff.Length();
+    const double dt =
+        ds / std::max(std::abs(v + prev_speed) / 2.0, kDoubleEpsilon);
+    const double a = (v - prev_speed) / dt;
+    const double kappa =
+        ds / common::math::NormalizeAngle(heading - prev_heading);
+
+    s += ds;
+    relative_time += dt;
+
+    trajectory_point->set_v(v);
+    trajectory_point->set_a(a);
+    trajectory_point->set_relative_time(relative_time);
+    trajectory_point->mutable_path_point()->CopyFrom(
+        PointFactory::ToPathPoint(x, y, z, s, heading, kappa));
+
+    prev_x = x;
+    prev_y = y;
+    prev_speed = v;
+    prev_heading = heading;
+  }
 }
 
 void fromMsg(const geometry_msgs::PoseStampedConstPtr& msg,

@@ -140,9 +140,6 @@ bool DiscretePointsMath::ComputePathPofile(
     double yds = y_over_s_first_derivatives[i];
     double xdds = x_over_s_second_derivatives[i];
     double ydds = y_over_s_second_derivatives[i];
-
-    ADEBUG(i << " " << xds << " " << yds << " " << xdds << " " << ydds << " "
-             << CurveMath::ComputeCurvature(xds, xdds, yds, ydds));
     kappas->push_back(CurveMath::ComputeCurvature(xds, xdds, yds, ydds));
   }
 

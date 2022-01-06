@@ -358,14 +358,14 @@ target_link_libraries(
 # ##############################################################################
 # static_trajectory_loader_test ##
 # ##############################################################################
-add_executable(static_trajectory_loader_test
-               src/nodes/static_trajectory_loader_test.cpp)
+add_executable(static_path_generator_test
+               src/nodes/static_path_generator_test.cpp)
 
-add_dependencies(static_trajectory_loader_test ${catkin_EXPORTED_TARGETS}
+add_dependencies(static_path_generator_test ${catkin_EXPORTED_TARGETS}
                  ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 target_link_libraries(
-  static_trajectory_loader_test
+  static_path_generator_test
   ${PROJECT_NAME}
   ${Protobuf_LIBRARIES}
   ${catkin_LIBRARIES}
@@ -403,7 +403,7 @@ target_link_libraries(
 
 install(
   TARGETS ${PROJECT_NAME} control_node trajectory_visualizer_test
-          # discrete_points_trajectory_smoother_test
+          static_path_generator_test
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

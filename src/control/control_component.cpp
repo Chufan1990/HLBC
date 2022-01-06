@@ -276,6 +276,7 @@ bool ControlComponent::Proc() {
     cmd.twist.linear.y = control_command.brake();
     cmd.twist.linear.z = control_command.gear_location();
     cmd.twist.angular.z = control_command.steering_target();
+    cmd.twist.angular.y = control_command.debug().simple_lat_debug().lateral_error();
     control_cmd_writer_->publish(cmd);
 
     /**

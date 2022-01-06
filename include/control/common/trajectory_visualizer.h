@@ -44,6 +44,13 @@ class TrajectoryVisualizer {
                                   const geometry_msgs::Vector3& scale,
                                   const std_msgs::ColorRGBA& color);
 
+  static MarkerType toMarkerArray(const std::vector<double>& xs,
+                                  const std::vector<double>& ys,
+                                  const std::vector<double>& headings,
+                                  const std_msgs::Header& header,
+                                  const geometry_msgs::Vector3& scale,
+                                  const std_msgs::ColorRGBA& color);
+
   template <typename T>
   static MarkerType TrajectoryToMarkerArray(const T& trajectory,
                                             const std::string& frame_id,

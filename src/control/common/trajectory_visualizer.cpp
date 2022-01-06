@@ -202,5 +202,57 @@ MarkerType TrajectoryVisualizer::toMarkerArray(const autoware_msgs::Lane& msg) {
   return std::make_pair(arrows, points_and_line);
 }
 
+MarkerType TrajectoryVisualizer::toMarkerArray(
+    const std::vector<double>& xs, const std::vector<double>& ys,
+    const std::vector<double>& headings, const std_msgs::Header& header,
+    const geometry_msgs::Vector3& scale, const std_msgs::ColorRGBA& color) {
+  Marker points, line_strip;
+  MarkerArray arrows, points_and_line;
+
+  points.header = line_strip.header = header;
+  points.ns = "points";
+  line_strip.ns = "line";
+  points.id = 0;
+  line_strip.id = 1;
+
+  points.type = Marker::POINTS;
+  line_strip.type = Marker::LINE_STRIP;
+
+  points.scale = line_strip.scale = scale;
+  points.color = line_strip.color = color;
+  // points.lifetime = line_strip.lifetime = ros::Duration(0);
+
+  int index = 0;
+  for (size_t i = 0; i < xs.size(); i++) {
+    geometry_msgs::Point p;
+    p.x = xs[i];
+    p.y = ys[i];
+    p.z = 0.0;
+
+    points.points.push_back(p);
+    line_strip.points.push_back(p);
+
+    Marker arrow;
+    arrow.pose.position = p;
+
+    auto q = tf2::Quaternion();
+    q.setRPY(0, 0, headings[i]);
+    arrow.pose.orientation = tf2::toMsg(q);
+    arrow.header = header;
+    arrow.ns = "arrows";
+    arrow.id = index++;
+    arrow.type = Marker::ARROW;
+    arrow.scale = scale;
+    arrow.color = color;
+    // arrow.lifetime = ros::Duration(0);
+    arrows.markers.push_back(arrow);
+  }
+
+  points_and_line.markers.push_back(points);
+  points_and_line.markers.push_back(line_strip);
+
+  return std::make_pair(arrows, points_and_line);
+}
+
 }  // namespace control
 }  // namespace autoagric

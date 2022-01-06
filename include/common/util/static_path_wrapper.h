@@ -16,31 +16,26 @@
 #include "autoagric/canbus/chassis.pb.h"
 #include "autoagric/common/pnc_point.pb.h"
 #include "autoagric/localization/localization.pb.h"
-#include "autoagric/planning/planning.pb.h"
 #include "autoagric/planning/reference_line_smoother_config.pb.h"
-#include "common/test/trajectory_loader.h"
+#include "common/util/static_path_generator.h"
 #include "common/vehicle_state/vehicle_state_provider.h"
 #include "control/common/pb3_ros_msgs.h"
 #include "control/common/trajectory_visualizer.h"
 #include "hlbc/Trajectory.h"
-#include "planning/common/ego_info.h"
-#include "planning/reference_line/discrete_points_trajectory_smoother.h"
 
 namespace autoagric {
 namespace common {
-namespace test {
+namespace util {
 
-class StaticTrajectoryLoader {
+class StaticPathWrapper {
  public:
-  StaticTrajectoryLoader() = default;
+  StaticPathWrapper() = default;
 
-  StaticTrajectoryLoader(ros::NodeHandle& nh, std::string& file_path);
+  StaticPathWrapper(ros::NodeHandle& nh, std::string& file_path);
 
-  void Init();
+  bool Init(const planning::TrajectorySmootherConfig& config);
 
-  void Proc();
-
-  void Smooth(const planning::TrajectorySmootherConfig& config);
+  bool Proc();
 
   void InitVisualizer(const std::string& name,
                       const geometry_msgs::Vector3& scale,
@@ -54,15 +49,7 @@ class StaticTrajectoryLoader {
 
   void OnChassis(const geometry_msgs::TwistStampedConstPtr& msg);
 
-  hlbc::Trajectory GenerateLocalProfile(const int begin, const int end,
-                                        const double now) const;
-
-  std::pair<int, double> QueryNearestPointByPoistion(const double x,
-                                                     const double y, int index);
-
-  int current_start_index_;
-
-  int trajectory_length_;
+  hlbc::Trajectory GenerateLocalProfile(const StaticPathResult& result) const;
 
   ros::NodeHandle nh_;
 
@@ -89,23 +76,15 @@ class StaticTrajectoryLoader {
 
   std::unique_ptr<ros::Timer> global_trajectory_writer_;
 
-  std::unique_ptr<TrajectoryLoader> loader_;
-
   std::string static_trajectory_file_path_;
-
-  hlbc::Trajectory global_trajectory_;
-
-  planning::TrajectorySmootherConfig config_;
-
-  std::unique_ptr<planning::TrajectorySmoother> smoother_;
 
   std::unique_ptr<control::TrajectoryVisualizer> visualizer_;
 
   control::TrajectoryVisualizer::MarkerType markers_;
 
-  planning::EgoInfo ego_info_;
-
   std::unique_ptr<common::VehicleStateProvider> vehicle_state_provider_;
+
+  std::unique_ptr<common::util::StaticPathGenerator> path_generator_;
 
   localization::LocalizationEstimate latest_localization_;
 
@@ -114,7 +93,11 @@ class StaticTrajectoryLoader {
   std::timed_mutex localization_copy_done_;
 
   std::timed_mutex chassis_copy_done_;
+
+  bool enable_periodic_speed_profile_;
+
+  double delta_t_;
 };
-}  // namespace test
+}  // namespace util
 }  // namespace common
 }  // namespace autoagric
