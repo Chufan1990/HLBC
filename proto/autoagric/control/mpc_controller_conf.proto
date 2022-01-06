@@ -36,20 +36,27 @@ message MPCControllerConf {
   double brake_minimum_action = 16;
   double throttle_minimum_action = 17;
   autoagric.control.GainScheduler lat_err_gain_scheduler = 18;
-  autoagric.control.GainScheduler heading_err_gain_scheduler = 19;
-  autoagric.control.GainScheduler steer_weight_gain_scheduler = 20;
-  autoagric.control.GainScheduler feedforwardterm_gain_scheduler = 21;
-  calibrationtable.ControlCalibrationTable calibration_table = 22;
-  bool enable_mpc_feedforward_compensation = 23;
-  double unconstrained_control_diff_limit = 24;
-  int32 ipopt_print_level = 25;
-  double latency_time = 26;
+  autoagric.control.GainScheduler lon_err_gain_scheduler = 19;
+  autoagric.control.GainScheduler heading_err_gain_scheduler = 20;
+  autoagric.control.GainScheduler speed_err_gain_scheduler = 21;
+  autoagric.control.GainScheduler steer_weight_gain_scheduler = 22;
+  autoagric.control.GainScheduler accel_weight_gain_scheduler = 23;
+  autoagric.control.GainScheduler steer_rate_weight_gain_scheduler = 24;
+  autoagric.control.GainScheduler jerk_weight_gain_scheduler = 25;
+  autoagric.control.GainScheduler feedforwardterm_gain_scheduler = 26;
+  calibrationtable.ControlCalibrationTable calibration_table = 27;
+  bool enable_mpc_feedforward_compensation = 28;
+  double unconstrained_control_diff_limit = 29;
+  int32 ipopt_print_level = 30;
+  double latency_time = 31;
 
-  autoagric.control.PidConf brake_pid_conf = 27;
-  string ipopt_warm_start = 28;
-  string ipopt_same_structure = 29;
+  autoagric.control.PidConf brake_pid_conf = 32;
+  string ipopt_warm_start = 33;
+  string ipopt_same_structure = 34;
 
-  double max_longitudinal_jerk = 30; 
+  double max_longitudinal_jerk = 35; 
 
-  repeated double matrix_endstate = 31;
+  repeated double matrix_endstate = 36;
+
+  
 }

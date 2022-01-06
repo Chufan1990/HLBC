@@ -264,42 +264,87 @@ void MPCController::LoadMPCGainScheduler(
     const MPCControllerConf &mpc_controller_conf) {
   const auto &lat_err_gain_scheduler =
       mpc_controller_conf.lat_err_gain_scheduler();
+  const auto &lon_err_gain_scheduler =
+      mpc_controller_conf.lon_err_gain_scheduler();
   const auto &heading_err_gain_scheduler =
       mpc_controller_conf.heading_err_gain_scheduler();
-  const auto &feedforwardterm_gain_scheduler =
-      mpc_controller_conf.feedforwardterm_gain_scheduler();
+  const auto &speed_err_gain_scheduler =
+      mpc_controller_conf.speed_err_gain_scheduler();
+  // const auto &feedforwardterm_gain_scheduler =
+  //     mpc_controller_conf.feedforwardterm_gain_scheduler();
   const auto &steer_weight_gain_scheduler =
       mpc_controller_conf.steer_weight_gain_scheduler();
+  const auto &accel_weight_gain_scheduler =
+      mpc_controller_conf.accel_weight_gain_scheduler();
+  const auto &steer_rate_weight_gain_scheduler =
+      mpc_controller_conf.steer_rate_weight_gain_scheduler();
+  const auto &jerk_weight_gain_scheduler =
+      mpc_controller_conf.jerk_weight_gain_scheduler();
   ADEBUG("MPC control gain scheduler loaded");
-  Interpolation1D::DataType xy1, xy2, xy3, xy4;
+  Interpolation1D::DataType xy1, xy2, xy3, xy4, xy5, xy6, xy7, xy8;
   for (const auto &scheduler : lat_err_gain_scheduler.scheduler()) {
     xy1.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
   }
-  for (const auto &scheduler : heading_err_gain_scheduler.scheduler()) {
+  for (const auto &scheduler : lat_err_gain_scheduler.scheduler()) {
     xy2.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
   }
-  for (const auto &scheduler : feedforwardterm_gain_scheduler.scheduler()) {
+  for (const auto &scheduler : heading_err_gain_scheduler.scheduler()) {
     xy3.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
   }
-  for (const auto &scheduler : steer_weight_gain_scheduler.scheduler()) {
+  for (const auto &scheduler : speed_err_gain_scheduler.scheduler()) {
     xy4.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
+  }
+  for (const auto &scheduler : steer_weight_gain_scheduler.scheduler()) {
+    xy5.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
+  }
+  for (const auto &scheduler : accel_weight_gain_scheduler.scheduler()) {
+    xy6.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
+  }
+  for (const auto &scheduler : steer_rate_weight_gain_scheduler.scheduler()) {
+    xy7.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
+  }
+  for (const auto &scheduler : jerk_weight_gain_scheduler.scheduler()) {
+    xy8.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
   }
 
   lat_err_interpolation_.reset(new Interpolation1D);
   AERROR_IF(!lat_err_interpolation_->Init(xy1),
             "Fail to load lateral error gain scheduler for MPC controller");
 
+  lat_err_interpolation_.reset(new Interpolation1D);
+  AERROR_IF(
+      !lon_err_interpolation_->Init(xy2),
+      "Fail to load longitudinal error gain scheduler for MPC controller");
+
   heading_err_interpolation_.reset(new Interpolation1D);
-  AERROR_IF(!heading_err_interpolation_->Init(xy2),
+  AERROR_IF(!heading_err_interpolation_->Init(xy3),
             "Fail to load heading error gain scheduler for MPC controller");
 
-  feedforwardterm_interpolation_.reset(new Interpolation1D);
-  AERROR_IF(!feedforwardterm_interpolation_->Init(xy3),
-            "Fail to load feed forward term gain scheduler for MPC controller");
+  heading_err_interpolation_.reset(new Interpolation1D);
+  AERROR_IF(!speed_err_interpolation_->Init(xy4),
+            "Fail to load speed error gain scheduler for MPC controller");
+
+  // feedforwardterm_interpolation_.reset(new Interpolation1D);
+  // AERROR_IF(!feedforwardterm_interpolation_->Init(xy3),
+  //           "Fail to load feed forward term gain scheduler for MPC
+  //           controller");
 
   steer_weight_interpolation_.reset(new Interpolation1D);
-  AERROR_IF(!steer_weight_interpolation_->Init(xy4),
+  AERROR_IF(!steer_weight_interpolation_->Init(xy5),
             "Fail to load steer weight gain scheduler for MPC controller");
+
+  steer_weight_interpolation_.reset(new Interpolation1D);
+  AERROR_IF(
+      !accel_weight_interpolation_->Init(xy6),
+      "Fail to load acceleration weight gain scheduler for MPC controller");
+
+  steer_weight_interpolation_.reset(new Interpolation1D);
+  AERROR_IF(!steer_rate_weight_interpolation_->Init(xy7),
+            "Fail to load steer rate weight gain scheduler for MPC controller");
+
+  steer_weight_interpolation_.reset(new Interpolation1D);
+  AERROR_IF(!jerk_weight_interpolation_->Init(xy8),
+            "Fail to load jerk weight gain scheduler for MPC controller");
 }
 
 void MPCController::LoadControlCalibrationTable(
@@ -402,7 +447,34 @@ Status MPCController::ComputeControlCommand(
            << " s: " << frenet_frame_trajectory[i].steer()
            << " t: " << frenet_frame_trajectory[i].relative_time());
   }
+
   UpdateState(matched_point.path_point());
+
+  auto speed_abs = std::fabs(injector_->vehicle_state()->linear_velocity());
+  // Add gain scheduler for higher speed steering
+  if (FLAGS_enable_gain_scheduler) {
+    matrix_q_updated_(0, 0) =
+        matrix_q_(0, 0) * lat_err_interpolation_->Interpolate(speed_abs);
+    matrix_q_updated_(1, 1) =
+        matrix_q_(1, 1) * lon_err_interpolation_->Interpolate(speed_abs);
+    matrix_q_updated_(2, 2) =
+        matrix_q_(2, 2) * heading_err_interpolation_->Interpolate(speed_abs);
+    matrix_q_updated_(3, 3) =
+        matrix_q_(3, 3) * speed_err_interpolation_->Interpolate(speed_abs);
+    matrix_r_updated_(0, 0) =
+        matrix_r_(0, 0) * steer_weight_interpolation_->Interpolate(speed_abs);
+    matrix_r_updated_(1, 1) =
+        matrix_r_(1, 1) * accel_weight_interpolation_->Interpolate(speed_abs);
+    matrix_r_updated_(2, 2) =
+        matrix_r_(2, 2) *
+        steer_rate_weight_interpolation_->Interpolate(speed_abs);
+    matrix_r_updated_(3, 3) =
+        matrix_r_(3, 3) * jerk_weight_interpolation_->Interpolate(speed_abs);
+  } else {
+    matrix_q_updated_ = matrix_q_;
+    matrix_r_updated_ = matrix_r_;
+    // steer_angle_feedforwardterm_updated_ = steer_angle_feedforwardterm_;
+  }
 
   double mpc_start_timestamp = ros::Time::now().toNSec();
   double steer_angle_feedback = 0.0;

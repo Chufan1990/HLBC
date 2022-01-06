@@ -112,11 +112,19 @@ class MPCController : public Controller {
 
   std::unique_ptr<Interpolation1D> lat_err_interpolation_;
 
+  std::unique_ptr<Interpolation1D> lon_err_interpolation_;
+
   std::unique_ptr<Interpolation1D> heading_err_interpolation_;
 
-  std::unique_ptr<Interpolation1D> feedforwardterm_interpolation_;
+  std::unique_ptr<Interpolation1D> speed_err_interpolation_;
+
+  std::unique_ptr<Interpolation1D> accel_weight_interpolation_;
 
   std::unique_ptr<Interpolation1D> steer_weight_interpolation_;
+
+  std::unique_ptr<Interpolation1D> jerk_weight_interpolation_;
+
+  std::unique_ptr<Interpolation1D> steer_rate_weight_interpolation_;
 
   std::shared_ptr<DependencyInjector> injector_;
 
