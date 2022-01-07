@@ -7,10 +7,10 @@ set(${PROJECT}}_VERSION 0.0.1)
 set(CMAKE_CXX_FLAGS
     "-std=c++14 -march=native -pipe -Wextra -fopenmp -fPIC -pthread -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG
-    "-std=c++14 -march=native -pipe -Wextra -fopenmp -fPIC -pthread -Wall -O3 -g -ggdb"
+    "-std=c++14 -march=native -pipe -Wextra -fopenmp -fPIC -pthread -Wall -O0 -g -ggdb"
 )
 set(CMAKE_CXX_FLAGS_RELEASE
-    "-std=c++14 -march=native -pipe -Wextra -fopenmp -fPIC -pthread -Wall -O0")
+    "-std=c++14 -march=native -pipe -Wextra -fopenmp -fPIC -pthread -Wall -O5")
 
 # set(ABSL_PROPAGATE_CXX_STD ON)
 

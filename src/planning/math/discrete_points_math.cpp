@@ -36,7 +36,7 @@ bool DiscretePointsMath::ComputePathPofile(
   // calculation
   auto points_size = xy_points.size();
 
-  for (auto i = 0; i < points_size; i++) {
+  for (size_t i = 0; i < points_size; i++) {
     double x_delta = 0.0;
     double y_delta = 0.0;
     if (i == 0) {
