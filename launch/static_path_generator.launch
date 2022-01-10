@@ -5,7 +5,6 @@
 	<node pkg="hlbc" type="static_path_generator_test" name="static_path_generator" output="screen">
 		<param name="filename" value="/autoware.ai/src/autoware/common/hlbc/data/saved_waypoints_SCSp.csv"/>
 		<param name="periodic" value="true"/>
-		<param name="timestep" value="0.1"/>
-
+		<param name="timestep" value="0.2"/>
 	</node>
 </launch>

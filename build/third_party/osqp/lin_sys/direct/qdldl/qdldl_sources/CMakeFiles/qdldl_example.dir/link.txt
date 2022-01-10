@@ -1,0 +1,1 @@
+/usr/bin/x86_64-linux-gnu-gcc-7  -O0 -g -O3 -g -O0 -g  -rdynamic CMakeFiles/qdldl_example.dir/examples/example.c.o  -o out/qdldl_example out/libqdldl.a  -lm -lrt -ldl 

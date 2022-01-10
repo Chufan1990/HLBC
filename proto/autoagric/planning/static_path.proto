@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+import "autoagric/planning/reference_line_smoother_config.proto";
+
+message SmootherConfig {
+  // The output resolution for discrete point smoother reference line is
+  // directly decided by max_constraint_interval
+  double max_constraint_interval = 1;
+  double longitudinal_boundary_bound = 2;
+  double max_lateral_boundary_bound = 3;
+  double min_lateral_boundary_bound = 4;
+  // The output resolution for qp smoother reference line.
+  uint32 num_of_total_points = 5;
+  double curb_shift = 6;
+  double lateral_buffer = 7;
+  // The output resolution for spiral smoother reference line.
+  double resolution = 8;
+  oneof PathSmootherConfig {
+    QpSplineSmootherConfig qp_spline = 20;
+    SpiralSmootherConfig spiral = 21;
+    DiscretePointsSmootherConfig discrete_points = 22;
+  }
+}

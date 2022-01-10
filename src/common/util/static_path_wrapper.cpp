@@ -88,6 +88,11 @@ bool StaticPathWrapper::Init(const TrajectorySmootherConfig& config) {
     AERROR("StaticPathGenerator Init failed");
     return false;
   }
+
+  if (!path_generator_->Proc()) {
+    AERROR("Generating static path failed");
+    return false;
+  }
   return true;
 }
 
@@ -113,10 +118,6 @@ void StaticPathWrapper::InitVisualizer(const std::string& name,
 }
 
 bool StaticPathWrapper::Proc() {
-  if (!path_generator_->Proc()) {
-    AERROR("Generating static path failed");
-    return false;
-  }
   spinner_->start();
   ros::Rate loop_rate(10);
   while (ros::ok() && (!latest_localization_.has_header() ||
@@ -142,12 +143,16 @@ bool StaticPathWrapper::Proc() {
       vehicle_state_provider_->Update(latest_localization_, latest_chassis_);
     }
 
-    ADEBUG("vehicle_state_provider_->x(), vehicle_state_provider_->y(): "
-           << vehicle_state_provider_->x() << " "
-           << vehicle_state_provider_->y());
-
     auto result = std::move(path_generator_->GenerateLocalProfile(
         vehicle_state_provider_->x(), vehicle_state_provider_->y()));
+
+    for (size_t i = 0; i < result.x.size(); i++) {
+      ADEBUG(std::setprecision(3)
+             << std::fixed << "x: " << result.x[i] << " y: " << result.y[i]
+             << " theta: " << result.phi[i] << " v: " << result.v[i]
+             << " a: " << result.a[i] << " s: " << result.accumulated_s[i]
+             << " t: " << result.relative_time[i]);
+    }
 
     local_trajectory_writer_->publish(GenerateLocalProfile(result));
 

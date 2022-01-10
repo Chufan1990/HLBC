@@ -1,0 +1,8 @@
+prefix=/usr/local
+
+Name: hlbc
+Description: Description of hlbc
+Version: 0.0.0
+Cflags: -I${prefix}/include -I/usr/include/eigen3
+Libs: -L${prefix}/lib -lhlbc /home/chufankong/autoware.ai/src/autoware/common/hlbc/third_party/protobuf/lib/libprotobuf.so /usr/local/lib/libipopt.so /usr/local/lib/libgflags.so.2.2.2
+Requires: geometry_msgs visualization_msgs roscpp rospy std_msgs message_runtime autoware_msgs

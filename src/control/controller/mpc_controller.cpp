@@ -285,7 +285,7 @@ void MPCController::LoadMPCGainScheduler(
   for (const auto &scheduler : lat_err_gain_scheduler.scheduler()) {
     xy1.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
   }
-  for (const auto &scheduler : lat_err_gain_scheduler.scheduler()) {
+  for (const auto &scheduler : lon_err_gain_scheduler.scheduler()) {
     xy2.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
   }
   for (const auto &scheduler : heading_err_gain_scheduler.scheduler()) {
@@ -306,12 +306,13 @@ void MPCController::LoadMPCGainScheduler(
   for (const auto &scheduler : jerk_weight_gain_scheduler.scheduler()) {
     xy8.push_back(std::make_pair(scheduler.speed(), scheduler.ratio()));
   }
+  ADEBUG("MPC control gain scheduler loaded");
 
   lat_err_interpolation_.reset(new Interpolation1D);
   AERROR_IF(!lat_err_interpolation_->Init(xy1),
             "Fail to load lateral error gain scheduler for MPC controller");
 
-  lat_err_interpolation_.reset(new Interpolation1D);
+  lon_err_interpolation_.reset(new Interpolation1D);
   AERROR_IF(
       !lon_err_interpolation_->Init(xy2),
       "Fail to load longitudinal error gain scheduler for MPC controller");
@@ -320,7 +321,7 @@ void MPCController::LoadMPCGainScheduler(
   AERROR_IF(!heading_err_interpolation_->Init(xy3),
             "Fail to load heading error gain scheduler for MPC controller");
 
-  heading_err_interpolation_.reset(new Interpolation1D);
+  speed_err_interpolation_.reset(new Interpolation1D);
   AERROR_IF(!speed_err_interpolation_->Init(xy4),
             "Fail to load speed error gain scheduler for MPC controller");
 
@@ -333,18 +334,19 @@ void MPCController::LoadMPCGainScheduler(
   AERROR_IF(!steer_weight_interpolation_->Init(xy5),
             "Fail to load steer weight gain scheduler for MPC controller");
 
-  steer_weight_interpolation_.reset(new Interpolation1D);
+  accel_weight_interpolation_.reset(new Interpolation1D);
   AERROR_IF(
       !accel_weight_interpolation_->Init(xy6),
       "Fail to load acceleration weight gain scheduler for MPC controller");
 
-  steer_weight_interpolation_.reset(new Interpolation1D);
+  steer_rate_weight_interpolation_.reset(new Interpolation1D);
   AERROR_IF(!steer_rate_weight_interpolation_->Init(xy7),
             "Fail to load steer rate weight gain scheduler for MPC controller");
 
-  steer_weight_interpolation_.reset(new Interpolation1D);
+  jerk_weight_interpolation_.reset(new Interpolation1D);
   AERROR_IF(!jerk_weight_interpolation_->Init(xy8),
             "Fail to load jerk weight gain scheduler for MPC controller");
+  ADEBUG("MPC control gain scheduler loaded");
 }
 
 void MPCController::LoadControlCalibrationTable(

@@ -54,6 +54,8 @@ bool StaticPathGenerator::Init(const TrajectorySmootherConfig& config) {
   const auto& cos_theta_config =
       smoother_config_.discrete_points().cos_theta_smoothing();
 
+  ADEBUG(cos_theta_config.DebugString());
+
   cos_theta_smoother_.reset(new CosThetaSmoother(cos_theta_config));
 
   return true;
@@ -110,6 +112,11 @@ bool StaticPathGenerator::GenerateSmoothPathProfle(StaticPathResult* result) {
 
   DeNormalizePoints(&smoothed_point2d);
 
+  for (size_t i = 0; i < horizon; i++) {
+    ADEBUG("raw point: " << result->x[i] << ", " << result->y[i]
+                         << " smoothed_point: " << smoothed_point2d[i].first
+                         << ", " << smoothed_point2d[i].second);
+  }
   if (smoothed_point2d.size() != horizon) {
     AERROR("Size of smoothed path is not equal to raw path");
     return false;
@@ -165,7 +172,7 @@ bool StaticPathGenerator::CosThetaSmooth(
   // box contraints on pos are used in cos theta smoother, thus shrink the
   // bounds by 1.0 / sqrt(2.0)
   std::vector<double> box_bounds = bounds;
-  const double box_ratio = 1.0 / std::sqrt(2.0);
+  const double box_ratio = M_SQRT1_2;
   for (auto& bound : box_bounds) {
     bound *= box_ratio;
   }
@@ -270,17 +277,6 @@ StaticPathResult StaticPathGenerator::GenerateLocalProfile(const double x,
             std::back_inserter(stitched_result.relative_time));
   std::copy(path_.gear.begin() + first, path_.gear.begin() + last,
             std::back_inserter(stitched_result.gear));
-
-  ADEBUG("i    x     y     h     v     a     k     s     t  ");
-  for (size_t i = 0; i < stitched_result.gear.size(); i++) {
-    ADEBUG(std::setprecision(2)
-           << std::fixed << i << " " << stitched_result.x[i] << " "
-           << stitched_result.y[i] << " " << stitched_result.phi[i] << " "
-           << stitched_result.v[i] << " " << stitched_result.a[i] << " "
-           << stitched_result.kappa[i] << " "
-           << stitched_result.accumulated_s[i] << " "
-           << stitched_result.relative_time[i]);
-  }
   return stitched_result;
 }
 
@@ -322,17 +318,6 @@ bool StaticPathGenerator::GetTemporalProfile(StaticPathResult* result) {
   stitched_result.accumulated_s.push_back(
       partitioned_results.back().accumulated_s.back());
   stitched_result.kappa.push_back(partitioned_results.back().kappa.back());
-
-  ADEBUG("i    x     y     h     v     a     k     s     t  ");
-  for (size_t i = 0; i < stitched_result.x.size(); i++) {
-    ADEBUG(std::setprecision(2)
-           << std::fixed << i << " " << stitched_result.x[i] << " "
-           << stitched_result.y[i] << " " << stitched_result.phi[i] << " "
-           << stitched_result.v[i] << " " << stitched_result.a[i] << " "
-           << stitched_result.kappa[i] << " "
-           << stitched_result.accumulated_s[i] << " "
-           << stitched_result.relative_time[i]);
-  }
 
   *result = stitched_result;
   ADEBUG("GetTemporalProfile done");
