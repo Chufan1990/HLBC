@@ -79,7 +79,7 @@ void PiecewiseJerkSpeedProblem::CalculateKernel(std::vector<c_float>* P_data,
   ++value_index;
 
   // -2 * w_dddx / delta_s^2 * x(i)'' * x(i + 1)''
-  for (int i = 0; i < n - 1; ++i) {
+  for (int i = 1; i < n ; ++i) {
     columns[2 * n + i].emplace_back(2 * n + i - 1,
                                     -2.0 * weight_dddx_ / delta_s_square /
                                         (scale_factor_[2] * scale_factor_[2]));
@@ -129,8 +129,8 @@ OSQPSettings* PiecewiseJerkSpeedProblem::SolverDefaultSettings() {
   OSQPSettings* settings =
       reinterpret_cast<OSQPSettings*>(c_malloc(sizeof(OSQPSettings)));
   osqp_set_default_settings(settings);
-  settings->eps_abs = 1e-4;
-  settings->eps_rel = 1e-4;
+  settings->eps_abs = 1e-3;
+  settings->eps_rel = 1e-2;
   settings->eps_prim_inf = 1e-5;
   settings->eps_dual_inf = 1e-5;
   settings->polish = true;

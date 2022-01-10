@@ -30,8 +30,9 @@ class HybridAStar {
   explicit HybridAStar(const PlannerOpenSpaceConfig& open_space_conf);
   virtual ~HybridAStar() = default;
 
-  bool Plan(double sx, double sy, double sphi, double ex, double ey,
-            double ephi, const std::vector<double>& XYbounds,
+  bool Plan(const double sx, const double sy, const double sphi,
+            const double ex, const double ey, const double ephi,
+            const std::vector<double>& XYbounds,
             const std::vector<std::vector<common::math::Vec2d>>&
                 obstacles_vertices_vec,
             HybridAStarResult* result);

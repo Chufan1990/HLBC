@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 
-#include "autoagric/planning/reference_line_smoother_config.pb.h"
+#include "autoagric/planning/static_path_config.pb.h"
 #include "common/util/csv_reader.h"
 #include "planning/math/discretized_points_smoothing/cos_theta_smoother.h"
 
@@ -17,11 +17,9 @@ class StaticPathGenerator {
  public:
   StaticPathGenerator() = default;
 
-  StaticPathGenerator(const std::string& file_path,
-                      const bool enable_periodic_speed_profile,
-                      const double delta_t);
+  StaticPathGenerator(const std::string& file_path);
 
-  bool Init(const planning::TrajectorySmootherConfig& config);
+  bool Init(const planning::StaticPathConfig& config);
 
   bool Proc();
 
@@ -34,7 +32,7 @@ class StaticPathGenerator {
 
   bool GenerateSpeedAcceleration(StaticPathResult* result);
 
-  bool GenerateRelativetimeAcceleration(StaticPathResult* result);
+  bool GenerateSCurveSpeedAcceleration(StaticPathResult* result);
 
   bool TrajectoryPartition(const StaticPathResult& result,
                            std::vector<StaticPathResult>* paritioned_results);
@@ -64,13 +62,9 @@ class StaticPathGenerator {
 
   StaticPathResult path_;
 
-  planning::TrajectorySmootherConfig smoother_config_;
+  planning::StaticPathConfig config_;
 
   std::unique_ptr<planning::CosThetaSmoother> cos_theta_smoother_;
-
-  bool enable_periodic_speed_profile_;
-
-  double delta_t_;
 
   double zero_x_;
 

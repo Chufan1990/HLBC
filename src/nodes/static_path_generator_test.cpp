@@ -3,6 +3,7 @@
 #include <string>
 
 #include "absl/strings/str_cat.h"
+#include "autoagric/planning/static_path_config.pb.h"
 #include "common/macro.h"
 #include "common/util/file.h"
 #include "common/util/static_path_wrapper.h"
@@ -14,24 +15,29 @@ int main(int argc, char **argv) {
 
   ros::NodeHandle nh("~");
 
-  std::string filename;
+  std::string data;
+  std::string config;
 
-  nh.getParam("filename", filename);
+  nh.getParam("data", data);
+  nh.getParam("config", config);
 
-  std::string path = absl::StrCat(std::string(std::getenv("HOME")), filename);
+  std::string data_filename =
+      absl::StrCat(std::string(std::getenv("HOME")), data);
+  std::string static_path_config_filename =
+      absl::StrCat(std::string(std::getenv("HOME")), config);
 
-  autoagric::common::util::StaticPathWrapper static_path_wrapper(nh, path);
+  autoagric::common::util::StaticPathWrapper static_path_wrapper(nh,
+                                                                 data_filename);
 
-  autoagric::planning::TrajectorySmootherConfig trajectory_smoother_conf;
+  autoagric::planning::StaticPathConfig static_path_conf;
 
-  if (!autoagric::common::util::GetProtoFromFile(
-          FLAGS_discrete_points_smoother_config_filename,
-          &trajectory_smoother_conf)) {
-    AERROR("Unable to load control conf file: "
-           << FLAGS_discrete_points_smoother_config_filename);
+  if (!autoagric::common::util::GetProtoFromFile(static_path_config_filename,
+                                                 &static_path_conf)) {
+    AERROR("Unable to load control conf file: " << static_path_config_filename);
+    return 1;
   }
 
-  if (!static_path_wrapper.Init(trajectory_smoother_conf)) {
+  if (!static_path_wrapper.Init(static_path_conf)) {
     AERROR("StaticPathWrapper init failed");
     return 1;
   }

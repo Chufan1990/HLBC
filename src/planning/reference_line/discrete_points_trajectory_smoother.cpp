@@ -1,4 +1,4 @@
-#include "planning/reference_line/discrete_points_smoother.h"
+#include "planning/reference_line/discrete_points_trajectory_smoother.h"
 
 #include <algorithm>
 

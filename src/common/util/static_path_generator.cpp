@@ -6,8 +6,11 @@
 #include "common/macro.h"
 #include "common/math/math_utils.h"
 #include "common/math/vec2d.h"
+#include "planning/common/path/discretized_path.h"
+#include "planning/common/speed/speed_data.h"
 #include "planning/common/speed_profile_generator.h"
 #include "planning/math/discrete_points_math.h"
+#include "planning/math/piecewise_jerk/piecewise_jerk_speed_problem.h"
 
 namespace autoagric {
 namespace common {
@@ -18,25 +21,19 @@ constexpr double kDoubleEpsilon = 1e-3;
 }
 
 using autoagric::planning::CosThetaSmoother;
-using autoagric::planning::TrajectorySmootherConfig;
+using autoagric::planning::DiscretizedPath;
+using autoagric::planning::PiecewiseJerkSpeedProblem;
+using autoagric::planning::SpeedData;
+using autoagric::planning::StaticPathConfig;
 using common::math::Vec2d;
 
-StaticPathGenerator::StaticPathGenerator(
-    const std::string& file_path, const bool enable_periodic_speed_profile,
-    const double delta_t)
-    : file_path_(file_path),
-      enable_periodic_speed_profile_(enable_periodic_speed_profile),
-      delta_t_(delta_t) {
+StaticPathGenerator::StaticPathGenerator(const std::string& file_path)
+    : file_path_(file_path) {
   AINFO("Load static path from " << file_path);
-  AINFO("Using periodic speed profile " << enable_periodic_speed_profile);
-  if (enable_periodic_speed_profile) {
-    AERROR_IF(delta_t_ < 1e-2, "timestep is too small");
-    CHECK_GT(delta_t_, 1e-2);
-  }
 }
 
-bool StaticPathGenerator::Init(const TrajectorySmootherConfig& config) {
-  smoother_config_ = config;
+bool StaticPathGenerator::Init(const StaticPathConfig& config) {
+  config_ = config;
 
   csv_reader_.reset(new CSVReader());
 
@@ -52,7 +49,7 @@ bool StaticPathGenerator::Init(const TrajectorySmootherConfig& config) {
   current_start_index_ = 0;
 
   const auto& cos_theta_config =
-      smoother_config_.discrete_points().cos_theta_smoothing();
+      config_.smoother_conf().discrete_points().cos_theta_smoothing();
 
   ADEBUG(cos_theta_config.DebugString());
 
@@ -86,7 +83,8 @@ bool StaticPathGenerator::GenerateSmoothPathProfle(StaticPathResult* result) {
   size_t horizon = result->x.size();
 
   // lateral and longitudinal constraints
-  const double lateral_bound = smoother_config_.max_lateral_boundary_bound();
+  const double lateral_bound =
+      config_.smoother_conf().max_lateral_boundary_bound();
 
   std::vector<std::pair<double, double>> raw_point2d, smoothed_point2d;
   std::vector<double> bounds;
@@ -112,11 +110,12 @@ bool StaticPathGenerator::GenerateSmoothPathProfle(StaticPathResult* result) {
 
   DeNormalizePoints(&smoothed_point2d);
 
-  for (size_t i = 0; i < horizon; i++) {
-    ADEBUG("raw point: " << result->x[i] << ", " << result->y[i]
-                         << " smoothed_point: " << smoothed_point2d[i].first
-                         << ", " << smoothed_point2d[i].second);
-  }
+  // for (size_t i = 0; i < horizon; i++) {
+  //   ADEBUG("raw point: " << result->x[i] << ", " << result->y[i]
+  //                        << " smoothed_point: " << smoothed_point2d[i].first
+  //                        << ", " << smoothed_point2d[i].second);
+  // }
+
   if (smoothed_point2d.size() != horizon) {
     AERROR("Size of smoothed path is not equal to raw path");
     return false;
@@ -132,6 +131,8 @@ bool StaticPathGenerator::GenerateSmoothPathProfle(StaticPathResult* result) {
   for (size_t i = 0; i < horizon; i++) {
     result->x[i] = smoothed_point2d[i].first;
     result->y[i] = smoothed_point2d[i].second;
+    result->phi[i] = common::math::NormalizeAngle(
+        result->phi[i] + (result->gear[i] ? 0.0 : M_PI));
   }
 
   ADEBUG("Generating smoothed partitioned path done");
@@ -377,14 +378,14 @@ bool StaticPathGenerator::TrajectoryPartition(
       AWARN("Smoothing failed. Using raw partitioned path");
     }
 
-    if (enable_periodic_speed_profile_) {
+    if (!FLAGS_use_s_curve_speed_smooth) {
       if (!GenerateSpeedAcceleration(&result)) {
         AERROR("GenerateSpeedAcceleration failed");
         return false;
       }
     } else {
-      if (!GenerateRelativetimeAcceleration(&result)) {
-        AERROR("GenerateRelativeTime failed");
+      if (!GenerateSCurveSpeedAcceleration(&result)) {
+        AERROR("GenerateSCurveSpeedAcceleration failed");
         return false;
       }
     }
@@ -399,6 +400,7 @@ bool StaticPathGenerator::GenerateSpeedAcceleration(StaticPathResult* result) {
     return false;
   }
   const size_t horizon = result->x.size();
+  const double dt = config_.delta_t();
 
   result->v.clear();
   result->a.clear();
@@ -408,64 +410,234 @@ bool StaticPathGenerator::GenerateSpeedAcceleration(StaticPathResult* result) {
   // initial and end speed are set to be zeros
   result->v.push_back(0.0);
   for (size_t i = 1; i < horizon - 1; i++) {
-    double discrete_v = (((result->x[i + 1] - result->x[i]) / delta_t_) *
-                             std::cos(result->phi[i]) +
-                         ((result->x[i] - result->x[i - 1]) / delta_t_) *
-                             std::cos(result->phi[i])) /
-                            2.0 +
-                        (((result->y[i + 1] - result->y[i]) / delta_t_) *
-                             std::sin(result->phi[i]) +
-                         ((result->y[i] - result->y[i - 1]) / delta_t_) *
-                             std::sin(result->phi[i])) /
-                            2.0;
+    double discrete_v =
+        (((result->x[i + 1] - result->x[i]) / dt) * std::cos(result->phi[i]) +
+         ((result->x[i] - result->x[i - 1]) / dt) * std::cos(result->phi[i])) /
+            2.0 +
+        (((result->y[i + 1] - result->y[i]) / dt) * std::sin(result->phi[i]) +
+         ((result->y[i] - result->y[i - 1]) / dt) * std::sin(result->phi[i])) /
+            2.0;
     result->v.push_back(discrete_v);
   }
   result->v.push_back(0.0);
 
   // load acceleration from velocity
   for (size_t i = 0; i < horizon - 1; i++) {
-    const double discrete_a = (result->v[i + 1] - result->v[i]) / delta_t_;
+    const double discrete_a = (result->v[i + 1] - result->v[i]) / dt;
     result->a.push_back(discrete_a);
   }
   result->a.push_back(0.0);
 
   result->relative_time.push_back(0.0);
   for (size_t i = 1; i < horizon; i++) {
-    double time = delta_t_ + result->relative_time[i - 1];
+    double time = dt + result->relative_time[i - 1];
     result->relative_time.push_back(time);
   }
 
   return true;
 }
 
-bool StaticPathGenerator::GenerateRelativetimeAcceleration(
+bool StaticPathGenerator::GenerateSCurveSpeedAcceleration(
     StaticPathResult* result) {
+  CHECK_NOTNULL(result);
   if (result->x.size() < 2 || result->y.size() < 2 || result->phi.size() < 2) {
     AERROR("result size check when generating relative time failed");
     return false;
   }
-  result->relative_time.clear();
-  result->a.clear();
 
-  const size_t horizon = result->x.size();
-
-  result->relative_time.push_back(0.0);
-  for (size_t i = 1; i < horizon; i++) {
-    double distance = std::hypot(result->x[i + 1] - result->x[i],
-                                 result->y[i + 1] - result->y[i]);
-    double discrete_time = distance / (result->v[i + 1] + result->v[i]) * 2.0;
-    result->relative_time.push_back(discrete_time);
+  if (result->x.size() != result->y.size() ||
+      result->x.size() != result->phi.size()) {
+    AERROR("result sizes are not equal");
   }
 
-  // load acceleration from velocity
-  for (size_t i = 0; i < horizon - 1; i++) {
-    const double discrete_a =
-        (result->v[i + 1] - result->v[i]) /
-        std::max(kDoubleEpsilon,
-                 (result->relative_time[i + 1] - result->relative_time[i]));
-    result->a.push_back(discrete_a);
+  double init_heading = result->phi.front();
+  const Vec2d init_tracking_vec(result->x[1] - result->x[0],
+                                result->y[1] - result->y[0]);
+
+  const bool gear = std::abs(common::math::NormalizeAngle(
+                        init_heading - init_tracking_vec.Angle())) < M_PI_2;
+
+  size_t path_points_size = result->x.size();
+
+  double accumulated_s = 0.0;
+  result->accumulated_s.resize(path_points_size);
+
+  auto last_x = result->x.front();
+  auto last_y = result->y.front();
+  for (size_t i = 0; i < path_points_size; i++) {
+    double x_diff = result->x[i] - last_x;
+    double y_diff = result->y[i] - last_y;
+    accumulated_s += std::hypot(x_diff, y_diff);
+    result->accumulated_s[i] = accumulated_s;
+    last_x = result->x[i];
+    last_y = result->y[i];
   }
-  result->a.push_back(0.0);
+
+  const double init_v = 0.0;
+  const double init_a = 0.0;
+
+  ADEBUG(config_.DebugString());
+
+  const double max_forward_v = config_.optimizer_conf().max_forward_velocity();
+  const double max_reverse_v = config_.optimizer_conf().max_reverse_velocity();
+  const double max_forward_a =
+      config_.optimizer_conf().max_forward_acceleration();
+  const double max_reverse_a =
+      config_.optimizer_conf().max_reverse_acceleration();
+  const double max_acc_jerk = config_.optimizer_conf().max_acceleration_jerk();
+  const double dt = config_.delta_t();
+  const double time_looseness_ratio = config_.time_looseness_ratio();
+  const double max_path_time = config_.max_path_time();
+
+  SpeedData speed_data;
+
+  const double path_length = result->accumulated_s.back();
+  const double total_time = std::max(
+      gear ? time_looseness_ratio *
+                 (max_forward_v * max_forward_v + path_length * max_forward_a) /
+                 (max_forward_v * max_forward_a)
+           : time_looseness_ratio *
+                 (max_reverse_v * max_reverse_v + path_length * max_reverse_a) /
+                 (max_reverse_a * max_reverse_v),
+      max_path_time);
+
+  const size_t num_of_knots = static_cast<size_t>(total_time / dt) + 1;
+
+  autoagric::planning::PiecewiseJerkSpeedProblem piecewise_jerk_problem(
+      num_of_knots, dt, {0.0, std::abs(init_v), std::abs(init_a)});
+
+  std::vector<std::pair<double, double>> x_bounds(num_of_knots,
+                                                  {0.0, path_length});
+  const double max_v = gear ? max_forward_v : max_reverse_v;
+  const double max_a = gear ? max_forward_a : max_reverse_a;
+
+  const auto upper_dx = std::max(max_v, std::abs(init_v));
+  const auto upper_ddx = std::max(max_a, std::abs(init_a));
+
+  std::vector<std::pair<double, double>> dx_bounds(num_of_knots,
+                                                   {0.0, upper_dx});
+  std::vector<std::pair<double, double>> ddx_bounds(num_of_knots,
+                                                    {-upper_ddx, upper_ddx});
+
+  x_bounds[0] = std::make_pair(0.0, 0.0);
+  x_bounds[num_of_knots - 1] = std::make_pair(path_length, path_length);
+  dx_bounds[num_of_knots - 1] = std::make_pair(0.0, 0.0);
+  ddx_bounds[num_of_knots - 1] = std::make_pair(0.0, 0.0);
+
+  std::vector<double> x_ref(num_of_knots, path_length);
+
+  const double weight_x_ref = config_.optimizer_conf().weight_x_ref();
+  const double weight_ddx = config_.optimizer_conf().weight_ddx();
+  const double weight_dddx = config_.optimizer_conf().weight_dddx();
+
+  // for (size_t i = 0; i < num_of_knots; i++) {
+  //   ADEBUG("x_ref: " << x_ref[i]);
+  //   ADEBUG("x_bounds: " << x_bounds[i].first << " " << x_bounds[i].second);
+  //   ADEBUG("dx_bounds: " << dx_bounds[i].first << " " <<
+  //   dx_bounds[i].second); ADEBUG("ddx_bounds: " << ddx_bounds[i].first << " "
+  //                         << ddx_bounds[i].second);
+  //
+  ADEBUG("num_of_knots " << num_of_knots);
+  ADEBUG("path_length " << path_length);
+  ADEBUG("upper_dx " << upper_dx);
+  ADEBUG("upper_ddx " << upper_ddx);
+  ADEBUG("total_time " << total_time);
+  ADEBUG("max_acc_jerk " << max_acc_jerk);
+
+  piecewise_jerk_problem.set_x_ref(weight_x_ref, std::move(x_ref));
+  piecewise_jerk_problem.set_weight_ddx(weight_ddx);
+  piecewise_jerk_problem.set_weight_dddx(weight_dddx);
+  piecewise_jerk_problem.set_x_bounds(std::move(x_bounds));
+  piecewise_jerk_problem.set_dx_bounds(std::move(dx_bounds));
+  piecewise_jerk_problem.set_ddx_bounds(std::move(ddx_bounds));
+  piecewise_jerk_problem.set_dddx_bound(max_acc_jerk);
+  // piecewise_jerk_problem.set_scale_factor({1.0, 2.0, 3.0});
+  // std::array<double, 3> scale_factor_ = {{10.0, 100.0, 10000.0}};
+
+  if (!piecewise_jerk_problem.Optimize(10000000)) {
+    AERROR("Piecewise jerk speed optimizer failed");
+    return false;
+  }
+
+  const auto& s = piecewise_jerk_problem.opt_x();
+  const auto& ds = piecewise_jerk_problem.opt_dx();
+  const auto& dds = piecewise_jerk_problem.opt_ddx();
+
+  speed_data.AppendSpeedPoint(s[0], 0.0, ds[0], dds[0], 0.0);
+  constexpr double kEpsilon = 1e-6;
+  constexpr double sEpsilon = 1e-6;
+
+  for (size_t i = 1; i < num_of_knots; i++) {
+    if (s[i - 1] - s[i] > kEpsilon) {
+      ADEBUG("unexpected decreasing s in speed acceleration at time "
+             << static_cast<double>(i) * dt << " with total time "
+             << total_time);
+      break;
+    }
+    speed_data.AppendSpeedPoint(s[i], dt * static_cast<double>(i), ds[i],
+                                dds[i], (dds[i] - dds[i - 1]) / dt);
+    if (path_length - s[i] < sEpsilon) {
+      break;
+    }
+  }
+
+  ADEBUG(speed_data.DebugString());
+
+  DiscretizedPath path_data;
+
+  for (size_t i = 0; i < path_points_size; i++) {
+    common::PathPoint path_point;
+    path_point.set_x(result->x[i]);
+    path_point.set_y(result->y[i]);
+    path_point.set_theta(result->phi[i]);
+    path_point.set_kappa(result->kappa[i]);
+    path_point.set_s(result->accumulated_s[i]);
+    path_data.push_back(std::move(path_point));
+  }
+
+  StaticPathResult combined_result;
+
+  const double kDenseTimeResolution = config_.dense_time_resolution();
+  const double time_horizon =
+      speed_data.TotalTime() + kDenseTimeResolution * 1e-6;
+  if (path_data.empty()) {
+    AERROR("path data is empty");
+    return false;
+  }
+
+  for (double cur_rel_time = 0.0; cur_rel_time < time_horizon;
+       cur_rel_time += kDenseTimeResolution) {
+    common::SpeedPoint speed_point;
+    if (!speed_data.EvaluateByTime(cur_rel_time, &speed_point)) {
+      AERROR("Fail to get speed point with relative time " << cur_rel_time);
+      return false;
+    }
+
+    if (speed_point.s() > path_data.Length()) {
+      break;
+    }
+
+    common::PathPoint path_point = path_data.Evaluate(speed_point.s());
+    combined_result.x.push_back(path_point.x());
+    combined_result.y.push_back(path_point.y());
+    combined_result.phi.push_back(path_point.theta());
+    combined_result.accumulated_s.push_back(path_point.s());
+    combined_result.kappa.push_back(path_point.kappa());
+    combined_result.relative_time.push_back(cur_rel_time);
+    combined_result.v.push_back(gear ? speed_point.v() : -speed_point.v());
+    combined_result.a.push_back(gear ? speed_point.a() : -speed_point.a());
+    combined_result.gear.push_back(gear);
+
+    TrajectoryPoint debug_point;
+    debug_point.mutable_path_point()->Swap(&path_point);
+    debug_point.set_a(combined_result.a.back());
+    debug_point.set_v(combined_result.v.back());
+    debug_point.set_relative_time(combined_result.relative_time.back());
+
+    ADEBUG(debug_point.DebugString());
+  }
+
+  *result = combined_result;
   return true;
 }
 

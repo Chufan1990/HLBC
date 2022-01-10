@@ -39,7 +39,6 @@ OSQPData* PiecewiseJerkProblem::FormulateProblem() {
   std::vector<c_int> P_indptr;
   CalculateKernel(&P_data, &P_indices, &P_indptr);
 
-
   // calculate affine constraints
   std::vector<c_float> A_data;
   std::vector<c_int> A_indices;
@@ -80,13 +79,7 @@ bool PiecewiseJerkProblem::Optimize(const int max_iter) {
 
   OSQPWorkspace* osqp_work = nullptr;
   // osqp_work = osqp_setup(data, settings);
-  if (osqp_setup(&osqp_work, data, settings)) {
-    AERROR("Workspace setup failed");
-    osqp_cleanup(osqp_work);
-    FreeData(data);
-    c_free(settings);
-    return false;
-  }
+  osqp_setup(&osqp_work, data, settings);
 
   osqp_solve(osqp_work);
 

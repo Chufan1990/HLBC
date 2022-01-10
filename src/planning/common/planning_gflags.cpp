@@ -312,7 +312,7 @@ DEFINE_double(
     turn_signal_distance, 100.00,
     "In meters. If there is a turn within this distance, use turn signal");
 
-DEFINE_int32(trajectory_point_num_for_debug, 10,
+DEFINE_int32(trajectory_point_num_for_debug, 100,
              "number of output trajectory points for debugging");
 
 DEFINE_double(lane_change_prepare_length, 80.0,
@@ -477,7 +477,7 @@ DEFINE_bool(
     enable_smoother_failsafe, false,
     "whether to use warm start result as final output when smoother fails");
 
-DEFINE_bool(use_s_curve_speed_smooth, false,
+DEFINE_bool(use_s_curve_speed_smooth, true,
             "Whether use s-curve (piecewise_jerk) for smoothing Hybrid Astar "
             "speed/acceleration.");
 
@@ -489,7 +489,7 @@ DEFINE_bool(
     enable_parallel_trajectory_smoothing, false,
     "Whether to partition the trajectory first and do smoothing in parallel");
 
-DEFINE_bool(enable_osqp_debug, false,
+DEFINE_bool(enable_osqp_debug, true,
             "True to turn on OSQP verbose debug output in log.");
 
 DEFINE_bool(export_chart, false, "export chart in planning");

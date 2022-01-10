@@ -8,7 +8,7 @@
 #include "control/common/pb3_ros_msgs.h"
 #include "control/controller/mpc_controller.h"
 #include "planning/common/planning_gflags.h"
-#include "planning/reference_line/discrete_points_moother.h"
+#include "planning/reference_line/discrete_points_trajectory_smoother.h"
 
 namespace autoagric {
 namespace control {

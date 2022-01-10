@@ -16,7 +16,7 @@
 #include "autoagric/canbus/chassis.pb.h"
 #include "autoagric/common/pnc_point.pb.h"
 #include "autoagric/localization/localization.pb.h"
-#include "autoagric/planning/reference_line_smoother_config.pb.h"
+#include "autoagric/planning/static_path_config.pb.h"
 #include "common/util/static_path_generator.h"
 #include "common/vehicle_state/vehicle_state_provider.h"
 #include "control/common/pb3_ros_msgs.h"
@@ -33,7 +33,7 @@ class StaticPathWrapper {
 
   StaticPathWrapper(ros::NodeHandle& nh, std::string& file_path);
 
-  bool Init(const planning::TrajectorySmootherConfig& config);
+  bool Init(const planning::StaticPathConfig& config);
 
   bool Proc();
 

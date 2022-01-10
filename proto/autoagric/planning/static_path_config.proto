@@ -1,8 +1,11 @@
 syntax = "proto3";
 
 import "autoagric/planning/reference_line_smoother_config.proto";
+import "autoagric/planning/task_config.proto";
 
-message SmootherConfig {
+package autoagric.planning;
+
+message StaticPathSmootherConfig {
   // The output resolution for discrete point smoother reference line is
   // directly decided by max_constraint_interval
   double max_constraint_interval = 1;
@@ -15,9 +18,18 @@ message SmootherConfig {
   double lateral_buffer = 7;
   // The output resolution for spiral smoother reference line.
   double resolution = 8;
-  oneof PathSmootherConfig {
+  oneof SmootherConfig {
     QpSplineSmootherConfig qp_spline = 20;
     SpiralSmootherConfig spiral = 21;
     DiscretePointsSmootherConfig discrete_points = 22;
   }
+}
+
+message StaticPathConfig {
+  StaticPathSmootherConfig smoother_conf = 1;
+  PiecewiseJerkSpeedOptimizerConfig optimizer_conf = 2;
+  double delta_t = 3;
+  double time_looseness_ratio = 4;
+  double dense_time_resolution = 5;
+  double max_path_time = 6;
 }

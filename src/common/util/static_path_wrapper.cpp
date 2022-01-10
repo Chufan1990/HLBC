@@ -24,11 +24,7 @@ constexpr double kDoubleEpsilon = 1e-3;
 }
 
 using autoagric::control::TrajectoryVisualizer;
-using autoagric::planning::ADCTrajectory;
-using autoagric::planning::AnchorPoint;
-using autoagric::planning::DiscretePointsTrajectorySmoother;
-using autoagric::planning::TrajectorySmootherConfig;
-using common::math::Vec2d;
+using autoagric::planning::StaticPathConfig;
 using message_filters::Synchronizer;
 using message_filters::sync_policies::ApproximateTime;
 
@@ -36,22 +32,9 @@ StaticPathWrapper::StaticPathWrapper(ros::NodeHandle& nh,
                                      std::string& file_path)
     : nh_(nh), static_trajectory_file_path_(file_path) {
   AINFO("Load static trajectory from " << file_path);
-  if (!nh_.getParam("periodic", enable_periodic_speed_profile_)) {
-    AWARN("Unknown speed profile mode");
-    enable_periodic_speed_profile_ = false;
-    delta_t_ = 0.0;
-  } else if (!nh_.getParam("timestep", delta_t_)) {
-    AWARN(
-        "No timestep set yet in periodic profile mode. Exit periodic profile "
-        "mode");
-    enable_periodic_speed_profile_ = false;
-    delta_t_ = 0.0;
-  } else {
-    AINFO("Using periodic mode with timestep: " << delta_t_);
-  }
 }
 
-bool StaticPathWrapper::Init(const TrajectorySmootherConfig& config) {
+bool StaticPathWrapper::Init(const StaticPathConfig& config) {
   spinner_ = std::make_unique<ros::AsyncSpinner>(0);
 
   chassis_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
@@ -79,8 +62,7 @@ bool StaticPathWrapper::Init(const TrajectorySmootherConfig& config) {
   global_trajectory_writer_ = std::make_unique<ros::Timer>(
       nh_.createTimer(ros::Duration(1), &StaticPathWrapper::Visualize, this));
 
-  path_generator_.reset(new StaticPathGenerator(
-      static_trajectory_file_path_, enable_periodic_speed_profile_, delta_t_));
+  path_generator_.reset(new StaticPathGenerator(static_trajectory_file_path_));
 
   vehicle_state_provider_.reset(new common::VehicleStateProvider());
 

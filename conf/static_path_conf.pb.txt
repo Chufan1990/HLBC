@@ -1,4 +1,9 @@
-discrete_points_smoother_conf {
+delta_t: 0.2
+time_looseness_ratio: 1.2
+dense_time_resolution: 0.05
+max_path_time: 10.0
+
+smoother_conf {
     max_constraint_interval : 0.25
     longitudinal_boundary_bound : 2.0
     max_lateral_boundary_bound : 0.2
@@ -22,3 +27,18 @@ discrete_points_smoother_conf {
     }
 }
 
+optimizer_conf {
+    acc_weight: 1.0
+    jerk_weight: 0.0
+    kappa_penalty_weight: 100.0
+    ref_s_weight: 0.1
+    ref_v_weight: 0.0
+    max_forward_velocity: 2
+    max_reverse_velocity: 2
+    max_forward_acceleration: 1
+    max_reverse_acceleration: 1
+    max_acceleration_jerk: 1
+    weight_x_ref: 10000.0
+    weight_ddx: 10.0
+    weight_dddx: 10.0
+}

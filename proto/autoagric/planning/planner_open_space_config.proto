@@ -67,6 +67,10 @@ message WarmStartConfig {
   double grid_a_star_xy_resolution = 15;
   double node_radius = 16;
   PiecewiseJerkSpeedOptimizerConfig s_curve_config = 17;
+  double delta_t = 18;
+  double time_looseness_ratio = 19;
+  double dense_time_resolution = 20;
+  double max_path_time = 21;
 }
 
 // message DualVariableWarmStartConfig {
