@@ -6,8 +6,8 @@
 #include "autoagric/planning/static_path_config.pb.h"
 #include "common/macro.h"
 #include "common/util/file.h"
-#include "common/util/static_path_wrapper.h"
 #include "planning/common/planning_gflags.h"
+#include "planning/static/static_path_wrapper.h"
 #include "ros/ros.h"
 
 int main(int argc, char **argv) {
@@ -26,8 +26,7 @@ int main(int argc, char **argv) {
   std::string static_path_config_filename =
       absl::StrCat(std::string(std::getenv("HOME")), config);
 
-  autoagric::common::util::StaticPathWrapper static_path_wrapper(nh,
-                                                                 data_filename);
+  autoagric::planning::StaticPathWrapper static_path_wrapper(nh, data_filename);
 
   autoagric::planning::StaticPathConfig static_path_conf;
 

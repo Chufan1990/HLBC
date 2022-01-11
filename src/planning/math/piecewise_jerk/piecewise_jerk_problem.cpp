@@ -39,6 +39,21 @@ OSQPData* PiecewiseJerkProblem::FormulateProblem() {
   std::vector<c_int> P_indptr;
   CalculateKernel(&P_data, &P_indices, &P_indptr);
 
+  // ADEBUG("P_indptr: ");
+  // for (size_t i = 0; i < P_indptr.size(); i++) {
+  //   ADEBUG(P_indptr[i]);
+  // }
+
+  // ADEBUG("P_indices: ");
+  // for (size_t i = 0; i < P_indices.size(); i++) {
+  //   ADEBUG(P_indices[i]);
+  // }
+
+  // ADEBUG("P_data:");
+  // for (size_t i = 0; i < P_data.size(); i++) {
+  //   ADEBUG(P_data[i]);
+  // }
+
   // calculate affine constraints
   std::vector<c_float> A_data;
   std::vector<c_int> A_indices;

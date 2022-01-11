@@ -49,17 +49,18 @@ message DpStSpeedOptimizerConfig {
 }
 
 message PiecewiseJerkSpeedOptimizerConfig {
-   double acc_weight = 1 ;
-   double jerk_weight = 2 ;
-   double kappa_penalty_weight = 3 ;
-   double ref_s_weight = 4 ;
-   double ref_v_weight = 5 ;
-   double max_forward_velocity = 6;
-   double max_reverse_velocity = 7;
-   double max_forward_acceleration = 8;
-   double max_reverse_acceleration = 9;
-   double max_acceleration_jerk = 10;
-   double weight_x_ref = 14;
-   double weight_ddx = 15;
-   double weight_dddx = 16;
+  double acc_weight = 1;
+  double jerk_weight = 2;
+  double kappa_penalty_weight = 3;
+  double ref_s_weight = 4;
+  double ref_v_weight = 5;
+  double max_forward_velocity = 6;
+  double max_reverse_velocity = 7;
+  double max_forward_acceleration = 8;
+  double max_reverse_acceleration = 9;
+  double max_acceleration_jerk = 10;
+  double max_num_of_iterations = 11;
+  double weight_x_ref = 15;
+  double weight_ddx = 16;
+  double weight_dddx = 17;
 }

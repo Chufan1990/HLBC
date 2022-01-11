@@ -38,7 +38,8 @@ optimizer_conf {
     max_forward_acceleration: 1
     max_reverse_acceleration: 1
     max_acceleration_jerk: 1
-    weight_x_ref: 10000.0
-    weight_ddx: 10.0
-    weight_dddx: 10.0
+    weight_x_ref: 100.0
+    weight_ddx: 1.0
+    weight_dddx: 1.0
+    max_num_of_iterations: 4000
 }

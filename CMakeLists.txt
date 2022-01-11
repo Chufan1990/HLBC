@@ -27,16 +27,15 @@ find_package(
              rospy
              message_generation
              autoware_msgs
-             message_filters
-             )
+             message_filters)
 
-set(THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party") 
+set(THIRDPARTY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
 set(Protobuf_DIR "${THIRDPARTY_DIR}/protobuf")
 set(OSQP_DIR "${THIRDPARTY_DIR}/osqp")
 
 find_package(osqp REQUIRED PATHS ${OSQP_DIR})
 
-message(WARNING "osqp_VERSION : ${osqp_VERSION}")
+message(STATUS "osqp_VERSION : ${osqp_VERSION}")
 
 # message(WARNING "CMAKE_SYSTEM_PREFIX_PATH: ${CMAKE_SYSTEM_PREFIX_PATH}")
 # message(WARNING "CMAKE_SYSTEM_FRAMEWORK_PATH: ${CMAKE_SYSTEM_FRAMEWORK_PATH}")
@@ -78,8 +77,8 @@ find_path(
 if("${Protobuf_LIBRARIES}" STREQUAL "Protobuf_LIBRARIES-NOTFOUND")
   message(WARNING "Protobuf package not found")
 else()
-  message(WARNING "Protobuf include path : ${Protobuf_INCLUDE_DIRS}")
-  message(WARNING "Protobuf libraries : ${Protobuf_LIBRARIES}")
+  message(STATUS "Protobuf include path : ${Protobuf_INCLUDE_DIRS}")
+  message(STATUS "Protobuf libraries : ${Protobuf_LIBRARIES}")
 endif()
 
 find_package(gflags REQUIRED)
@@ -93,7 +92,7 @@ find_library(Ipopt_LIBRARIES ipopt PATHS /usr/local/lib /usr/lib)
 if("${Ipopt_LIBRARIES}" STREQUAL "Ipopt_LIBRARIES-NOTFOUND")
   message(WARNING ${Ipopt_LIBRARIES})
 else()
-  message(WARNING "Ipopt libraries : ${Ipopt_LIBRARIES}")
+  message(STATUS "Ipopt libraries : ${Ipopt_LIBRARIES}")
 endif()
 
 # message(WARNING "Protobuf_LIBRARIES=${Protobuf_LIBRARIES}") message(WARNING
@@ -142,7 +141,7 @@ file(
   *.msg)
 
 message(
-  WARNING
+  STATUS
     "${PROJECT_NAME}_MESSAGE_SOURCE_FILES = ${${PROJECT_NAME}_MESSAGE_SOURCE_FILES}"
 )
 
@@ -298,13 +297,14 @@ add_library(${PROJECT_NAME} ${${PROJECT_NAME}_SOURCE_FILES}
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION 0.0.1 SOVERSION 1)
 
-target_link_libraries(${PROJECT_NAME} 
-  glog::glog absl::base
-  absl::synchronization 
-  absl::strings 
+target_link_libraries(
+  ${PROJECT_NAME}
+  glog::glog
+  absl::base
+  absl::synchronization
+  absl::strings
   absl::str_format
-  osqp::osqp
-  )
+  osqp::osqp)
 
 # ##############################################################################
 # control_node ##
@@ -373,6 +373,23 @@ target_link_libraries(
   ${GFLAGS_LIBRARIES}
   glog::glog)
 
+# ##############################################################################
+# piecewise_jerk_speed_problem_test ##
+# ##############################################################################
+add_executable(piecewise_jerk_speed_problem_test
+               src/nodes/piecewise_jerk_speed_problem_test.cpp)
+
+add_dependencies(piecewise_jerk_speed_problem_test ${catkin_EXPORTED_TARGETS}
+                 ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+target_link_libraries(
+  piecewise_jerk_speed_problem_test
+  ${PROJECT_NAME}
+  ${Protobuf_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${Ipopt_LIBRARIES}
+  ${GFLAGS_LIBRARIES}
+  glog::glog)
 # ##############################################################################
 # Install ##
 # ##############################################################################

@@ -1,1 +1,0 @@
-/usr/bin/x86_64-linux-gnu-gcc-7  -O0 -g -g  -rdynamic CMakeFiles/osqp_demo.dir/examples/osqp_demo.c.o  -o out/osqp_demo out/libosqp.a  -lm -lrt -ldl 

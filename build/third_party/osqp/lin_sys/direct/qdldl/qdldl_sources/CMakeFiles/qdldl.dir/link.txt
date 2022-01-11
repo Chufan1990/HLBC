@@ -1,1 +1,0 @@
-/usr/bin/x86_64-linux-gnu-gcc-7 -fPIC  -O0 -g -O3 -g -O0 -g  -shared -Wl,-soname,libqdldl.so -o out/libqdldl.so CMakeFiles/qdldl.dir/src/qdldl.c.o  -lm -lrt -ldl 
