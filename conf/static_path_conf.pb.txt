@@ -37,6 +37,6 @@ optimizer_conf {
     max_reverse_velocity: 2
     max_forward_acceleration: 1
     max_reverse_acceleration: 1
-    max_acceleration_jerk: 1
+    max_acceleration_jerk: 5
     max_num_of_iterations: 20000
 }
