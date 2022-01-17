@@ -1,13 +1,11 @@
 #include "control/common/pb3_ros_msgs.h"
 
-#include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-
 #include <algorithm>
 #include <cmath>
 
 #include "common/macro.h"
 #include "common/math/math_utils.h"
+#include "common/math/quaternion.h"
 #include "common/math/vec2d.h"
 #include "common/util/point_factory.h"
 #include "hlbc/TrajectoryPoint.h"
@@ -57,11 +55,11 @@ void fromMsg(const autoware_msgs::LaneConstPtr& msg,
   double prev_x = msg->waypoints.front().pose.pose.position.x;
   double prev_y = msg->waypoints.front().pose.pose.position.y;
 
-  double prev_heading = common::math::NormalizeAngle(tf2::getYaw(
-      tf2::Quaternion(msg->waypoints.front().pose.pose.orientation.x,
-                      msg->waypoints.front().pose.pose.orientation.y,
-                      msg->waypoints.front().pose.pose.orientation.z,
-                      msg->waypoints.front().pose.pose.orientation.w)));
+  double prev_heading = common::math::QuaternionToHeading(
+      msg->waypoints.front().pose.pose.orientation.w,
+      msg->waypoints.front().pose.pose.orientation.x,
+      msg->waypoints.front().pose.pose.orientation.y,
+      msg->waypoints.front().pose.pose.orientation.z);
 
   double prev_speed = msg->waypoints.front().twist.twist.linear.x;
 
@@ -75,11 +73,9 @@ void fromMsg(const autoware_msgs::LaneConstPtr& msg,
     const double x = waypoint.pose.pose.position.x;
     const double y = waypoint.pose.pose.position.y;
     const double z = waypoint.pose.pose.position.z;
-    const double heading =
-        common::math::NormalizeAngle(tf2::getYaw(tf2::Quaternion(
-            waypoint.pose.pose.orientation.x, waypoint.pose.pose.orientation.y,
-            waypoint.pose.pose.orientation.z,
-            waypoint.pose.pose.orientation.w)));
+    const double heading = common::math::QuaternionToHeading(
+        waypoint.pose.pose.orientation.w, waypoint.pose.pose.orientation.x,
+        waypoint.pose.pose.orientation.y, waypoint.pose.pose.orientation.z);
     const double v = waypoint.twist.twist.linear.x;
 
     Vec2d diff(x - prev_x, y - prev_y);
@@ -120,10 +116,9 @@ void fromMsg(const geometry_msgs::PoseStampedConstPtr& msg,
       msg->pose.orientation.z);
   localization->mutable_pose()->mutable_orientation()->set_qw(
       msg->pose.orientation.w);
-  localization->mutable_pose()->set_heading(
-      common::math::NormalizeAngle(tf2::getYaw(
-          tf2::Quaternion(msg->pose.orientation.x, msg->pose.orientation.y,
-                          msg->pose.orientation.z, msg->pose.orientation.w))));
+  localization->mutable_pose()->set_heading(common::math::QuaternionToHeading(
+      msg->pose.orientation.w, msg->pose.orientation.x, msg->pose.orientation.y,
+      msg->pose.orientation.z));
 
   fromMsg(msg->header, localization->mutable_header());
 }

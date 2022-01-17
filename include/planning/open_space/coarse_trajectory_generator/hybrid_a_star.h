@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "autoagric/planning/planner_open_space_config.pb.h"
 #include "common/configs/vehicle_config_helper.h"
 #include "common/math/vec2d.h"
 #include "planning/open_space/coarse_trajectory_generator/grid_search.h"

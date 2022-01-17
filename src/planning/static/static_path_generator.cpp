@@ -1,12 +1,10 @@
 #include "planning/static/static_path_generator.h"
 
-#include <Eigen/Core>
 #include <chrono>
 
 #include "autoagric/common/pnc_point.pb.h"
 #include "common/macro.h"
 #include "common/math/math_utils.h"
-#include "common/math/matrix_operations.h"
 #include "common/math/vec2d.h"
 #include "planning/common/path/discretized_path.h"
 #include "planning/common/speed/speed_data.h"
@@ -202,8 +200,8 @@ bool StaticPathGenerator::CosThetaSmooth(
 
 std::pair<int, int> StaticPathGenerator::QueryNearestPointByPoistion(
     const double x, const double y, const size_t index) const {
-  ADEBUG("current index: " << index);
-  ADEBUG("gear size: " << path_.gear.size());
+  // ADEBUG("current index: " << index);
+  // ADEBUG("gear size: " << path_.gear.size());
 
   const bool init_gear = path_.gear[index];
 
@@ -226,6 +224,8 @@ std::pair<int, int> StaticPathGenerator::QueryNearestPointByPoistion(
     curr_gear = path_.gear[++i];
   }
 
+  CHECK_GE(i, 0);
+
   return std::make_pair(min_index, i);
 }
 
@@ -244,18 +244,18 @@ StaticPathResult StaticPathGenerator::GenerateLocalProfile(const double x,
     current_start_index_ = start_index;
   }
 
-  ADEBUG("path_length_: " << path_length_);
+  // ADEBUG("path_length_: " << path_length_);
 
-  ADEBUG("start_index: " << start_index);
-  ADEBUG("end_index: " << end_index);
+  // ADEBUG("start_index: " << start_index);
+  // ADEBUG("end_index: " << end_index);
 
   StaticPathResult stitched_result;
 
   const int first = std::max<int>(start_index - 1, 0);
   const int last = std::min<int>(start_index + 20, end_index - 1);
 
-  ADEBUG("first: " << first);
-  ADEBUG("last: " << last);
+  // ADEBUG("first: " << first);
+  // ADEBUG("last: " << last);
 
   std::copy(path_.x.begin() + first, path_.x.begin() + last,
             std::back_inserter(stitched_result.x));
@@ -485,24 +485,24 @@ bool StaticPathGenerator::GenerateSCurveSpeedAcceleration(
       config_.optimizer_conf().max_reverse_acceleration();
   const double max_acc_jerk = config_.optimizer_conf().max_acceleration_jerk();
   const double dt = config_.delta_t();
-  const double time_looseness_ratio = config_.time_looseness_ratio();
+  const double time_slack_ratio = config_.time_slack_ratio();
   const double max_path_time = config_.max_path_time();
 
   SpeedData speed_data;
 
   const double path_length = result->accumulated_s.back();
-  const double total_time = std::max(
-      gear ? time_looseness_ratio *
+  const double total_time = std::min(
+      gear ? time_slack_ratio *
                  (max_forward_v * max_forward_v + path_length * max_forward_a) /
                  (max_forward_v * max_forward_a)
-           : time_looseness_ratio *
+           : time_slack_ratio *
                  (max_reverse_v * max_reverse_v + path_length * max_reverse_a) /
                  (max_reverse_a * max_reverse_v),
       max_path_time);
 
   const size_t num_of_knots = static_cast<size_t>(total_time / dt) + 1;
 
-  autoagric::planning::PiecewiseJerkSpeedProblem piecewise_jerk_problem(
+  PiecewiseJerkSpeedProblem piecewise_jerk_problem(
       num_of_knots, dt, {0.0, std::abs(init_v), std::abs(init_a)});
 
   std::vector<std::pair<double, double>> x_bounds(num_of_knots,
@@ -511,87 +511,22 @@ bool StaticPathGenerator::GenerateSCurveSpeedAcceleration(
   const double max_a = gear ? max_forward_a : max_reverse_a;
 
   const auto upper_dx = std::max(max_v, std::abs(init_v));
-  const auto upper_ddx = std::max(max_a, std::abs(init_a));
+  // const auto upper_ddx = std::max(max_a, std::abs(init_a));
 
   std::vector<std::pair<double, double>> dx_bounds(num_of_knots,
                                                    {0.0, upper_dx});
   std::vector<std::pair<double, double>> ddx_bounds(num_of_knots,
-                                                    {-upper_ddx, upper_ddx});
+                                                    {-max_a, max_a});
 
   x_bounds[num_of_knots - 1] = std::make_pair(path_length, path_length);
-  // dx_bounds[num_of_knots - 1] = std::make_pair(0.0, 0.0);
-  // ddx_bounds[num_of_knots - 1] = std::make_pair(0.0, 0.0);
+  dx_bounds[num_of_knots - 1] = std::make_pair(0.0, 0.0);
+  ddx_bounds[num_of_knots - 1] = std::make_pair(0.0, 0.0);
 
   std::vector<double> x_ref(num_of_knots, path_length);
 
-  const double weight_x_ref = config_.optimizer_conf().weight_x_ref();
-  const double weight_ddx = config_.optimizer_conf().weight_ddx();
-  const double weight_dddx = config_.optimizer_conf().weight_dddx();
-
-  // Eigen::MatrixXd P = Eigen::MatrixXd::Zero(num_of_knots * 3, num_of_knots * 3);
-
-  // size_t n = num_of_knots;
-
-  // for (size_t i = 0; i < n; ++i) {
-  //   P(i, i) = weight_x_ref;
-  // }
-
-  // // x(i)'^2 * (w_dx_ref + penalty_dx)
-  // for (size_t i = 0; i < n; ++i) {
-  //   P(n + i, n + i) = 0.0;
-  // }
-  // // x(n-1)'^2 * (w_dx_ref + penalty_dx + w_end_dx)
-
-  // auto delta_s_square = dt * dt;
-  // // x(i)''^2 * (w_ddx +  w_dddx / delta_s^2)
-  // P(2 * n, 2 * n) = weight_ddx + weight_dddx / delta_s_square;
-
-  // // x(i)''^2 * (w_ddx + 2 * w_dddx / delta_s^2)
-  // for (size_t i = 1; i < n - 1; ++i) {
-  //   P(2 * n + i, 2 * n + i) = weight_ddx + 2.0 * weight_dddx / delta_s_square;
-  // }
-  // // x(i)''^2 * (w_ddx +  w_dddx / delta_s^2)
-  // P(3 * n - 1, 3 * n - 1) = weight_ddx + weight_dddx / delta_s_square;
-
-  // // -2 * w_dddx / delta_s^2 * x(i)'' * x(i + 1)''
-  // for (size_t i = 1; i < n; ++i) {
-  //   P(2 * n + i, 2 * n + i - 1) = -1.0 * weight_dddx / delta_s_square;
-  // }
-
-  // std::vector<double> p_indptr;
-  // std::vector<double> p_indices;
-  // std::vector<double> p_data;
-
-  // common::math::DenseToCSCMatrix(P, &p_data, &p_indices, &p_indptr);
-
-  // ADEBUG("p_indptr: ");
-  // for (size_t i = 0; i < p_indptr.size(); i++) {
-  //   ADEBUG(p_indptr[i]);
-  // }
-
-  // ADEBUG("p_indices: ");
-  // for (size_t i = 0; i < p_indices.size(); i++) {
-  //   ADEBUG(p_indices[i]);
-  // }
-
-  // ADEBUG("p_data:");
-  // for (size_t i = 0; i < p_data.size(); i++) {
-  //   ADEBUG(p_data[i] * 2.0);
-  // }
-
-  // for (size_t i = 0; i < num_of_knots; i++) {
-  //   ADEBUG("x_ref: " << x_ref[i]);
-  //   ADEBUG("x_bounds: " << x_bounds[i].first << " " << x_bounds[i].second);
-  //   ADEBUG("dx_bounds: " << dx_bounds[i].first << " " <<
-  //   dx_bounds[i].second); ADEBUG("ddx_bounds: " << ddx_bounds[i].first << " "
-  //                         << ddx_bounds[i].second);
-  //
-  ADEBUG("num_of_knots " << num_of_knots);
-  ADEBUG("path_length " << path_length);
-  ADEBUG("upper_dx " << upper_dx);
-  ADEBUG("upper_ddx " << upper_ddx);
-  ADEBUG("total_time " << total_time);
-  ADEBUG("max_acc_jerk " << max_acc_jerk);
+  const double weight_x_ref = config_.optimizer_conf().ref_s_weight();
+  const double weight_ddx = config_.optimizer_conf().acc_weight();
+  const double weight_dddx = config_.optimizer_conf().jerk_weight();
 
   piecewise_jerk_problem.set_x_ref(weight_x_ref, std::move(x_ref));
   piecewise_jerk_problem.set_weight_ddx(weight_ddx);
@@ -600,8 +535,6 @@ bool StaticPathGenerator::GenerateSCurveSpeedAcceleration(
   piecewise_jerk_problem.set_dx_bounds(std::move(dx_bounds));
   piecewise_jerk_problem.set_ddx_bounds(std::move(ddx_bounds));
   piecewise_jerk_problem.set_dddx_bound(max_acc_jerk);
-  // piecewise_jerk_problem.set_scale_factor({1.0, 2.0, 3.0});
-  // std::array<double, 3> scale_factor_ = {{10.0, 100.0, 10000.0}};
 
   if (!piecewise_jerk_problem.Optimize(
           config_.optimizer_conf().max_num_of_iterations())) {
@@ -619,9 +552,13 @@ bool StaticPathGenerator::GenerateSCurveSpeedAcceleration(
 
   for (size_t i = 1; i < num_of_knots; i++) {
     if (s[i - 1] - s[i] > kEpsilon) {
-      ADEBUG("unexpected decreasing s in speed acceleration at time "
+      AERROR("unexpected decreasing s in speed acceleration at time "
              << static_cast<double>(i) * dt << " with total time "
              << total_time);
+      ADEBUG("s: " << s[i - 1] << "\nt: " << static_cast<double>(i - 1) * dt
+                   << "\nv: " << ds[i - 1] << "\na: " << dds[i - 1]);
+      ADEBUG("s: " << s[i] << "\nt: " << static_cast<double>(i) * dt
+                   << "\nv: " << ds[i] << "\na: " << dds[i]);
       break;
     }
     speed_data.AppendSpeedPoint(s[i], dt * static_cast<double>(i), ds[i],
@@ -631,7 +568,7 @@ bool StaticPathGenerator::GenerateSCurveSpeedAcceleration(
     }
   }
 
-  ADEBUG(speed_data.DebugString());
+  // ADEBUG(speed_data.DebugString());
 
   DiscretizedPath path_data;
 
@@ -673,7 +610,7 @@ bool StaticPathGenerator::GenerateSCurveSpeedAcceleration(
     combined_result.phi.push_back(path_point.theta());
     combined_result.accumulated_s.push_back(path_point.s());
     combined_result.kappa.push_back(path_point.kappa());
-    combined_result.relative_time.push_back(cur_rel_time);
+    combined_result.relative_time.push_back(speed_point.t());
     combined_result.v.push_back(gear ? speed_point.v() : -speed_point.v());
     combined_result.a.push_back(gear ? speed_point.a() : -speed_point.a());
     combined_result.gear.push_back(gear);

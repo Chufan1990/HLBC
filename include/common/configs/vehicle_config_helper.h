@@ -6,10 +6,10 @@
 
 #include <string>
 
-#include "common/macro.h"
 #include "autoagric/common/pnc_point.pb.h"
 #include "autoagric/common/vehicle_config.pb.h"
-// #include "modules/common/math/box2d.h"
+#include "common/macro.h"
+#include "common/math/box2d.h"
 
 /**
  * @namespace common
@@ -92,13 +92,13 @@ class VehicleConfigHelper {
 
   static double MinSafeTurnRadius();
 
-  //   /**
-  //    * @brief Get the box (four corners: ABCD) of the vehicle.
-  //    * @param path_point of a vehicle (which contains point X and heading).
-  //    * @return a box2d which contains the ABCD points info.
-  //    */
-  //   static common::math::Box2d GetBoundingBox(
-  //       const common::PathPoint &path_point);
+  /**
+   * @brief Get the box (four corners: ABCD) of the vehicle.
+   * @param path_point of a vehicle (which contains point X and heading).
+   * @return a box2d which contains the ABCD points info.
+   */
+  static common::math::Box2d GetBoundingBox(
+      const common::PathPoint &path_point);
 
  private:
   static VehicleConfig vehicle_config_;

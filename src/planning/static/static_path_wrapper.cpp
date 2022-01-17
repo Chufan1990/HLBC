@@ -4,6 +4,7 @@
 #include <message_filters/subscriber.h>
 #include <std_msgs/ColorRGBA.h>
 
+#include <boost/bind.hpp>
 #include <chrono>
 #include <memory>
 
@@ -21,9 +22,8 @@ namespace planning {
 namespace {
 constexpr double kDoubleEpsilon = 1e-3;
 }
-
-using autoagric::control::TrajectoryVisualizer;
 using common::util::StaticPathResult;
+using common::util::TrajectoryVisualizer;
 using message_filters::Synchronizer;
 using message_filters::sync_policies::ApproximateTime;
 
@@ -56,7 +56,7 @@ bool StaticPathWrapper::Init(const StaticPathConfig& config) {
   //     "/current_pose", 1, &StaticPathWrapper::OnLocalization, this));
 
   local_trajectory_writer_ = std::make_unique<ros::Publisher>(
-      nh_.advertise<hlbc::Trajectory>("static_trajectory", 1));
+      nh_.advertise<hlbc::Trajectory>("planning/trajectory", 1));
 
   global_trajectory_writer_ = std::make_unique<ros::Timer>(
       nh_.createTimer(ros::Duration(1), &StaticPathWrapper::Visualize, this));
@@ -78,24 +78,30 @@ bool StaticPathWrapper::Init(const StaticPathConfig& config) {
 }
 
 void StaticPathWrapper::Visualize(const ros::TimerEvent& e) {
-  visualizer_->Proc({markers_});
+  visualizer_->Publish(markers_);
 }
 
 void StaticPathWrapper::InitVisualizer(const std::string& name,
                                        const geometry_msgs::Vector3& scale,
                                        const std_msgs::ColorRGBA& color) {
-  // global_trajectory_.header.stamp = ros::Time::now();
-  std_msgs::Header header;
-  header.frame_id = "/map";
-  header.stamp = ros::Time::now();
+  visualizer_.reset(new TrajectoryVisualizer(nh_));
 
-  visualizer_.reset(new TrajectoryVisualizer(nh_, {name}));
+  std::unordered_map<std::string,
+                     std::pair<std_msgs::ColorRGBA, geometry_msgs::Vector3>>
+      markers_properties;
 
-  visualizer_->Init();
+  markers_properties["arrows"] = std::make_pair(color, scale);
+  markers_properties["points_and_lines"] = std::make_pair(color, scale);
 
-  markers_ = TrajectoryVisualizer::toMarkerArray(
-      path_generator_->Path().x, path_generator_->Path().y,
-      path_generator_->Path().phi, header, scale, color);
+  visualizer_->Setup(name, "/map", markers_properties, true, true);
+
+  const auto& global_trajectory = path_generator_->Path();
+
+  markers_["arrows"] = common::util::TrajectoryVisualizer::Arrows(
+      global_trajectory.x, global_trajectory.y, global_trajectory.phi);
+  markers_["points_and_lines"] =
+      common::util::TrajectoryVisualizer::PointsAndLines(
+          global_trajectory.x, global_trajectory.y, global_trajectory.phi);
 }
 
 bool StaticPathWrapper::Proc() {
@@ -136,8 +142,6 @@ bool StaticPathWrapper::Proc() {
     }
 
     local_trajectory_writer_->publish(GenerateLocalProfile(result));
-
-    visualizer_->Proc({markers_});
     loop_rate.sleep();
   }
   spinner_->stop();

@@ -1,6 +1,8 @@
 syntax = "proto3";
 
 import "autoagric/planning/task_config.proto";
+import "autoagric/planning/math/fem_pos_deviation_smoother_config.proto";
+import "autoagric/planning/math/cos_theta_smoother_config.proto";
 
 package autoagric.planning;
 
@@ -31,7 +33,7 @@ message PlannerOpenSpaceConfig {
   // Distance Approach Configs
   //   DistanceApproachConfig distance_approach_config = 4;
   // Iterative Anchoring Configs
-  //   IterativeAnchoringConfig iterative_anchoring_smoother_config = 5;
+  IterativeAnchoringConfig iterative_anchoring_smoother_config = 5;
   // Trajectory PartitionConfig Configs
   //   TrajectoryPartitionConfig trajectory_partition_config = 6;
   float delta_t = 7;
@@ -68,7 +70,7 @@ message WarmStartConfig {
   double node_radius = 16;
   PiecewiseJerkSpeedOptimizerConfig s_curve_config = 17;
   double delta_t = 18;
-  double time_looseness_ratio = 19;
+  double time_slack_ratio = 19;
   double dense_time_resolution = 20;
   double max_path_time = 21;
 }
@@ -147,26 +149,25 @@ message WarmStartConfig {
 //   bool osqp_debug_log = 6 [ default = false ];
 // }
 
-// message IterativeAnchoringConfig {
-//   // Ipopt configs
-//   double interpolated_delta_s = 1 [ default = 0.1 ];
-//   int32 reanchoring_trails_num = 2 [ default = 50 ];
-//   double reanchoring_pos_stddev = 3 [ default = 0.25 ];
-//   double reanchoring_length_stddev = 4 [ default = 1.0 ];
-//   bool estimate_bound = 5 [ default = false ];
-//   double default_bound = 6 [ default = 2.0 ];
-//   double vehicle_shortest_dimension = 7 [ default = 1.04 ];
-//   FemPosDeviationSmootherConfig fem_pos_deviation_smoother_config = 8;
-//   double collision_decrease_ratio = 9 [ default = 0.9 ];
-//   // TODO(QiL, Jinyun): Merge following with overall config for open space
-//   double max_forward_v = 10 [ default = 2.0 ];
-//   double max_reverse_v = 11 [ default = 2.0 ];
-//   double max_forward_acc = 12 [ default = 3.0 ];
-//   double max_reverse_acc = 13 [ default = 2.0 ];
-//   double max_acc_jerk = 14 [ default = 4.0 ];
-//   double delta_t = 15 [ default = 0.2 ];
-//   PiecewiseJerkSpeedOptimizerConfig s_curve_config = 16;
-// }
+message IterativeAnchoringConfig {
+  // Ipopt configs
+  double interpolated_delta_s = 1;
+  int32 reanchoring_trails_num = 2;
+  double reanchoring_pos_stddev = 3;
+  double reanchoring_length_stddev = 4;
+  bool estimate_bound = 5;
+  double default_bound = 6;
+  double vehicle_shortest_dimension = 7;
+  FemPosDeviationSmootherConfig fem_pos_deviation_smoother_config = 8;
+  double collision_decrease_ratio = 9;
+  PiecewiseJerkSpeedOptimizerConfig s_curve_config = 10;
+  double delta_t = 11;
+  CosThetaSmootherConfig cos_theta_smoother_config = 12;
+  int32 max_iteration_num = 13;
+  double dense_time_resolution = 14;
+  double max_path_time = 15;
+  double time_slack_ratio = 16;
+}
 
 // message TrajectoryPartitionConfig {
 //   uint64 interpolated_pieces_num = 1 [ default = 50 ];

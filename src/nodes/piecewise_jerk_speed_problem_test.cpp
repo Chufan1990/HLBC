@@ -17,17 +17,17 @@ int main(int argc, char** argv) {
   const double max_reverse_a = 1.0;
   const double max_acc_jerk = 1.0;
   const double dt = 5.0;
-  const double time_looseness_ratio = 1.5;
+  const double time_slack_ratio = 1.5;
   const double max_path_time = 10.0;
 
   autoagric::planning::SpeedData speed_data;
 
   const double path_length = 15.0;
   const double total_time = std::max(
-      gear ? time_looseness_ratio *
+      gear ? time_slack_ratio *
                  (max_forward_v * max_forward_v + path_length * max_forward_a) /
                  (max_forward_v * max_forward_a)
-           : time_looseness_ratio *
+           : time_slack_ratio *
                  (max_reverse_v * max_reverse_v + path_length * max_reverse_a) /
                  (max_reverse_a * max_reverse_v),
       max_path_time);

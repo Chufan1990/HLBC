@@ -19,9 +19,10 @@
  **/
 #include "planning/reference_line/discrete_points_trajectory_smoother.h"
 
+#include <geometry_msgs/Vector3.h>
 #include <ros/ros.h>
-#include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <std_msgs/ColorRGBA.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include <iostream>
 #include <random>
@@ -32,14 +33,12 @@
 #include "autoware_msgs/Lane.h"
 #include "autoware_msgs/Waypoint.h"
 #include "common/macro.h"
+#include "common/math/quaternion.h"
 #include "common/math/vec2d.h"
 #include "common/util/file.h"
-#include "control/common/trajectory_visualizer.h"
-#include "geometry_msgs/Vector3.h"
+#include "common/util/trajectory_visualizer.h"
 #include "planning/common/planning_gflags.h"
 #include "planning/reference_line/trajectory_smoother.h"
-#include "std_msgs/ColorRGBA.h"
-#include "visualization_msgs/MarkerArray.h"
 
 namespace autoagric {
 namespace planning {
@@ -226,10 +225,11 @@ void ADCTrajectoryToLane(const autoagric::planning::ADCTrajectory& trajectory,
     wp.pose.pose.position.x = point.path_point().x();
     wp.pose.pose.position.y = point.path_point().y();
 
-    auto q = tf2::Quaternion();
-    q.setRPY(0, 0, point.path_point().theta());
-    wp.pose.pose.orientation = tf2::toMsg(q);
-
+    auto q = common::math::HeadingToQuaternio(point.path_point().theta());
+    wp.pose.pose.orientation.x = q.x();
+    wp.pose.pose.orientation.y = q.y();
+    wp.pose.pose.orientation.z = q.z();
+    wp.pose.pose.orientation.w = q.w();
     lane.waypoints.push_back(wp);
   }
 }
@@ -290,9 +290,8 @@ int main(int argc, char** argv) {
   scale.y = 0.01;
   scale.z = 0.01;
 
-  auto old_markers =
-      autoagric::control::TrajectoryVisualizer::toMarkerArray(
-          old_lane, scale, o_color);
+  auto old_markers = autoagric::control::TrajectoryVisualizer::toMarkerArray(
+      old_lane, scale, o_color);
   auto new_markers = old_markers;
 
   tester.smoother_->SetAnchorPoints(tester.anchor_points_);
@@ -310,31 +309,30 @@ int main(int argc, char** argv) {
               << std::endl;
   }
 
-  if (status) {
-    ADCTrajectoryToLane(smoothed_trajectory, new_lane);
-    new_markers =
-        autoagric::control::TrajectoryVisualizer::toMarkerArray(
-            new_lane, scale, n_color);
-  }
-  for (int i = 0; i < old_markers.first.markers.size(); i++) {
-    ADEBUG(old_markers.first.markers[i].pose.position.x
-           << " " << old_markers.first.markers[i].pose.position.y << " || "
-           << new_markers.first.markers[i].pose.position.x << " "
-           << new_markers.first.markers[i].pose.position.y);
-  }
+  // if (status) {
+  //   ADCTrajectoryToLane(smoothed_trajectory, new_lane);
+  //   new_markers = autoagric::control::TrajectoryVisualizer::toMarkerArray(
+  //       new_lane, scale, n_color);
+  // }
+  // for (int i = 0; i < old_markers.first.markers.size(); i++) {
+  //   ADEBUG(old_markers.first.markers[i].pose.position.x
+  //          << " " << old_markers.first.markers[i].pose.position.y << " || "
+  //          << new_markers.first.markers[i].pose.position.x << " "
+  //          << new_markers.first.markers[i].pose.position.y);
+  // }
 
-  ros::Rate loop_rate(10);
+  // ros::Rate loop_rate(10);
 
-  while (ros::ok()) {
-    pub1.publish(old_markers.first);
-    pub2.publish(old_markers.second);
-    if (status) {
-      pub3.publish(new_markers.first);
-      pub4.publish(new_markers.second);
-    }
-    ADEBUG("are we doing this?");
-    loop_rate.sleep();
-  }
+  // while (ros::ok()) {
+  //   pub1.publish(old_markers.first);
+  //   pub2.publish(old_markers.second);
+  //   if (status) {
+  //     pub3.publish(new_markers.first);
+  //     pub4.publish(new_markers.second);
+  //   }
+  //   ADEBUG("are we doing this?");
+  //   loop_rate.sleep();
+  // }
 
   return 0;
 }

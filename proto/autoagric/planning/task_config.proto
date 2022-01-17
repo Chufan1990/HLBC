@@ -60,7 +60,7 @@ message PiecewiseJerkSpeedOptimizerConfig {
   double max_reverse_acceleration = 9;
   double max_acceleration_jerk = 10;
   double max_num_of_iterations = 11;
-  double weight_x_ref = 15;
-  double weight_ddx = 16;
-  double weight_dddx = 17;
+  // double weight_x_ref = 15;
+  // double weight_ddx = 16;
+  // double weight_dddx = 17;
 }

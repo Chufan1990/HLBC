@@ -14,7 +14,7 @@
 #include "autoagric/planning/reference_line_smoother_config.pb.h"
 #include "autoware_msgs/ControlCommandStamped.h"
 #include "autoware_msgs/Lane.h"
-#include "control/common/trajectory_visualizer.h"
+#include "common/util/trajectory_visualizer.h"
 #include "control/controller/controller_agent.h"
 #include "hlbc/Trajectory.h"
 #include "planning/reference_line/trajectory_smoother.h"
@@ -74,7 +74,7 @@ class ControlComponent final {
 
   std::shared_ptr<DependencyInjector> injector_;
 
-  std::unique_ptr<TrajectoryVisualizer> visualizer_;
+  std::unique_ptr<common::util::TrajectoryVisualizer> visualizer_;
 
   ControlConf control_conf_;
 

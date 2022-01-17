@@ -15,6 +15,8 @@
 #include <memory>
 #include <utility>
 
+#include "common/macro.h"
+
 /**
  * @namespace common::util
  * @brief common::util

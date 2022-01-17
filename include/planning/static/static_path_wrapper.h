@@ -17,9 +17,9 @@
 #include "autoagric/common/pnc_point.pb.h"
 #include "autoagric/localization/localization.pb.h"
 #include "autoagric/planning/static_path_config.pb.h"
+#include "common/util/trajectory_visualizer.h"
 #include "common/vehicle_state/vehicle_state_provider.h"
 #include "control/common/pb3_ros_msgs.h"
-#include "control/common/trajectory_visualizer.h"
 #include "hlbc/Trajectory.h"
 #include "planning/static/static_path_generator.h"
 
@@ -78,9 +78,9 @@ class StaticPathWrapper {
 
   std::string static_trajectory_file_path_;
 
-  std::unique_ptr<control::TrajectoryVisualizer> visualizer_;
+  std::unique_ptr<common::util::TrajectoryVisualizer> visualizer_;
 
-  control::TrajectoryVisualizer::MarkerType markers_;
+  std::unordered_map<std::string, visualization_msgs::MarkerArray> markers_;
 
   std::unique_ptr<common::VehicleStateProvider> vehicle_state_provider_;
 

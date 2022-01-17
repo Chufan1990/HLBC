@@ -464,8 +464,8 @@ bool HybridAStar::GenerateSCurveSpeedAcceleration(HybridAStarResult* result) {
   const double max_acc_jerk = opt_conf.max_acceleration_jerk();
 
   const double dt = planner_open_space_config_.warm_start_config().delta_t();
-  const double looseness_ratio =
-      planner_open_space_config_.warm_start_config().time_looseness_ratio();
+  const double slack_ratio =
+      planner_open_space_config_.warm_start_config().time_slack_ratio();
   const double max_path_time =
       planner_open_space_config_.warm_start_config().max_path_time();
 
@@ -475,10 +475,10 @@ bool HybridAStar::GenerateSCurveSpeedAcceleration(HybridAStarResult* result) {
   const double path_length = result->accumulated_s.back();
 
   const double total_t = std::max(
-      gear ? looseness_ratio *
+      gear ? slack_ratio *
                  (max_forward_v * max_forward_v + path_length * max_forward_a) /
                  (max_forward_a * max_forward_v)
-           : looseness_ratio *
+           : slack_ratio *
                  (max_reverse_v * max_reverse_v + path_length * max_reverse_a) /
                  (max_reverse_a * max_reverse_v),
       max_path_time);
@@ -510,9 +510,9 @@ bool HybridAStar::GenerateSCurveSpeedAcceleration(HybridAStarResult* result) {
   // Sf
   std::vector<double> x_ref(num_of_knots, path_length);
 
-  const double w_x_ref = opt_conf.weight_x_ref();
-  const double w_ddx = opt_conf.weight_ddx();
-  const double w_dddx = opt_conf.weight_dddx();
+  const double w_x_ref = opt_conf.ref_s_weight();
+  const double w_ddx = opt_conf.acc_weight();
+  const double w_dddx = opt_conf.jerk_weight();
 
   // Setup piecewise optimization problem
   piecewise_jerk_problem.set_x_ref(w_x_ref, std::move(x_ref));

@@ -29,7 +29,7 @@ message StaticPathConfig {
   StaticPathSmootherConfig smoother_conf = 1;
   PiecewiseJerkSpeedOptimizerConfig optimizer_conf = 2;
   double delta_t = 3;
-  double time_looseness_ratio = 4;
+  double time_slack_ratio = 4;
   double dense_time_resolution = 5;
   double max_path_time = 6;
 }

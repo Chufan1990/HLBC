@@ -59,25 +59,34 @@ bool ControlComponent::Init() {
    * ##################################
    */
   if (FLAGS_enable_trajectory_visualizer) {
-    auto visual_nh = ros::NodeHandle(nh_, "visual");
-    std::vector<std::string> names = {"resampled_trajectory",
-                                      "warmstart_solution"};
-    visualizer_ = std::make_unique<TrajectoryVisualizer>(visual_nh, names);
-    visualizer_->Init();
-    scale_1_.x = 0.5;
-    scale_1_.y = 0.05;
-    scale_1_.z = 0.05;
-    scale_2_.x = 0.5;
-    scale_2_.y = 0.05;
-    scale_2_.z = 0.05;
-    color_1_.r = 1.0;
-    color_1_.g = 0.5;
-    color_1_.b = 0.1;
-    color_1_.a = 0.5;
-    color_2_.r = 0.1;
-    color_2_.g = 0.5;
-    color_2_.b = 1.0;
-    color_2_.a = 1.0;
+    visualizer_ = std::make_unique<common::util::TrajectoryVisualizer>(nh_);
+
+    std::unordered_map<std::string,
+                       std::pair<std_msgs::ColorRGBA, geometry_msgs::Vector3>>
+        markers_properites;
+
+    std_msgs::ColorRGBA color;
+    geometry_msgs::Vector3 scale;
+    color.r = 1.0;
+    color.g = 0.1;
+    color.b = 0.1;
+    color.a = 1.0;
+    scale.x = 0.1;
+    scale.y = 0.1;
+    scale.z = 0.1;
+
+    markers_properites["arrows"] = std::make_pair(color, scale);
+
+    color.r = 0.1;
+    color.g = 0.1;
+    color.b = 1.0;
+    color.a = 1.0;
+    scale.x = 0.1;
+    scale.y = 0.1;
+    scale.z = 0.1;
+    markers_properites["points_and_lines"] = std::make_pair(color, scale);
+
+    visualizer_->Setup("viz", "/map", markers_properites, true, true);
   }
   /**
    * ##################################
@@ -276,7 +285,8 @@ bool ControlComponent::Proc() {
     cmd.twist.linear.y = control_command.brake();
     cmd.twist.linear.z = control_command.gear_location();
     cmd.twist.angular.z = control_command.steering_target();
-    cmd.twist.angular.y = control_command.debug().simple_lat_debug().lateral_error();
+    cmd.twist.angular.y =
+        control_command.debug().simple_lat_debug().lateral_error();
     control_cmd_writer_->publish(cmd);
 
     /**
@@ -285,26 +295,30 @@ bool ControlComponent::Proc() {
      * ############################
      */
     if (FLAGS_enable_trajectory_visualizer) {
-      std::vector<std::pair<visualization_msgs::MarkerArray,
-                            visualization_msgs::MarkerArray>>
-          markers;
+      const auto& predicted_trajectory =
+          controller_agent_.controller()->predicted_solution();
 
-      const auto& controller = controller_agent_.controller();
+      const size_t horizon = predicted_trajectory.size();
+      std::vector<double> x, y, theta;
+      x.resize(horizon);
+      y.resize(horizon);
+      theta.resize(horizon);
 
-      markers.emplace_back(
-          std::move(TrajectoryVisualizer::TrajectoryToMarkerArray<
-                    std::vector<common::TrajectoryPoint>>(
-              controller->reference_trajectory(),
-              local_view_.trajectory().header().frame_id(),
-              ros::Time::now().toSec(), scale_1_, color_1_)));
-      markers.emplace_back(
-          std::move(TrajectoryVisualizer::TrajectoryToMarkerArray<
-                    std::vector<common::TrajectoryPoint>>(
-              controller->predicted_solution(),
-              local_view_.trajectory().header().frame_id(),
-              ros::Time::now().toSec(), scale_2_, color_2_)));
+      for (size_t i = 0; i < predicted_trajectory.size(); i++) {
+        const auto& trajectory_point = predicted_trajectory[i];
+        x[i] = trajectory_point.path_point().x();
+        y[i] = trajectory_point.path_point().y();
+        theta[i] = trajectory_point.path_point().theta();
+      }
 
-      visualizer_->Proc(markers);
+      std::unordered_map<std::string, visualization_msgs::MarkerArray> markers;
+
+      markers["arrows"] =
+          common::util::TrajectoryVisualizer::Arrows(x, y, theta);
+      markers["points_and_lines"] =
+          common::util::TrajectoryVisualizer::PointsAndLines(x, y, theta);
+
+      visualizer_->Publish(markers);
     }
     /**
      * ################################

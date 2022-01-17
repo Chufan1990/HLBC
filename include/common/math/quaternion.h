@@ -29,9 +29,9 @@
 #include <Eigen/Geometry>
 #include <cmath>
 
+#include "autoagric/common/geometry.pb.h"
 #include "common/math/euler_angles_zxy.h"
 #include "common/math/math_utils.h"
-#include "autoagric/common/geometry.pb.h"
 
 /**
  * @namespace namespace autoagric {
