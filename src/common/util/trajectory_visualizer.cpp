@@ -189,7 +189,7 @@ bool TrajectoryVisualizer::Publish(
     return false;
   }
   for (auto& marker_pair : markers) {
-    if (publisher_queue_.find(marker_pair.first) != publisher_queue_.end()) {
+    if (publisher_queue_.find(marker_pair.first) == publisher_queue_.end()) {
       AERROR("Cannot find publisher for " << marker_pair.first);
       return false;
     }

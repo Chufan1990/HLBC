@@ -87,8 +87,9 @@ inline T QuaternionToHeading(const Eigen::Quaternion<T> &q) {
  */
 template <typename T>
 inline Eigen::Quaternion<T> HeadingToQuaternion(T heading) {
-  // Note that heading is zero at East and yaw is zero at North.
-  EulerAnglesZXY<T> euler_angles(heading - M_PI_2);
+  // Note that heading is zero at East and yaw is zero at North. (deprecated)
+  // EulerAnglesZXY<T> euler_angles(heading - M_PI_2);
+  EulerAnglesZXY<T> euler_angles(heading);
   return euler_angles.ToQuaternion();
 }
 
