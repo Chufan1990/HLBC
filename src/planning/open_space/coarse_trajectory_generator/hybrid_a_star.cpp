@@ -265,7 +265,7 @@ bool HybridAStar::GetResult(HybridAStarResult* result) {
   if (result->x.size() != result->y.size() ||
       result->x.size() != result->v.size() ||
       result->x.size() != result->phi.size()) {
-    AERROR("state sizes are equal."
+    AERROR("state sizes not equal."
            << " result->x.size(): " << result->x.size() << " result->y.size(): "
            << result->y.size() << " result->v.size(): " << result->v.size()
            << " result->phi.size(): " << result->phi.size());
@@ -273,7 +273,7 @@ bool HybridAStar::GetResult(HybridAStarResult* result) {
   }
 
   if (result->a.size() != result->steer.size() ||
-      result->x.size() != (result->a.size() - 1)) {
+      result->x.size() != (result->a.size() + 1)) {
     AERROR("control sizes are neither equal nor right");
     AERROR("acceleration size: " << result->a.size());
     AERROR("steer size: " << result->steer.size());
@@ -284,11 +284,32 @@ bool HybridAStar::GetResult(HybridAStarResult* result) {
 }
 
 bool HybridAStar::GetTemporalProfile(HybridAStarResult* result) {
-  std::vector<HybridAStarResult> partitioned_result;
-  if (!TrajectoryPartition(*result, &partitioned_result)) {
+  std::vector<HybridAStarResult> partitioned_results;
+  if (!TrajectoryPartition(*result, &partitioned_results)) {
     AERROR("Trajectory partition failed");
     return false;
   }
+  HybridAStarResult stitched_result;
+  for (const auto& result : partitioned_results) {
+    std::copy(result.x.begin(), result.x.end() - 1,
+              std::back_inserter(stitched_result.x));
+    std::copy(result.y.begin(), result.y.end() - 1,
+              std::back_inserter(stitched_result.y));
+    std::copy(result.phi.begin(), result.phi.end() - 1,
+              std::back_inserter(stitched_result.phi));
+    std::copy(result.v.begin(), result.v.end() - 1,
+              std::back_inserter(stitched_result.v));
+    std::copy(result.a.begin(), result.a.end(),
+              std::back_inserter(stitched_result.a));
+    std::copy(result.steer.begin(), result.steer.end(),
+              std::back_inserter(stitched_result.steer));
+  }
+  stitched_result.x.push_back(partitioned_results.back().x.back());
+  stitched_result.y.push_back(partitioned_results.back().y.back());
+  stitched_result.phi.push_back(partitioned_results.back().phi.back());
+  stitched_result.v.push_back(partitioned_results.back().v.back());
+  *result = stitched_result;
+  return true;
 }
 
 bool HybridAStar::TrajectoryPartition(
@@ -612,7 +633,7 @@ bool HybridAStar::GenerateSCurveSpeedAcceleration(HybridAStarResult* result) {
   path_points_size = combined_result.x.size();
 
   // update steer
-  combined_result.steer.resize(path_points_size);
+  combined_result.steer.resize(path_points_size - 1);
   for (size_t i = 0; i < path_points_size - 1; i++) {
     double discrete_steer =
         (combined_result.phi[i + 1] - combined_result.phi[i]) *
@@ -622,6 +643,10 @@ bool HybridAStar::GenerateSCurveSpeedAcceleration(HybridAStarResult* result) {
     combined_result.steer[i] =
         gear ? std::atan(discrete_steer) : std::atan(-discrete_steer);
   }
+
+  ADEBUG("combined_result.v.size(): " << combined_result.v.size());
+  ADEBUG("combined_result.a.size(): " << combined_result.a.size());
+  ADEBUG("combined_result.steer.size(): " << combined_result.steer.size());
 
   *result = combined_result;
   return true;
@@ -742,6 +767,7 @@ bool HybridAStar::Plan(
          << std::chrono::duration_cast<std::chrono::milliseconds>(
                 astar_end_time - astar_start_time)
                 .count());
+  return true;
 }
 
 }  // namespace planning

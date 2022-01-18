@@ -388,6 +388,24 @@ target_link_libraries(
   ${Ipopt_LIBRARIES}
   ${GFLAGS_LIBRARIES}
   glog::glog)
+
+# ##############################################################################
+# open_space_trajectory_wrapper_test ##
+# ##############################################################################
+add_executable(open_space_trajectory_wrapper_test
+               src/nodes/open_space_trajectory_wrapper_test.cpp)
+
+add_dependencies(open_space_trajectory_wrapper_test ${catkin_EXPORTED_TARGETS}
+                 ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
+target_link_libraries(
+  open_space_trajectory_wrapper_test
+  ${PROJECT_NAME}
+  ${Protobuf_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${Ipopt_LIBRARIES}
+  ${GFLAGS_LIBRARIES}
+  glog::glog)
 # ##############################################################################
 # Install ##
 # ##############################################################################

@@ -1,0 +1,76 @@
+parking_spot_config {
+    front_to_center: 1.5
+    rear_to_center: 1.5
+    left_to_center: 1.0
+    right_to_center: 1.0
+}
+
+default_lateral_range: 50.0
+default_longitudinal_range: 50.0
+
+planner_open_space_config {
+    warm_start_config {
+        next_node_num: 5
+        step_size: 1.0
+        xy_grid_resolution: 1.0
+        traj_forward_penalty: 1.0
+        traj_backward_penalty: 1.0
+        traj_gear_switch_penalty: 1.0
+        traj_steer_penalty: 1.0
+        traj_steer_change_penalty: 1.0
+        node_radius: 1.0
+        s_curve_config {
+            acc_weight: 1.0
+            jerk_weight: 10.0
+            kappa_penalty_weight: 100.0
+            ref_s_weight: 10.0
+            ref_v_weight: 1.0
+            max_forward_velocity: 2
+            max_reverse_velocity: 2
+            max_forward_acceleration: 2
+            max_reverse_acceleration: 2
+            max_acceleration_jerk: 5
+            max_num_of_iterations: 20000
+        }
+        delta_t: 0.2
+        time_slack_ratio: 1.2
+        max_path_time: 10.0
+        dense_time_resolution: 0.05
+    }
+    iterative_anchoring_smoother_config {
+        interpolated_delta_s: 0.5
+        estimate_bound: true
+        default_bound: 1.0
+        vehicle_shortest_dimension: 0.2
+        collision_decrease_ratio: 0.95
+        s_curve_config {
+            acc_weight: 1.0
+            jerk_weight: 10.0
+            kappa_penalty_weight: 100.0
+            ref_s_weight: 10.0
+            ref_v_weight: 1.0
+            max_forward_velocity: 2
+            max_reverse_velocity: 2
+            max_forward_acceleration: 2
+            max_reverse_acceleration: 2
+            max_acceleration_jerk: 5
+            max_num_of_iterations: 20000
+        }
+        delta_t: 0.2
+        cos_theta_smoother_config {
+            weight_cos_included_angle: 20.0
+            weight_anchor_points: 10.0
+            weight_length: 100.0
+            print_level: 3
+            max_num_of_iterations: 500
+            acceptable_num_of_iterations: 250
+            tol: 1e-6
+            acceptable_tol: 1e-3
+            ipopt_use_automatic_differentiation: true
+        }
+        max_iteration_num: 10000
+        dense_time_resolution: 0.05
+        max_path_time: 10.0
+        time_slack_ratio: 1.2
+    }
+}

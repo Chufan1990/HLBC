@@ -116,6 +116,12 @@ class PiecewiseJerkProblem {
 
   const std::vector<double>& opt_ddx() const { return ddx_; }
 
+  const std::vector<double>& debug_x() const { return debug_x_; }
+
+  const std::vector<double>& debug_dx() const { return debug_dx_; }
+
+  const std::vector<double>& debug_ddx() const { return debug_ddx_; }
+
  protected:
   // naming convention follows osqp solver.
   virtual void CalculateKernel(std::vector<c_float>* P_data,
@@ -150,6 +156,11 @@ class PiecewiseJerkProblem {
   std::vector<double> x_;
   std::vector<double> dx_;
   std::vector<double> ddx_;
+
+  // debug
+  std::vector<double> debug_x_;
+  std::vector<double> debug_dx_;
+  std::vector<double> debug_ddx_;
 
   std::array<double, 3> x_init_;
   std::array<double, 3> scale_factor_ = {{1.0, 1.0, 1.0}};

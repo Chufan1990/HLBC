@@ -59,7 +59,7 @@ inline double QuaternionToHeading(const double qw, const double qx,
   EulerAnglesZXYd euler_angles(qw, qx, qy, qz);
   // euler_angles.yaw() is zero when the car is pointing North, but
   // the heading is zero when the car is pointing East.
-  return NormalizeAngle(euler_angles.yaw() + M_PI_2);
+  return NormalizeAngle(euler_angles.yaw());
 }
 
 /*

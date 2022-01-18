@@ -2,6 +2,7 @@
 
 #include <boost/bind.hpp>
 #include <string>
+#include <unordered_map>
 
 #include "common/configs/vehicle_config_helper.h"
 #include "common/macro.h"
@@ -31,13 +32,16 @@ bool OpenSpaceTrajectoryWrapper::Init() {
     return false;
   }
 
-  if (!common::util::GetProtoFromFile(open_space_trajectory_conf_file,
-                                      &config_)) {
+  std::string filename = absl::StrCat(std::string(std::getenv("HOME")),
+                                      open_space_trajectory_conf_file);
+
+  if (!common::util::GetProtoFromFile(filename, &config_)) {
     AERROR("Unable to load control conf file: "
            << open_space_trajectory_conf_file);
     return false;
   } else {
-    AINFO("Conf file: " << open_space_trajectory_conf_file << " is loaded.");
+    AINFO("Configuration file " << open_space_trajectory_conf_file
+                                << " is loaded: " << config_.DebugString());
   }
 
   std::string obstacle_message;
@@ -47,7 +51,7 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   }
 
   std::string localization_message;
-  if (!nh_.getParam("gps_message", localization_message)) {
+  if (!nh_.getParam("localization_message", localization_message)) {
     AERROR("Unable to retrived localization message topic name");
     return false;
   }
@@ -83,7 +87,54 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   open_space_trajectory_generator_.reset(
       new OpenSpaceTrajectoryGenerator(config_));
 
+  warm_start_visualizer_.reset(new common::util::TrajectoryVisualizer(nh_));
+
+  optimized_trajectory_visualizer_.reset(
+      new common::util::TrajectoryVisualizer(nh_));
+
+  std::unordered_map<std::string,
+                     std::pair<std_msgs::ColorRGBA, geometry_msgs::Vector3>>
+      markers_properties;
+
+  std_msgs::ColorRGBA color;
+  geometry_msgs::Vector3 scale;
+
+  color.a = 1.0;
+  color.r = 0.5;
+  color.g = 0.5;
+  color.b = 0.1;
+  scale.x = 0.2;
+  scale.y = 0.2;
+  scale.z = 0.2;
+  markers_properties["arrows"] = std::make_pair(color, scale);
+  markers_properties["points_and_lines"] = std::make_pair(color, scale);
+
+  warm_start_visualizer_->Setup("warm_start", "/map", markers_properties);
+
+  color.a = 1.0;
+  color.r = 0.1;
+  color.g = 1.0;
+  color.b = 0.1;
+  scale.x = 0.2;
+  scale.y = 0.2;
+  scale.z = 0.2;
+  markers_properties["arrows"] = std::make_pair(color, scale);
+  markers_properties["points_and_lines"] = std::make_pair(color, scale);
+
+  optimized_trajectory_visualizer_->Setup("optimized", "/map",
+                                          markers_properties);
+
+  trajectory_marker_writer_ = std::make_unique<ros::Timer>(nh_.createTimer(
+      ros::Duration(1), &OpenSpaceTrajectoryWrapper::Visualize, this));
+
   return true;
+}
+
+void OpenSpaceTrajectoryWrapper::Visualize(const ros::TimerEvent& e) {
+  if (trajectory_updated_.load()) {
+    optimized_trajectory_visualizer_->Publish(optimized_trajectory_markers_);
+    warm_start_visualizer_->Publish(warm_start_markers_);
+  }
 }
 
 void OpenSpaceTrajectoryWrapper::OnLocalization(
@@ -132,59 +183,108 @@ void OpenSpaceTrajectoryWrapper::OnDestination(
         msg->pose.orientation.y, msg->pose.orientation.z));
     destination_ready_.store(true);
   }
+}
 
-  data_ready_ = localization_ready_ && obstacles_ready_ && destination_ready_;
-
-  if (!data_ready_) {
-    return;
-  }
+bool OpenSpaceTrajectoryWrapper::Proc() {
+  ros::Rate loop_rate(1);
+  spinner_->start();
 
   OpenSpaceTrajectoryThreadData thread_data;
 
-  {
-    std::lock(obstacles_copy_done_, localization_copy_done_,
-              destination_copy_done_);
-    // make sure both already-locked mutexes are unlocked at the end of scope
-    std::lock_guard<std::timed_mutex> lock1(obstacles_copy_done_,
-                                            std::adopt_lock);
-    std::lock_guard<std::timed_mutex> lock2(localization_copy_done_,
-                                            std::adopt_lock);
-    std::lock_guard<std::timed_mutex> lock3(destination_copy_done_,
-                                            std::adopt_lock);
+  AINFO("waiting for data");
+  while (ros::ok()) {
+    if (localization_ready_.load() && obstacles_ready_.load() &&
+        destination_ready_.load()) {
+      data_ready_.store(true);
+    }
+    if (!data_ready_.load()) {
+      AWARN("Input data not ready");
+      loop_rate.sleep();
+      continue;
+    }
+    AINFO("Input data received");
 
-    thread_data = thread_data_;
+    {
+      std::lock(obstacles_copy_done_, localization_copy_done_,
+                destination_copy_done_);
+      // make sure both already-locked mutexes are unlocked at the end of
+      // scope
+      std::lock_guard<std::timed_mutex> lock1(obstacles_copy_done_,
+                                              std::adopt_lock);
+      std::lock_guard<std::timed_mutex> lock2(localization_copy_done_,
+                                              std::adopt_lock);
+      std::lock_guard<std::timed_mutex> lock3(destination_copy_done_,
+                                              std::adopt_lock);
+      thread_data = thread_data_;
+      localization_ready_.store(false);
+      obstacles_ready_.store(false);
+      destination_ready_.store(false);
+      data_ready_.store(false);
+    }
+
+    GetRoiBoundary(thread_data.cur_pose[0], thread_data.cur_pose[1],
+                   thread_data.cur_pose[2], thread_data.end_pose[0],
+                   thread_data.end_pose[1], thread_data.end_pose[2],
+                   thread_data.cur_pose[0], thread_data.cur_pose[1],
+                   thread_data.cur_pose[2], &thread_data.XYbounds);
+
+    Status status = open_space_trajectory_generator_->Plan(
+        thread_data.stitching_trajectory, thread_data.cur_pose,
+        thread_data.end_pose, thread_data.XYbounds, thread_data.rotate_angle,
+        thread_data.translate_origin, thread_data.obstacles_vertices_vec);
+
+    open_space_trajectory_generator_->GetOptimizedTrajectory(
+        &optimized_trajectory_);
+
+    const size_t horizon = optimized_trajectory_.size();
+
+    std::vector<double> visual_x(horizon, 0.0);
+    std::vector<double> visual_y(horizon, 0.0);
+    std::vector<double> visual_phi(horizon, 0.0);
+
+    for (size_t i = 0; i < horizon; i++) {
+      const auto& point = optimized_trajectory_[i];
+      visual_x[i] = point.path_point().x();
+      visual_y[i] = point.path_point().y();
+      visual_phi[i] = point.path_point().theta();
+    }
+
+    optimized_trajectory_markers_["arrows"] =
+        optimized_trajectory_visualizer_->Arrows(visual_x, visual_y,
+                                                 visual_phi);
+    optimized_trajectory_markers_["points_and_lines"] =
+        optimized_trajectory_visualizer_->PointsAndLines(visual_x, visual_y,
+                                                         visual_phi);
+
+    HybridAStarResult warm_start;
+
+    open_space_trajectory_generator_->GetWarmStartResult(&warm_start);
+
+    warm_start_markers_["arrows"] = warm_start_visualizer_->Arrows(
+        warm_start.x, warm_start.y, warm_start.phi);
+    warm_start_markers_["points_and_lines"] =
+        warm_start_visualizer_->PointsAndLines(warm_start.x, warm_start.y,
+                                               warm_start.phi);
+
+    trajectory_updated_.store(true);
+    loop_rate.sleep();
   }
 
-  GetRoiBoundary(thread_data.cur_pose[0], thread_data.cur_pose[1],
-                 thread_data.cur_pose[2], thread_data.end_pose[0],
-                 thread_data.end_pose[1], thread_data.end_pose[2],
-                 &thread_data.XYbounds);
-
-  Status status = open_space_trajectory_generator_->Plan(
-      thread_data.stitching_trajectory, thread_data.cur_pose,
-      thread_data.end_pose, thread_data.XYbounds, thread_data.rotate_angle,
-      thread_data.translate_origin, thread_data.obstacles_vertices_vec);
-
-  localization_ready_.store(false);
-  obstacles_ready_.store(false);
-  destination_ready_.store(false);
+  spinner_->stop();
+  return true;
+  // return status.ok();
 }
 
 void OpenSpaceTrajectoryWrapper::GetRoiBoundary(
     const double sx, const double sy, const double sphi, const double ex,
-    const double ey, const double ephi, std::vector<double>* XYbounds) {
-  // sanity check
-  CHECK_NOTNULL(XYbounds);
-
+    const double ey, const double ephi, const double vx, const double vy,
+    const double vphi, std::vector<double>* XYbounds) {
   std::vector<common::math::Vec2d> boundary_points;
 
   const auto vehicle_param =
       common::VehicleConfigHelper::GetConfig().vehicle_param();
 
-  const auto& vehicle_state = injector_->vehicle_state();
-  const auto vehicle_bbox =
-      Node3d::GetBoundingBox(vehicle_param, vehicle_state->x(),
-                             vehicle_state->y(), vehicle_state->yaw());
+  const auto vehicle_bbox = Node3d::GetBoundingBox(vehicle_param, vx, vy, vphi);
   const auto& vehicle_vertices = vehicle_bbox.GetAllCorners();
 
   boundary_points.insert(std::end(boundary_points),

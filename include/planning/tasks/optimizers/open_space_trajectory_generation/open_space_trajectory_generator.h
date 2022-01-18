@@ -32,6 +32,10 @@ class OpenSpaceTrajectoryGenerator {
     *optimized_trajectory = optimized_trajectory_;
   }
 
+  void GetWarmStartResult(HybridAStarResult* warm_start) {
+    *warm_start = warm_start_result_;
+  }
+
  private:
   void PathPointNormalizing(const double rotate_angle,
                             const common::math::Vec2d& translate_origin,
@@ -84,6 +88,8 @@ class OpenSpaceTrajectoryGenerator {
   std::shared_ptr<DependencyInjector> injector_;
 
   DiscretizedTrajectory optimized_trajectory_;
+
+  HybridAStarResult warm_start_result_;
 };
 }  // namespace planning
 }  // namespace autoagric

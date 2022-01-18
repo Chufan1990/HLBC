@@ -12,6 +12,7 @@
 #include "autoagric/planning/open_space_trajectory_generator_config.pb.h"
 #include "autoware_msgs/DetectedObjectArray.h"
 #include "common/math/vec2d.h"
+#include "common/util/trajectory_visualizer.h"
 #include "planning/common/dependency_injector.h"
 #include "planning/common/trajectory/discretized_trajectory.h"
 #include "planning/tasks/optimizers/open_space_trajectory_generation/open_space_trajectory_generator.h"
@@ -48,11 +49,14 @@ class OpenSpaceTrajectoryWrapper {
 
   void GetRoiBoundary(const double sx, const double sy, const double sphi,
                       const double ex, const double ey, const double ephi,
+                      const double vx, const double vy, const double vphi,
                       std::vector<double>* XYbounds);
 
   std::vector<common::math::Vec2d> CenterToRectangle(
       const double cx, const double cy, const double cphi, const double left,
       const double right, const double front, const double rear);
+
+  void Visualize(const ros::TimerEvent& e);
 
   ros::NodeHandle nh_;
 
@@ -87,15 +91,28 @@ class OpenSpaceTrajectoryWrapper {
 
   OpenSpaceTrajectoryGeneratorConfig config_;
 
-  std::atomic<bool> localization_ready_;
+  std::atomic<bool> localization_ready_{false};
 
-  std::atomic<bool> obstacles_ready_;
+  std::atomic<bool> obstacles_ready_{false};
 
-  std::atomic<bool> destination_ready_;
+  std::atomic<bool> destination_ready_{false};
 
-  std::atomic<bool> data_ready_;
+  std::atomic<bool> data_ready_{false};
 
-  std::atomic<bool> trajectory_updated_;
+  std::atomic<bool> trajectory_updated_{false};
+
+  std::unique_ptr<common::util::TrajectoryVisualizer> warm_start_visualizer_;
+
+  std::unique_ptr<common::util::TrajectoryVisualizer>
+      optimized_trajectory_visualizer_;
+
+  std::unordered_map<std::string, visualization_msgs::MarkerArray>
+      warm_start_markers_;
+
+  std::unordered_map<std::string, visualization_msgs::MarkerArray>
+      optimized_trajectory_markers_;
+
+  std::unique_ptr<ros::Timer> trajectory_marker_writer_;
 };
 
 }  // namespace planning

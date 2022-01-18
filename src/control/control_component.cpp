@@ -313,10 +313,8 @@ bool ControlComponent::Proc() {
 
       std::unordered_map<std::string, visualization_msgs::MarkerArray> markers;
 
-      markers["arrows"] =
-          common::util::TrajectoryVisualizer::Arrows(x, y, theta);
-      markers["points_and_lines"] =
-          common::util::TrajectoryVisualizer::PointsAndLines(x, y, theta);
+      markers["arrows"] = visualizer_->Arrows(x, y, theta);
+      markers["points_and_lines"] = visualizer_->PointsAndLines(x, y, theta);
 
       visualizer_->Publish(markers);
     }

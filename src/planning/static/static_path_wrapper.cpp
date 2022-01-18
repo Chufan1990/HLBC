@@ -97,11 +97,10 @@ void StaticPathWrapper::InitVisualizer(const std::string& name,
 
   const auto& global_trajectory = path_generator_->Path();
 
-  markers_["arrows"] = common::util::TrajectoryVisualizer::Arrows(
+  markers_["arrows"] = visualizer_->Arrows(
       global_trajectory.x, global_trajectory.y, global_trajectory.phi);
-  markers_["points_and_lines"] =
-      common::util::TrajectoryVisualizer::PointsAndLines(
-          global_trajectory.x, global_trajectory.y, global_trajectory.phi);
+  markers_["points_and_lines"] = visualizer_->PointsAndLines(
+      global_trajectory.x, global_trajectory.y, global_trajectory.phi);
 }
 
 bool StaticPathWrapper::Proc() {

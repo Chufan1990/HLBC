@@ -490,13 +490,26 @@ bool IterativeAnchoringSmoother::SmoothSpeed(const double init_a,
 
   x_bounds[num_of_knots - 1] = std::make_pair(path_length, path_length);
   dx_bounds[num_of_knots - 1] = std::make_pair(0.0, 0.0);
-  ddx_bounds[num_of_knots - 1] = std::make_pair(0.0, 0.0);
+  // ddx_bounds[num_of_knots - 1] = std::make_pair(0.0, 0.0);
 
   std::vector<double> x_ref(num_of_knots, path_length);
 
   const double weight_x_ref = smoother_config.s_curve_config().ref_s_weight();
   const double weight_dx = smoother_config.s_curve_config().acc_weight();
   const double weight_ddx = smoother_config.s_curve_config().jerk_weight();
+
+  ADEBUG("weight_x_ref: " << weight_x_ref);
+  ADEBUG("weight_dx: " << weight_dx);
+  ADEBUG("weight_ddx: " << weight_ddx);
+  
+  ADEBUG("upper_dx: " << upper_dx);
+  ADEBUG("max_a: " << max_a);
+  ADEBUG("max_acc_jerk: " << max_acc_jerk);
+
+  ADEBUG("path_length: " << path_length);
+  ADEBUG("total_time: " << total_time);
+  ADEBUG("dt: " << dt);
+  ADEBUG("num_of_knots: " << num_of_knots);
 
   piecewise_jerk_problem.set_x_ref(weight_x_ref, std::move(x_ref));
   piecewise_jerk_problem.set_weight_ddx(weight_dx);
@@ -512,6 +525,14 @@ bool IterativeAnchoringSmoother::SmoothSpeed(const double init_a,
   // solve
   if (!piecewise_jerk_problem.Optimize(max_num_of_iterations)) {
     AERROR("Piecewise jerk speed optimizer failed");
+
+    for (size_t i = 0; i < piecewise_jerk_problem.debug_x().size(); i++) {
+      ADEBUG(std::setprecision(3)
+             << piecewise_jerk_problem.debug_x()[i] << ", "
+             << piecewise_jerk_problem.debug_dx()[i] << ", "
+             << piecewise_jerk_problem.debug_ddx()[i]);
+    }
+
     return false;
   }
 

@@ -105,6 +105,18 @@ bool PiecewiseJerkProblem::Optimize(const int max_iter) {
     osqp_cleanup(osqp_work);
     FreeData(data);
     c_free(settings);
+
+    debug_x_.resize(num_of_knots_);
+    debug_dx_.resize(num_of_knots_);
+    debug_ddx_.resize(num_of_knots_);
+
+    for (size_t i = 0; i < num_of_knots_; ++i) {
+      debug_x_.at(i) = osqp_work->solution->x[i] / scale_factor_[0];
+      debug_dx_.at(i) =
+          osqp_work->solution->x[i + num_of_knots_] / scale_factor_[1];
+      debug_ddx_.at(i) =
+          osqp_work->solution->x[i + 2 * num_of_knots_] / scale_factor_[2];
+    }
     return false;
   } else if (osqp_work->solution == nullptr) {
     AERROR("The solution from OSQP is nullptr");

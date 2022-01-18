@@ -24,19 +24,19 @@ class TrajectoryVisualizer {
       const std::unordered_map<std::string, visualization_msgs::MarkerArray>&
           markers);
 
-  static visualization_msgs::MarkerArray Arrows(
+  visualization_msgs::MarkerArray Arrows(const std::vector<double>& x,
+                                         const std::vector<double>& y,
+                                         const std::vector<double>& theta);
+
+  visualization_msgs::MarkerArray PointsAndLines(
       const std::vector<double>& x, const std::vector<double>& y,
       const std::vector<double>& theta);
 
-  static visualization_msgs::MarkerArray PointsAndLines(
-      const std::vector<double>& x, const std::vector<double>& y,
-      const std::vector<double>& theta);
+  visualization_msgs::MarkerArray LineStrip(const std::vector<double>& x,
+                                            const std::vector<double>& y,
+                                            const std::vector<double>& theta);
 
-  static visualization_msgs::MarkerArray LineStrip(
-      const std::vector<double>& x, const std::vector<double>& y,
-      const std::vector<double>& theta);
-
-  static visualization_msgs::MarkerArray TextView(
+  visualization_msgs::MarkerArray TextView(
       const std::vector<double>& x, const std::vector<double>& y,
       const std::vector<double>& theta, const std::vector<std::string>& text);
 
@@ -55,10 +55,10 @@ class TrajectoryVisualizer {
 
   std::string name_;
 
-  inline static std::string frame_id_;
+  std::string frame_id_;
 
-  inline static std::unordered_map<
-      std::string, std::pair<std_msgs::ColorRGBA, geometry_msgs::Vector3>>
+  std::unordered_map<std::string,
+                     std::pair<std_msgs::ColorRGBA, geometry_msgs::Vector3>>
       properties_;
 
   bool has_properties_ = false;

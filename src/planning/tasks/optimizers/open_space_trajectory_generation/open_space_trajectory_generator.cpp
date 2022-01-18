@@ -72,10 +72,9 @@ Status OpenSpaceTrajectoryGenerator::Plan(
   PathPointNormalizing(rotate_angle, translate_origin, &end_x, &end_y,
                        &end_phi);
 
-  HybridAStarResult result;
-
   if (warm_start_->Plan(init_x, init_y, init_phi, end_x, end_y, end_phi,
-                        XYbounds, obstacles_vertices_vec, &result)) {
+                        XYbounds, obstacles_vertices_vec,
+                        &warm_start_result_)) {
     ADEBUG("Warm start problem solved successfully");
   } else {
     ADEBUG("Fail to solve warm start problem");
@@ -90,7 +89,8 @@ Status OpenSpaceTrajectoryGenerator::Plan(
   Eigen::MatrixXd time_result_ds;
 
   std::vector<HybridAStarResult> paritioned_trajectories;
-  if (!warm_start_->TrajectoryPartition(result, &paritioned_trajectories)) {
+  if (!warm_start_->TrajectoryPartition(warm_start_result_,
+                                        &paritioned_trajectories)) {
     return Status(ErrorCode::PLANNING_ERROR, "Hybrid Astar partition failed");
   }
 
@@ -134,10 +134,6 @@ Status OpenSpaceTrajectoryGenerator::Plan(
                   << state_result_ds_vec[i].cols());
   }
 
-  /**
-   * @todo CombineTrajectories
-   *
-   */
   CombineTrajectories(xWS_vec, uWS_vec, state_result_ds_vec,
                       control_result_ds_vec, time_result_ds_vec, &xWS, &uWS,
                       &state_result_ds, &control_result_ds, &time_result_ds);
