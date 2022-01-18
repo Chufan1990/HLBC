@@ -32,5 +32,5 @@
 *.app
 
 # Configuration directories
-build
-autoagric
+./build
+./autoagric
