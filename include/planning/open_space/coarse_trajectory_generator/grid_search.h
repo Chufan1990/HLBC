@@ -13,6 +13,7 @@
 namespace autoagric {
 namespace planning {
 
+
 class Node2d {
  public:
   Node2d(const double x, const double y, const double xy_resolution,
@@ -22,14 +23,12 @@ class Node2d {
     grid_y_ = static_cast<int>((y - XYbounds[2]) / xy_resolution);
     index_ = ComputeStringIndex(grid_x_, grid_y_);
   }
-
   Node2d(const int grid_x, const int grid_y,
          const std::vector<double>& XYbounds) {
     grid_x_ = grid_x;
     grid_y_ = grid_y;
     index_ = ComputeStringIndex(grid_x_, grid_y_);
   }
-
   void SetPathCost(const double path_cost) {
     path_cost_ = path_cost;
     cost_ = path_cost_ + heuristic_;
@@ -40,17 +39,17 @@ class Node2d {
   }
   void SetCost(const double cost) { cost_ = cost; }
   void SetPreNode(std::shared_ptr<Node2d> pre_node) { pre_node_ = pre_node; }
-
   double GetGridX() const { return grid_x_; }
   double GetGridY() const { return grid_y_; }
   double GetPathCost() const { return path_cost_; }
-  double GetHeuristic() const { return heuristic_; }
+  double GetHeuCost() const { return heuristic_; }
   double GetCost() const { return cost_; }
   const std::string& GetIndex() const { return index_; }
   std::shared_ptr<Node2d> GetPreNode() const { return pre_node_; }
   static std::string CalcIndex(const double x, const double y,
                                const double xy_resolution,
                                const std::vector<double>& XYbounds) {
+    // XYbounds with xmin, xmax, ymin, ymax
     int grid_x = static_cast<int>((x - XYbounds[0]) / xy_resolution);
     int grid_y = static_cast<int>((y - XYbounds[2]) / xy_resolution);
     return ComputeStringIndex(grid_x, grid_y);
@@ -71,10 +70,10 @@ class Node2d {
   double heuristic_ = 0.0;
   double cost_ = 0.0;
   std::string index_;
-  std::shared_ptr<Node2d> pre_node_;
+  std::shared_ptr<Node2d> pre_node_ = nullptr;
 };
 
-struct GridAstarResult {
+struct GridAStarResult {
   std::vector<double> x;
   std::vector<double> y;
   double path_cost = 0.0;
@@ -84,17 +83,16 @@ class GridSearch {
  public:
   explicit GridSearch(const PlannerOpenSpaceConfig& open_space_conf);
   virtual ~GridSearch() = default;
-  bool GenerateAstarPath(
+  bool GenerateAStarPath(
       const double sx, const double sy, const double ex, const double ey,
       const std::vector<double>& XYbounds,
       const std::vector<std::vector<common::math::LineSegment2d>>&
           obstacles_linesegments_vec,
-      GridAstarResult* result);
+      GridAStarResult* result);
   bool GenerateDpMap(
       const double ex, const double ey, const std::vector<double>& XYbounds,
       const std::vector<std::vector<common::math::LineSegment2d>>&
           obstacles_linesegments_vec);
-
   double CheckDpMap(const double sx, const double sy);
 
  private:
@@ -103,7 +101,7 @@ class GridSearch {
   std::vector<std::shared_ptr<Node2d>> GenerateNextNodes(
       std::shared_ptr<Node2d> node);
   bool CheckConstraints(std::shared_ptr<Node2d> node);
-  void LoadGridAstarResult(GridAstarResult* result);
+  void LoadGridAStarResult(GridAStarResult* result);
 
  private:
   double xy_grid_resolution_ = 0.0;

@@ -399,6 +399,7 @@ bool IterativeAnchoringSmoother::SmoothPath(
   while (!is_collision_free) {
     if (counter > max_iteration_num) {
       AERROR("Maximum iteration reached, path smoother early stops");
+      return true;
     }
 
     AdjustPathBounds(colliding_point_index, &flexible_bounds);
@@ -446,29 +447,22 @@ bool IterativeAnchoringSmoother::SmoothSpeed(const double init_a,
 
   const auto& smoother_config =
       planner_open_space_config_.iterative_anchoring_smoother_config();
-  const double max_forward_v =
-      smoother_config.s_curve_config().max_forward_velocity();
-  const double max_reverse_v =
-      smoother_config.s_curve_config().max_reverse_velocity();
-  const double max_forward_a =
-      smoother_config.s_curve_config().max_forward_acceleration();
-  const double max_reverse_a =
-      smoother_config.s_curve_config().max_reverse_acceleration();
-  const double max_acc_jerk =
-      smoother_config.s_curve_config().max_acceleration_jerk();
+  const double max_forward_v = smoother_config.max_forward_v();
+  const double max_reverse_v = smoother_config.max_reverse_v();
+  const double max_forward_a = smoother_config.max_forward_acc();
+  const double max_reverse_a = smoother_config.max_reverse_acc();
+  const double max_acc_jerk = smoother_config.max_acc_jerk();
   const double dt = smoother_config.delta_t();
   const double loosen_ratio = smoother_config.time_slack_ratio();
-  const double max_path_time = smoother_config.max_path_time();
 
-  const double total_time = std::min(
+  const double total_time =
       gear_
           ? loosen_ratio *
                 (max_forward_v * max_forward_v + path_length * max_forward_a) /
                 (max_forward_v * max_forward_a)
           : loosen_ratio *
                 (max_reverse_v * max_reverse_v + path_length * max_reverse_a) /
-                (max_reverse_a * max_reverse_v),
-      max_path_time);
+                (max_reverse_a * max_reverse_v);
   ADEBUG("total time is " << total_time);
 
   const size_t num_of_knots = static_cast<size_t>(total_time / dt) + 1;
@@ -501,7 +495,7 @@ bool IterativeAnchoringSmoother::SmoothSpeed(const double init_a,
   ADEBUG("weight_x_ref: " << weight_x_ref);
   ADEBUG("weight_dx: " << weight_dx);
   ADEBUG("weight_ddx: " << weight_ddx);
-  
+
   ADEBUG("upper_dx: " << upper_dx);
   ADEBUG("max_a: " << max_a);
   ADEBUG("max_acc_jerk: " << max_acc_jerk);

@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "autoagric/common/pnc_point.pb.h"
-#include "autoagric/planning/open_space_trajectory_generator_config.pb.h"
+#include "autoagric/planning/open_space_task_config.pb.h"
 #include "common/math/vec2d.h"
 #include "common/status/status.h"
 #include "planning/common/dependency_injector.h"
@@ -17,7 +17,7 @@ namespace planning {
 class OpenSpaceTrajectoryGenerator {
  public:
   OpenSpaceTrajectoryGenerator(
-      const OpenSpaceTrajectoryGeneratorConfig& config);
+      const OpenSpaceTrajectoryOptimizerConfig& config);
 
   common::Status Plan(
       const std::vector<common::TrajectoryPoint>& stitching_trajectory,
@@ -83,7 +83,7 @@ class OpenSpaceTrajectoryGenerator {
 
   std::unique_ptr<IterativeAnchoringSmoother> iterative_anchoring_smoother_;
 
-  OpenSpaceTrajectoryGeneratorConfig config_;
+  OpenSpaceTrajectoryOptimizerConfig config_;
 
   std::shared_ptr<DependencyInjector> injector_;
 

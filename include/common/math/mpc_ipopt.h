@@ -38,13 +38,13 @@ class MpcIpopt {
   void operator()(ADvector& fg, const ADvector& vars);
 
  private:
+  std::string options_;
   Eigen::MatrixXd* matrix_q_;
   Eigen::MatrixXd* matrix_r_;
   Eigen::MatrixXd* matrix_endstate_;
-  const double lf_;
   const double horizon_;
   const double dt_;
-  std::string options_;
+  const double lf_;
   std::vector<common::TrajectoryPoint>* ref_trajectory_;
   const size_t x_index_;
   const size_t y_index_;

@@ -31,5 +31,9 @@ message StaticPathConfig {
   double delta_t = 3;
   double time_slack_ratio = 4;
   double dense_time_resolution = 5;
-  double max_path_time = 6;
+  double max_forward_v = 6;
+  double max_reverse_v = 7;
+  double max_forward_acc = 8;
+  double max_reverse_acc = 9;
+  double max_acc_jerk = 10;
 }

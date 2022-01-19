@@ -385,8 +385,8 @@ Status MPCController::ComputeControlCommand(
   current_trajectory_timestamp_ =
       planning_published_trajectory->header().timestamp_sec();
 
-  auto pos_trajectory_time_stamp_diff =
-      localization->header().timestamp_sec() - current_trajectory_timestamp_;
+  // auto pos_trajectory_time_stamp_diff =
+  //     localization->header().timestamp_sec() - current_trajectory_timestamp_;
 
   const auto &com = injector_->vehicle_state()->ComputeCOMPosition(lr_);
 

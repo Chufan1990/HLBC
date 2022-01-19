@@ -72,7 +72,11 @@ message WarmStartConfig {
   double delta_t = 18;
   double time_slack_ratio = 19;
   double dense_time_resolution = 20;
-  double max_path_time = 21;
+  double max_forward_v = 21;
+  double max_reverse_v = 22;
+  double max_forward_acc = 23;
+  double max_reverse_acc = 24;
+  double max_acc_jerk = 25;
 }
 
 // message DualVariableWarmStartConfig {
@@ -165,8 +169,12 @@ message IterativeAnchoringConfig {
   CosThetaSmootherConfig cos_theta_smoother_config = 12;
   int32 max_iteration_num = 13;
   double dense_time_resolution = 14;
-  double max_path_time = 15;
   double time_slack_ratio = 16;
+  double max_forward_v = 17;
+  double max_reverse_v = 18;
+  double max_forward_acc = 19;
+  double max_reverse_acc = 20;
+  double max_acc_jerk = 21;
 }
 
 // message TrajectoryPartitionConfig {

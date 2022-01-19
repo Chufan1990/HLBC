@@ -15,7 +15,7 @@ using common::Status;
 using common::math::Vec2d;
 
 OpenSpaceTrajectoryGenerator::OpenSpaceTrajectoryGenerator(
-    const OpenSpaceTrajectoryGeneratorConfig& config) {
+    const OpenSpaceTrajectoryOptimizerConfig& config) {
   config_ = config;
 
   warm_start_.reset(new HybridAStar(config.planner_open_space_config()));

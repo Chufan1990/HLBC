@@ -26,15 +26,6 @@ using common::TrajectoryPoint;
 using common::math::Vec2d;
 
 namespace {
-double PointDistanceSquare(const TrajectoryPoint& point, const double x,
-                           const double y) {
-  const double dx = point.path_point().x() - x;
-  const double dy = point.path_point().y() - y;
-  return dx * dx + dy * dy;
-}
-
-double sign(const double x) { return x < 0 ? -1.0 : 1.0; }
-
 constexpr double kDoubleEpsilon = 1e-3;
 }  // namespace
 
@@ -172,7 +163,7 @@ void fromMsg(const geometry_msgs::TwistStampedConstPtr& msg,
 void fromMsg(const hlbc::TrajectoryConstPtr& msg,
              planning::ADCTrajectory* trajectory) {
   trajectory->Clear();
-  for (int i = 0; i < msg->trajectory_point.size(); i++) {
+  for (size_t i = 0; i < msg->trajectory_point.size(); i++) {
     auto& msg_point = msg->trajectory_point[i];
     auto&& trajectory_point = trajectory->add_trajectory_point();
 
@@ -193,7 +184,7 @@ void fromMsg(const hlbc::TrajectoryConstPtr& msg,
 void fromMsg(const hlbc::Trajectory& msg, planning::ADCTrajectory* trajectory) {
   trajectory->Clear();
 
-  for (int i = 0; i < msg.trajectory_point.size(); i++) {
+  for (size_t i = 0; i < msg.trajectory_point.size(); i++) {
     auto& msg_point = msg.trajectory_point[i];
     auto&& trajectory_point = trajectory->add_trajectory_point();
     fromMsg(msg_point, trajectory_point);

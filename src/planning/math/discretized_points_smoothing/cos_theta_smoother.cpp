@@ -25,12 +25,12 @@ bool CosThetaSmoother::Solve(
   const double weight_length = config_.weight_length();
   const size_t print_level = config_.print_level();
   const size_t max_num_of_iterations = config_.max_num_of_iterations();
-  const size_t acceptable_num_of_iterations =
-      config_.acceptable_num_of_iterations();
+  // const size_t acceptable_num_of_iterations =
+  //     config_.acceptable_num_of_iterations();
   const double tol = config_.tol();
   const double acceptable_tol = config_.acceptable_tol();
-  const bool use_automatic_differentiation =
-      config_.ipopt_use_automatic_differentiation();
+  // const bool use_automatic_differentiation =
+  //     config_.ipopt_use_automatic_differentiation();
 
   std::unique_ptr<CosThetaIpoptInterface> smoother =
       std::unique_ptr<CosThetaIpoptInterface>(

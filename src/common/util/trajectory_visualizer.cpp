@@ -5,12 +5,15 @@
 
 #include "absl/strings/str_cat.h"
 #include "common/macro.h"
+#include "common/math/box2d.h"
 #include "common/math/quaternion.h"
 
 namespace autoagric {
 namespace common {
 namespace util {
 
+using common::math::Box2d;
+using common::math::Vec2d;
 using visualization_msgs::Marker;
 using visualization_msgs::MarkerArray;
 
@@ -140,7 +143,8 @@ bool TrajectoryVisualizer::Setup(
         std::string, std::pair<std_msgs::ColorRGBA, geometry_msgs::Vector3>>&
         properties,
     const bool has_points_and_lines_, const bool has_arrows,
-    const bool has_text) {
+    const bool has_texts, const bool has_boundingboxs,
+    const bool has_obstacles) {
   nh_ = ros::NodeHandle(nh_, name);
 
   if (has_points_and_lines_) {
@@ -160,12 +164,29 @@ bool TrajectoryVisualizer::Setup(
     publisher_queue_["arrows"] = nh_.advertise<MarkerArray>("arrows", 10);
   }
 
-  if (has_text) {
+  if (has_texts) {
     if (properties.find("texts") == properties.end()) {
       AERROR("No properties preset for texts");
       return false;
     }
     publisher_queue_["texts"] = nh_.advertise<MarkerArray>("texts", 10);
+  }
+
+  if (has_boundingboxs) {
+    if (properties.find("boundingboxs") == properties.end()) {
+      AERROR("No properties preset for bounding boxs");
+      return false;
+    }
+    publisher_queue_["boundingboxs"] =
+        nh_.advertise<MarkerArray>("boundingbox", 10);
+  }
+
+  if (has_obstacles) {
+    if (properties.find("obstacles") == properties.end()) {
+      AERROR("No properties preset for obstacles");
+      return false;
+    }
+    publisher_queue_["obstacles"] = nh_.advertise<MarkerArray>("obstacles", 10);
   }
 
   properties_.clear();
@@ -196,6 +217,102 @@ bool TrajectoryVisualizer::Publish(
     publisher_queue_[marker_pair.first].publish(marker_pair.second);
   }
   return true;
+}
+
+MarkerArray TrajectoryVisualizer::BoundingBoxs(const std::vector<double>& x,
+                                               const std::vector<double>& y,
+                                               const std::vector<double>& theta,
+                                               const double length,
+                                               const double width,
+                                               const size_t interval) {
+  if (x.size() != y.size() || x.size() != theta.size()) {
+    AERROR("States sizes not equal");
+    return MarkerArray();
+  }
+
+  MarkerArray boundingboxs;
+
+  const size_t horizon = x.size();
+
+  for (size_t i = 0; i < horizon; i += interval) {
+    auto bbox = EgoBox(x[i], y[i], theta[i], length, width);
+    bbox.id = i;
+    boundingboxs.markers.emplace_back(std::move(bbox));
+  }
+
+  return boundingboxs;
+}
+
+Marker TrajectoryVisualizer::EgoBox(const double x, const double y,
+                                    const double theta, const double length,
+                                    const double width) {
+  Box2d ego_box(Vec2d(x, y), theta, length, width);
+
+  std::vector<Vec2d> ego_box_corners = ego_box.GetAllCorners();
+
+  Marker boundingbox;
+
+  boundingbox.type = Marker::LINE_STRIP;
+  boundingbox.header.frame_id = frame_id_;
+  boundingbox.ns = "bounding boxs";
+  boundingbox.action = Marker::ADD;
+  boundingbox.color = properties_["boundingboxs"].first;
+  boundingbox.scale = properties_["boundingboxs"].second;
+  if (!ego_box_corners.empty()) {
+    for (const auto& vertice : ego_box_corners) {
+      auto point = ToGeometryPose(vertice.x(), vertice.y(), 0.0).position;
+      boundingbox.points.emplace_back(point);
+    }
+    boundingbox.points.emplace_back(ToGeometryPose(ego_box_corners.front().x(),
+                                                   ego_box_corners.front().y(),
+                                                   0.0)
+                                        .position);
+  }
+  return boundingbox;
+}
+
+MarkerArray TrajectoryVisualizer::BoundingBoxs(
+    const std::vector<std::vector<common::math::Vec2d>>&
+        obstacles_vertices_vec) {
+  if (obstacles_vertices_vec.empty()) {
+    ADEBUG("No obstacles");
+    return MarkerArray();
+  }
+
+  MarkerArray boundingboxs;
+
+  const size_t num_of_obstacles = obstacles_vertices_vec.size();
+
+  for (size_t i = 0; i < num_of_obstacles; i++) {
+    auto obox = ObstacleBox(obstacles_vertices_vec[i]);
+    obox.id = i;
+    boundingboxs.markers.emplace_back(std::move(obox));
+  }
+
+  return boundingboxs;
+}
+
+Marker TrajectoryVisualizer::ObstacleBox(
+    const std::vector<common::math::Vec2d>& obstacle_vertices) {
+  Marker obstacle_box;
+
+  obstacle_box.type = Marker::LINE_STRIP;
+  obstacle_box.header.frame_id = frame_id_;
+  obstacle_box.ns = "obstacles";
+  obstacle_box.action = Marker::ADD;
+  obstacle_box.color = properties_["obstacles"].first;
+  obstacle_box.scale = properties_["obstacles"].second;
+  if (!obstacle_vertices.empty()) {
+    for (const auto& vertice : obstacle_vertices) {
+      auto point = ToGeometryPose(vertice.x(), vertice.y(), 0.0).position;
+      obstacle_box.points.emplace_back(point);
+    }
+    obstacle_box.points.emplace_back(
+        ToGeometryPose(obstacle_vertices.front().x(),
+                       obstacle_vertices.front().y(), 0.0)
+            .position);
+  }
+  return obstacle_box;
 }
 
 }  // namespace util

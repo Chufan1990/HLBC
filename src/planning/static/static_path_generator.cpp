@@ -238,7 +238,7 @@ StaticPathResult StaticPathGenerator::GenerateLocalProfile(const double x,
   const int end_index = matched_point.second;
   const int length = end_index - start_index;
 
-  if ((length == 1) && (end_index != path_length_)) {
+  if ((length == 1) && (end_index != static_cast<int>(path_length_))) {
     current_start_index_ = end_index;
   } else {
     current_start_index_ = start_index;
@@ -477,28 +477,23 @@ bool StaticPathGenerator::GenerateSCurveSpeedAcceleration(
 
   ADEBUG(config_.DebugString());
 
-  const double max_forward_v = config_.optimizer_conf().max_forward_velocity();
-  const double max_reverse_v = config_.optimizer_conf().max_reverse_velocity();
-  const double max_forward_a =
-      config_.optimizer_conf().max_forward_acceleration();
-  const double max_reverse_a =
-      config_.optimizer_conf().max_reverse_acceleration();
-  const double max_acc_jerk = config_.optimizer_conf().max_acceleration_jerk();
+  const double max_forward_v = config_.max_forward_v();
+  const double max_reverse_v = config_.max_reverse_v();
+  const double max_forward_a = config_.max_forward_acc();
+  const double max_reverse_a = config_.max_reverse_acc();
+  const double max_acc_jerk = config_.max_acc_jerk();
   const double dt = config_.delta_t();
   const double time_slack_ratio = config_.time_slack_ratio();
-  const double max_path_time = config_.max_path_time();
-
   SpeedData speed_data;
 
   const double path_length = result->accumulated_s.back();
-  const double total_time = std::min(
+  const double total_time =
       gear ? time_slack_ratio *
                  (max_forward_v * max_forward_v + path_length * max_forward_a) /
                  (max_forward_v * max_forward_a)
            : time_slack_ratio *
                  (max_reverse_v * max_reverse_v + path_length * max_reverse_a) /
-                 (max_reverse_a * max_reverse_v),
-      max_path_time);
+                 (max_reverse_a * max_reverse_v);
 
   const size_t num_of_knots = static_cast<size_t>(total_time / dt) + 1;
 

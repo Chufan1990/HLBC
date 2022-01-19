@@ -84,13 +84,16 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   trajectory_writer_ = std::make_unique<ros::Publisher>(
       nh_.advertise<hlbc::Trajectory>(trajectory_message, 1));
 
-  open_space_trajectory_generator_.reset(
-      new OpenSpaceTrajectoryGenerator(config_));
+  open_space_trajectory_generator_.reset(new OpenSpaceTrajectoryGenerator(
+      config_.open_space_trajectory_provider_config()
+          .open_space_trajectory_optimizer_config()));
 
   warm_start_visualizer_.reset(new common::util::TrajectoryVisualizer(nh_));
 
   optimized_trajectory_visualizer_.reset(
       new common::util::TrajectoryVisualizer(nh_));
+
+  obstacle_visualizer_.reset(new common::util::TrajectoryVisualizer(nh_));
 
   std::unordered_map<std::string,
                      std::pair<std_msgs::ColorRGBA, geometry_msgs::Vector3>>
@@ -100,8 +103,8 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   geometry_msgs::Vector3 scale;
 
   color.a = 1.0;
-  color.r = 0.5;
-  color.g = 0.5;
+  color.r = 0.9;
+  color.g = 0.9;
   color.b = 0.1;
   scale.x = 0.2;
   scale.y = 0.2;
@@ -109,7 +112,13 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   markers_properties["arrows"] = std::make_pair(color, scale);
   markers_properties["points_and_lines"] = std::make_pair(color, scale);
 
-  warm_start_visualizer_->Setup("warm_start", "/map", markers_properties);
+  scale.x = 0.05;
+  scale.y = 0.05;
+  scale.z = 0.05;
+  markers_properties["boundingboxs"] = std::make_pair(color, scale);
+
+  warm_start_visualizer_->Setup("warm_start", "/map", markers_properties, true,
+                                true, false, true, false);
 
   color.a = 1.0;
   color.r = 0.1;
@@ -121,8 +130,25 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   markers_properties["arrows"] = std::make_pair(color, scale);
   markers_properties["points_and_lines"] = std::make_pair(color, scale);
 
-  optimized_trajectory_visualizer_->Setup("optimized", "/map",
-                                          markers_properties);
+  scale.x = 0.05;
+  scale.y = 0.05;
+  scale.z = 0.05;
+  markers_properties["boundingboxs"] = std::make_pair(color, scale);
+
+  optimized_trajectory_visualizer_->Setup(
+      "optimized", "/map", markers_properties, true, true, false, true, false);
+
+  color.a = 1.0;
+  color.r = 1.0;
+  color.g = 0.1;
+  color.b = 0.1;
+  scale.x = 0.05;
+  scale.y = 0.05;
+  scale.z = 0.05;
+  markers_properties["obstacles"] = std::make_pair(color, scale);
+
+  obstacle_visualizer_->Setup("obstacle", "/map", markers_properties, false,
+                              false, false, false, true);
 
   trajectory_marker_writer_ = std::make_unique<ros::Timer>(nh_.createTimer(
       ros::Duration(1), &OpenSpaceTrajectoryWrapper::Visualize, this));
@@ -134,6 +160,7 @@ void OpenSpaceTrajectoryWrapper::Visualize(const ros::TimerEvent& e) {
   if (trajectory_updated_.load()) {
     optimized_trajectory_visualizer_->Publish(optimized_trajectory_markers_);
     warm_start_visualizer_->Publish(warm_start_markers_);
+    obstacle_visualizer_->Publish(obstacle_markers_);
   }
 }
 
@@ -222,6 +249,9 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
       data_ready_.store(false);
     }
 
+    obstacle_markers_["obstacles"] =
+        obstacle_visualizer_->BoundingBoxs(thread_data.obstacles_vertices_vec);
+
     GetRoiBoundary(thread_data.cur_pose[0], thread_data.cur_pose[1],
                    thread_data.cur_pose[2], thread_data.end_pose[0],
                    thread_data.end_pose[1], thread_data.end_pose[2],
@@ -237,6 +267,12 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
         &optimized_trajectory_);
 
     const size_t horizon = optimized_trajectory_.size();
+
+    const auto& vehicle_param =
+        common::VehicleConfigHelper::GetConfig().vehicle_param();
+
+    const double length = vehicle_param.length();
+    const double width = vehicle_param.width();
 
     std::vector<double> visual_x(horizon, 0.0);
     std::vector<double> visual_y(horizon, 0.0);
@@ -255,6 +291,9 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
     optimized_trajectory_markers_["points_and_lines"] =
         optimized_trajectory_visualizer_->PointsAndLines(visual_x, visual_y,
                                                          visual_phi);
+    optimized_trajectory_markers_["boundingboxs"] =
+        optimized_trajectory_visualizer_->BoundingBoxs(
+            visual_x, visual_y, visual_phi, length, width, 5);
 
     HybridAStarResult warm_start;
 
@@ -265,6 +304,8 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
     warm_start_markers_["points_and_lines"] =
         warm_start_visualizer_->PointsAndLines(warm_start.x, warm_start.y,
                                                warm_start.phi);
+    warm_start_markers_["boundingboxs"] = warm_start_visualizer_->BoundingBoxs(
+        warm_start.x, warm_start.y, warm_start.phi, length, width, 5);
 
     trajectory_updated_.store(true);
     loop_rate.sleep();

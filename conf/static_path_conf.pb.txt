@@ -1,7 +1,11 @@
 delta_t: 0.2
 time_slack_ratio: 1.2
-dense_time_resolution: 0.05
-max_path_time: 10.0
+dense_time_resolution: 0.1
+max_forward_v: 2.0
+max_reverse_v: 2.0
+max_forward_acc: 1.0
+max_reverse_acc: 1.0
+max_acc_jerk: 0.5
 
 smoother_conf {
     max_constraint_interval : 0.25
@@ -33,10 +37,7 @@ optimizer_conf {
     kappa_penalty_weight: 100.0
     ref_s_weight: 10.0
     ref_v_weight: 1.0
-    max_forward_velocity: 2
-    max_reverse_velocity: 2
-    max_forward_acceleration: 1
-    max_reverse_acceleration: 1
-    max_acceleration_jerk: 5
     max_num_of_iterations: 20000
 }
+
+

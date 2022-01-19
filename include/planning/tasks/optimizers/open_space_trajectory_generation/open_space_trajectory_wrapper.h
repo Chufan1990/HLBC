@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "autoagric/common/pnc_point.pb.h"
-#include "autoagric/planning/open_space_trajectory_generator_config.pb.h"
+#include "autoagric/planning/open_space_task_config.pb.h"
 #include "autoware_msgs/DetectedObjectArray.h"
 #include "common/math/vec2d.h"
 #include "common/util/trajectory_visualizer.h"
@@ -89,8 +89,6 @@ class OpenSpaceTrajectoryWrapper {
 
   OpenSpaceTrajectoryThreadData thread_data_;
 
-  OpenSpaceTrajectoryGeneratorConfig config_;
-
   std::atomic<bool> localization_ready_{false};
 
   std::atomic<bool> obstacles_ready_{false};
@@ -106,13 +104,20 @@ class OpenSpaceTrajectoryWrapper {
   std::unique_ptr<common::util::TrajectoryVisualizer>
       optimized_trajectory_visualizer_;
 
+  std::unique_ptr<common::util::TrajectoryVisualizer> obstacle_visualizer_;
+
   std::unordered_map<std::string, visualization_msgs::MarkerArray>
       warm_start_markers_;
 
   std::unordered_map<std::string, visualization_msgs::MarkerArray>
       optimized_trajectory_markers_;
 
+  std::unordered_map<std::string, visualization_msgs::MarkerArray>
+      obstacle_markers_;
+
   std::unique_ptr<ros::Timer> trajectory_marker_writer_;
+
+  OpenSpaceTrajectoryTaskConfig config_;
 };
 
 }  // namespace planning

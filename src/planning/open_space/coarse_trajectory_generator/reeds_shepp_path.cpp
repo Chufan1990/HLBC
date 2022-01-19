@@ -1,7 +1,10 @@
 #include "planning/open_space/coarse_trajectory_generator/reeds_shepp_path.h"
 
+#include <omp.h>
+
 #include "common/macro.h"
 #include "common/math/math_utils.h"
+#include "planning/common/planning_gflags.h"
 
 namespace autoagric {
 namespace planning {
@@ -10,10 +13,10 @@ ReedsShepp::ReedsShepp(const common::VehicleParam& vehicle_param,
                        const PlannerOpenSpaceConfig& open_space_conf)
     : vehicle_param_(vehicle_param),
       planner_open_space_config_(open_space_conf) {
-  max_kappa_ = std::tan(vehicle_param_.max_steer_angle() /
+  max_kappa_ = std::tan(vehicle_param_.max_steer_angle() * 0.8 /
                         vehicle_param_.steer_ratio()) /
                vehicle_param_.wheel_base();
-  // AINFO_IF(FLAGS_enable_parallel_hybrid_a, "parallel REEDShepp");
+  AINFO_IF(FLAGS_enable_parallel_hybrid_a, "parallel REEDShepp");
 }
 
 std::pair<double, double> ReedsShepp::calc_tau_omega(const double u,
@@ -101,18 +104,18 @@ bool ReedsShepp::ShortestRSP(const std::shared_ptr<Node3d> start_node,
 bool ReedsShepp::GenerateRSPs(const std::shared_ptr<Node3d> start_node,
                               const std::shared_ptr<Node3d> end_node,
                               std::vector<ReedsSheppPath>* all_possible_paths) {
-  // if (FLAGS_enable_parallel_hybrid_a) {
-  //   // AINFO << "parallel hybrid a*");
-  //   if (!GenerateRSPPar(start_node, end_node, all_possible_paths)) {
-  //     ADEBUG("Fail to generate general profile of different RSPs");
-  //     return false;
-  //   }
-  // } else {
-  if (!GenerateRSP(start_node, end_node, all_possible_paths)) {
-    AERROR("Fail to generate general profile of different RSPs");
-    return false;
+  if (FLAGS_enable_parallel_hybrid_a) {
+    // AINFO << "parallel hybrid a*";
+    if (!GenerateRSPPar(start_node, end_node, all_possible_paths)) {
+      ADEBUG("Fail to generate general profile of different RSPs");
+      return false;
+    }
+  } else {
+    if (!GenerateRSP(start_node, end_node, all_possible_paths)) {
+      AERROR("Fail to generate general profile of different RSPs");
+      return false;
+    }
   }
-  // }
   return true;
 }
 
@@ -443,7 +446,7 @@ bool ReedsShepp::CCCC(const double x, const double y, const double phi,
 bool ReedsShepp::CCSC(const double x, const double y, const double phi,
                       std::vector<ReedsSheppPath>* all_possible_paths) {
   RSPParam LRSL1_param;
-  LRLRn(x, y, phi, &LRSL1_param);
+  LRSL(x, y, phi, &LRSL1_param);
   double LRSL1_lengths[4] = {LRSL1_param.t, -0.5 * M_PI, -LRSL1_param.u,
                              LRSL1_param.v};
   char LRSL1_types[] = "LRSL";
@@ -454,7 +457,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSL2_param;
-  LRLRn(-x, y, -phi, &LRSL2_param);
+  LRSL(-x, y, -phi, &LRSL2_param);
   double LRSL2_lengths[4] = {-LRSL2_param.t, 0.5 * M_PI, -LRSL2_param.u,
                              -LRSL2_param.v};
   char LRSL2_types[] = "LRSL";
@@ -465,7 +468,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSL3_param;
-  LRLRn(x, -y, -phi, &LRSL3_param);
+  LRSL(x, -y, -phi, &LRSL3_param);
   double LRSL3_lengths[4] = {LRSL3_param.t, -0.5 * M_PI, LRSL3_param.u,
                              LRSL3_param.v};
   char LRSL3_types[] = "RLSR";
@@ -476,7 +479,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSL4_param;
-  LRLRn(-x, -y, phi, &LRSL4_param);
+  LRSL(-x, -y, phi, &LRSL4_param);
   double LRSL4_lengths[4] = {-LRSL4_param.t, -0.5 * M_PI, -LRSL4_param.u,
                              -LRSL4_param.v};
   char LRSL4_types[] = "RLSR";
@@ -487,7 +490,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSR1_param;
-  LRLRp(x, y, phi, &LRSR1_param);
+  LRSR(x, y, phi, &LRSR1_param);
   double LRSR1_lengths[4] = {LRSR1_param.t, -0.5 * M_PI, LRSR1_param.u,
                              LRSR1_param.v};
   char LRSR1_types[] = "LRSR";
@@ -498,7 +501,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSR2_param;
-  LRLRp(-x, y, -phi, &LRSR2_param);
+  LRSR(-x, y, -phi, &LRSR2_param);
   double LRSR2_lengths[4] = {-LRSR2_param.t, 0.5 * M_PI, -LRSR2_param.u,
                              -LRSR2_param.v};
   char LRSR2_types[] = "LRSR";
@@ -509,7 +512,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSR3_param;
-  LRLRp(x, -y, -phi, &LRSR3_param);
+  LRSR(x, -y, -phi, &LRSR3_param);
   double LRSR3_lengths[4] = {LRSR3_param.t, -0.5 * M_PI, LRSR3_param.u,
                              LRSR3_param.v};
   char LRSR3_types[] = "RLSL";
@@ -520,7 +523,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSR4_param;
-  LRLRp(-x, -y, phi, &LRSR4_param);
+  LRSR(-x, -y, phi, &LRSR4_param);
   double LRSR4_lengths[4] = {-LRSR4_param.t, 0.5 * M_PI, -LRSR4_param.u,
                              -LRSR4_param.v};
   char LRSR4_types[] = "RLSL";
@@ -535,7 +538,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   double yb = x * std::sin(phi) - y * std::cos(phi);
 
   RSPParam LRSL5_param;
-  LRLRn(xb, yb, phi, &LRSL5_param);
+  LRSL(xb, yb, phi, &LRSL5_param);
   double LRSL5_lengths[4] = {LRSL5_param.v, LRSL5_param.u, -0.5 * M_PI,
                              LRSL5_param.t};
   char LRSL5_types[] = "LSRL";
@@ -546,7 +549,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSL6_param;
-  LRLRn(-xb, yb, -phi, &LRSL6_param);
+  LRSL(-xb, yb, -phi, &LRSL6_param);
   double LRSL6_lengths[4] = {-LRSL6_param.v, -LRSL6_param.u, 0.5 * M_PI,
                              -LRSL6_param.t};
   char LRSL6_types[] = "LSRL";
@@ -557,7 +560,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSL7_param;
-  LRLRn(xb, -yb, -phi, &LRSL7_param);
+  LRSL(xb, -yb, -phi, &LRSL7_param);
   double LRSL7_lengths[4] = {LRSL7_param.v, LRSL7_param.u, -0.5 * M_PI,
                              LRSL7_param.t};
   char LRSL7_types[] = "RSLR";
@@ -568,7 +571,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSL8_param;
-  LRLRn(-xb, -yb, phi, &LRSL8_param);
+  LRSL(-xb, -yb, phi, &LRSL8_param);
   double LRSL8_lengths[4] = {-LRSL8_param.v, -LRSL8_param.u, 0.5 * M_PI,
                              -LRSL8_param.t};
   char LRSL8_types[] = "RSLR";
@@ -579,7 +582,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSR5_param;
-  LRLRp(xb, yb, phi, &LRSR5_param);
+  LRSR(xb, yb, phi, &LRSR5_param);
   double LRSR5_lengths[4] = {LRSR5_param.v, LRSR5_param.u, -0.5 * M_PI,
                              LRSR5_param.t};
   char LRSR5_types[] = "RSRL";
@@ -590,7 +593,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSR6_param;
-  LRLRp(-xb, yb, -phi, &LRSR6_param);
+  LRSR(-xb, yb, -phi, &LRSR6_param);
   double LRSR6_lengths[4] = {-LRSR6_param.v, -LRSR6_param.u, 0.5 * M_PI,
                              -LRSR6_param.t};
   char LRSR6_types[] = "RSRL";
@@ -601,7 +604,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSR7_param;
-  LRLRp(xb, -yb, -phi, &LRSR7_param);
+  LRSR(xb, -yb, -phi, &LRSR7_param);
   double LRSR7_lengths[4] = {LRSR7_param.v, LRSR7_param.u, -0.5 * M_PI,
                              LRSR7_param.t};
   char LRSR7_types[] = "LSLR";
@@ -612,7 +615,7 @@ bool ReedsShepp::CCSC(const double x, const double y, const double phi,
   }
 
   RSPParam LRSR8_param;
-  LRLRp(-xb, -yb, phi, &LRSR8_param);
+  LRSR(-xb, -yb, phi, &LRSR8_param);
   double LRSR8_lengths[4] = {-LRSR8_param.v, -LRSR8_param.u, 0.5 * M_PI,
                              -LRSR8_param.t};
   char LRSR8_types[] = "LSLR";
@@ -894,7 +897,7 @@ bool ReedsShepp::SetRSP(const int size, const double* lengths,
   }
   path.total_length = sum;
   if (path.total_length <= 0.0) {
-    AERROR("total length smaller than 0");
+    ADEBUG("total length smaller than 0");
     return false;
   }
   all_possible_paths->emplace_back(path);
@@ -1038,7 +1041,7 @@ bool ReedsShepp::SetRSPPar(const int size, const double* lengths,
   }
   path.total_length = sum;
   if (path.total_length <= 0.0) {
-    AERROR("total length smaller than 0");
+    ADEBUG("total length smaller than 0");
     return false;
   }
 
@@ -1046,216 +1049,215 @@ bool ReedsShepp::SetRSPPar(const int size, const double* lengths,
   return true;
 }
 
-// bool ReedsShepp::GenerateRSPPar(
-//     const std::shared_ptr<Node3d> start_node,
-//     const std::shared_ptr<Node3d> end_node,
-//     std::vector<ReedsSheppPath>* all_possible_paths) {
-//   double dx = end_node->GetX() - start_node->GetX();
-//   double dy = end_node->GetY() - start_node->GetY();
-//   double dphi = end_node->GetPhi() - start_node->GetPhi();
-//   double c = std::cos(start_node->GetPhi());
-//   double s = std::sin(start_node->GetPhi());
-//   // normalize the initial point to (0,0,0)
-//   double x = (c * dx + s * dy) * this->max_kappa_;
-//   double y = (-s * dx + c * dy) * this->max_kappa_;
-//   // backward
-//   double xb = x * std::cos(dphi) + y * std::sin(dphi);
-//   double yb = x * std::sin(dphi) - y * std::cos(dphi);
+bool ReedsShepp::GenerateRSPPar(
+    const std::shared_ptr<Node3d> start_node,
+    const std::shared_ptr<Node3d> end_node,
+    std::vector<ReedsSheppPath>* all_possible_paths) {
+  double dx = end_node->GetX() - start_node->GetX();
+  double dy = end_node->GetY() - start_node->GetY();
+  double dphi = end_node->GetPhi() - start_node->GetPhi();
+  double c = std::cos(start_node->GetPhi());
+  double s = std::sin(start_node->GetPhi());
+  // normalize the initial point to (0,0,0)
+  double x = (c * dx + s * dy) * this->max_kappa_;
+  double y = (-s * dx + c * dy) * this->max_kappa_;
+  // backward
+  double xb = x * std::cos(dphi) + y * std::sin(dphi);
+  double yb = x * std::sin(dphi) - y * std::cos(dphi);
 
-//   int RSP_nums = 46;
-//   all_possible_paths->resize(RSP_nums);
-//   bool succ = true;
-// #pragma omp parallel for schedule(dynamic, 2) num_threads(8)
-//   for (int i = 0; i < RSP_nums; ++i) {
-//     RSPParam RSP_param;
-//     int tmp_length = 0;
-//     double RSP_lengths[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
-//     double x_param = 1.0;
-//     double y_param = 1.0;
-//     std::string rd_type;
+  int RSP_nums = 46;
+  all_possible_paths->resize(RSP_nums);
+  bool succ = true;
+#pragma omp parallel for schedule(dynamic, 2) num_threads(8)
+  for (int i = 0; i < RSP_nums; ++i) {
+    RSPParam RSP_param;
+    int tmp_length = 0;
+    double RSP_lengths[5] = {0.0, 0.0, 0.0, 0.0, 0.0};
+    double x_param = 1.0;
+    double y_param = 1.0;
+    std::string rd_type;
 
-//     if (i > 2 && i % 2) {
-//       x_param = -1.0;
-//     }
-//     if (i > 2 && i % 4 < 2) {
-//       y_param = -1.0;
-//     }
+    if (i > 2 && i % 2) {
+      x_param = -1.0;
+    }
+    if (i > 2 && i % 4 < 2) {
+      y_param = -1.0;
+    }
 
-//     if (i < 2) {  // SCS case
-//       if (i == 1) {
-//         y_param = -1.0;
-//         rd_type = "SRS");
-//       } else {
-//         rd_type = "SLS");
-//       }
-//       SLS(x, y_param * y, y_param * dphi, &RSP_param);
-//       tmp_length = 3;
-//       RSP_lengths[0] = RSP_param.t;
-//       RSP_lengths[1] = RSP_param.u;
-//       RSP_lengths[2] = RSP_param.v;
-//     } else if (i < 6) {  // CSC, LSL case
-//       LSL(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
-//       if (y_param > 0) {
-//         rd_type = "LSL";
-//       } else {
-//         rd_type = "RSR";
-//       }
-//       tmp_length = 3;
-//       RSP_lengths[0] = x_param * RSP_param.t;
-//       RSP_lengths[1] = x_param * RSP_param.u;
-//       RSP_lengths[2] = x_param * RSP_param.v;
-//     } else if (i < 10) {  // CSC, LSR case
-//       LSR(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
-//       if (y_param > 0) {
-//         rd_type = "LSR";
-//       } else {
-//         rd_type = "RSL";
-//       }
-//       tmp_length = 3;
-//       RSP_lengths[0] = x_param * RSP_param.t;
-//       RSP_lengths[1] = x_param * RSP_param.u;
-//       RSP_lengths[2] = x_param * RSP_param.v;
-//     } else if (i < 14) {  // CCC, LRL case
-//       LRL(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
-//       if (y_param > 0) {
-//         rd_type = "LRL";
-//       } else {
-//         rd_type = "RLR";
-//       }
-//       tmp_length = 3;
-//       RSP_lengths[0] = x_param * RSP_param.t;
-//       RSP_lengths[1] = x_param * RSP_param.u;
-//       RSP_lengths[2] = x_param * RSP_param.v;
-//     } else if (i < 18) {  // CCC, LRL case, backward
-//       LRL(x_param * xb, y_param * yb, x_param * y_param * dphi, &RSP_param);
-//       if (y_param > 0) {
-//         rd_type = "LRL";
-//       } else {
-//         rd_type = "RLR";
-//       }
-//       tmp_length = 3;
-//       RSP_lengths[0] = x_param * RSP_param.v;
-//       RSP_lengths[1] = x_param * RSP_param.u;
-//       RSP_lengths[2] = x_param * RSP_param.t;
-//     } else if (i < 22) {  // CCCC, LRLRn
-//       LRLRn(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
-//       if (y_param > 0.0) {
-//         rd_type = "LRLR";
-//       } else {
-//         rd_type = "RLRL";
-//       }
-//       tmp_length = 4;
-//       RSP_lengths[0] = x_param * RSP_param.t;
-//       RSP_lengths[1] = x_param * RSP_param.u;
-//       RSP_lengths[2] = -x_param * RSP_param.u;
-//       RSP_lengths[3] = x_param * RSP_param.v;
-//     } else if (i < 26) {  // CCCC, LRLRp
-//       LRLRp(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
-//       if (y_param > 0.0) {
-//         rd_type = "LRLR";
-//       } else {
-//         rd_type = "RLRL";
-//       }
-//       tmp_length = 4;
-//       RSP_lengths[0] = x_param * RSP_param.t;
-//       RSP_lengths[1] = x_param * RSP_param.u;
-//       RSP_lengths[2] = -x_param * RSP_param.u;
-//       RSP_lengths[3] = x_param * RSP_param.v;
-//     } else if (i < 30) {  // CCSC, LRLRn
-//       tmp_length = 4;
-//       LRLRn(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
-//       if (y_param > 0.0) {
-//         rd_type = "LRSL";
-//       } else {
-//         rd_type = "RLSR";
-//       }
-//       RSP_lengths[0] = x_param * RSP_param.t;
-//       if (x_param < 0 && y_param > 0) {
-//         RSP_lengths[1] = 0.5 * M_PI;
-//       } else {
-//         RSP_lengths[1] = -0.5 * M_PI;
-//       }
-//       if (x_param > 0 && y_param < 0) {
-//         RSP_lengths[2] = RSP_param.u;
-//       } else {
-//         RSP_lengths[2] = -RSP_param.u;
-//       }
-//       RSP_lengths[3] = x_param * RSP_param.v;
-//     } else if (i < 34) {  // CCSC, LRLRp
-//       tmp_length = 4;
-//       LRLRp(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
-//       if (y_param) {
-//         rd_type = "LRSR";
-//       } else {
-//         rd_type = "RLSL";
-//       }
-//       RSP_lengths[0] = x_param * RSP_param.t;
-//       if (x_param < 0 && y_param > 0) {
-//         RSP_lengths[1] = 0.5 * M_PI;
-//       } else {
-//         RSP_lengths[1] = -0.5 * M_PI;
-//       }
-//       RSP_lengths[2] = x_param * RSP_param.u;
-//       RSP_lengths[3] = x_param * RSP_param.v;
-//     } else if (i < 38) {  // CCSC, LRLRn, backward
-//       tmp_length = 4;
-//       LRLRn(x_param * xb, y_param * yb, x_param * y_param * dphi,
-//       &RSP_param); if (y_param > 0) {
-//         rd_type = "LSRL";
-//       } else {
-//         rd_type = "RSLR";
-//       }
-//       RSP_lengths[0] = x_param * RSP_param.v;
-//       RSP_lengths[1] = x_param * RSP_param.u;
-//       RSP_lengths[2] = -x_param * 0.5 * M_PI;
-//       RSP_lengths[3] = x_param * RSP_param.t;
-//     } else if (i < 42) {  // CCSC, LRLRp, backward
-//       tmp_length = 4;
-//       LRLRp(x_param * xb, y_param * yb, x_param * y_param * dphi,
-//       &RSP_param); if (y_param > 0) {
-//         rd_type = "RSRL";
-//       } else {
-//         rd_type = "LSLR";
-//       }
-//       RSP_lengths[0] = x_param * RSP_param.v;
-//       RSP_lengths[1] = x_param * RSP_param.u;
-//       RSP_lengths[2] = -x_param * M_PI * 0.5;
-//       RSP_lengths[3] = x_param * RSP_param.t;
-//     } else {  // CCSCC, LRSLR
-//       tmp_length = 5;
-//       LRSLR(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
-//       if (y_param > 0.0) {
-//         rd_type = "LRSLR";
-//       } else {
-//         rd_type = "RLSRL";
-//       }
-//       RSP_lengths[0] = x_param * RSP_param.t;
-//       RSP_lengths[1] = -x_param * 0.5 * M_PI;
-//       RSP_lengths[2] = x_param * RSP_param.u;
-//       RSP_lengths[3] = -x_param * 0.5 * M_PI;
-//       RSP_lengths[4] = x_param * RSP_param.v;
-//     }
+    if (i < 2) {  // SCS case
+      if (i == 1) {
+        y_param = -1.0;
+        rd_type = "SRS";
+      } else {
+        rd_type = "SLS";
+      }
+      SLS(x, y_param * y, y_param * dphi, &RSP_param);
+      tmp_length = 3;
+      RSP_lengths[0] = RSP_param.t;
+      RSP_lengths[1] = RSP_param.u;
+      RSP_lengths[2] = RSP_param.v;
+    } else if (i < 6) {  // CSC, LSL case
+      LSL(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
+      if (y_param > 0) {
+        rd_type = "LSL";
+      } else {
+        rd_type = "RSR";
+      }
+      tmp_length = 3;
+      RSP_lengths[0] = x_param * RSP_param.t;
+      RSP_lengths[1] = x_param * RSP_param.u;
+      RSP_lengths[2] = x_param * RSP_param.v;
+    } else if (i < 10) {  // CSC, LSR case
+      LSR(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
+      if (y_param > 0) {
+        rd_type = "LSR";
+      } else {
+        rd_type = "RSL";
+      }
+      tmp_length = 3;
+      RSP_lengths[0] = x_param * RSP_param.t;
+      RSP_lengths[1] = x_param * RSP_param.u;
+      RSP_lengths[2] = x_param * RSP_param.v;
+    } else if (i < 14) {  // CCC, LRL case
+      LRL(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
+      if (y_param > 0) {
+        rd_type = "LRL";
+      } else {
+        rd_type = "RLR";
+      }
+      tmp_length = 3;
+      RSP_lengths[0] = x_param * RSP_param.t;
+      RSP_lengths[1] = x_param * RSP_param.u;
+      RSP_lengths[2] = x_param * RSP_param.v;
+    } else if (i < 18) {  // CCC, LRL case, backward
+      LRL(x_param * xb, y_param * yb, x_param * y_param * dphi, &RSP_param);
+      if (y_param > 0) {
+        rd_type = "LRL";
+      } else {
+        rd_type = "RLR";
+      }
+      tmp_length = 3;
+      RSP_lengths[0] = x_param * RSP_param.v;
+      RSP_lengths[1] = x_param * RSP_param.u;
+      RSP_lengths[2] = x_param * RSP_param.t;
+    } else if (i < 22) {  // CCCC, LRLRn
+      LRLRn(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
+      if (y_param > 0.0) {
+        rd_type = "LRLR";
+      } else {
+        rd_type = "RLRL";
+      }
+      tmp_length = 4;
+      RSP_lengths[0] = x_param * RSP_param.t;
+      RSP_lengths[1] = x_param * RSP_param.u;
+      RSP_lengths[2] = -x_param * RSP_param.u;
+      RSP_lengths[3] = x_param * RSP_param.v;
+    } else if (i < 26) {  // CCCC, LRLRp
+      LRLRp(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
+      if (y_param > 0.0) {
+        rd_type = "LRLR";
+      } else {
+        rd_type = "RLRL";
+      }
+      tmp_length = 4;
+      RSP_lengths[0] = x_param * RSP_param.t;
+      RSP_lengths[1] = x_param * RSP_param.u;
+      RSP_lengths[2] = -x_param * RSP_param.u;
+      RSP_lengths[3] = x_param * RSP_param.v;
+    } else if (i < 30) {  // CCSC, LRLRn
+      tmp_length = 4;
+      LRLRn(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
+      if (y_param > 0.0) {
+        rd_type = "LRSL";
+      } else {
+        rd_type = "RLSR";
+      }
+      RSP_lengths[0] = x_param * RSP_param.t;
+      if (x_param < 0 && y_param > 0) {
+        RSP_lengths[1] = 0.5 * M_PI;
+      } else {
+        RSP_lengths[1] = -0.5 * M_PI;
+      }
+      if (x_param > 0 && y_param < 0) {
+        RSP_lengths[2] = RSP_param.u;
+      } else {
+        RSP_lengths[2] = -RSP_param.u;
+      }
+      RSP_lengths[3] = x_param * RSP_param.v;
+    } else if (i < 34) {  // CCSC, LRLRp
+      tmp_length = 4;
+      LRLRp(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
+      if (y_param) {
+        rd_type = "LRSR";
+      } else {
+        rd_type = "RLSL";
+      }
+      RSP_lengths[0] = x_param * RSP_param.t;
+      if (x_param < 0 && y_param > 0) {
+        RSP_lengths[1] = 0.5 * M_PI;
+      } else {
+        RSP_lengths[1] = -0.5 * M_PI;
+      }
+      RSP_lengths[2] = x_param * RSP_param.u;
+      RSP_lengths[3] = x_param * RSP_param.v;
+    } else if (i < 38) {  // CCSC, LRLRn, backward
+      tmp_length = 4;
+      LRLRn(x_param * xb, y_param * yb, x_param * y_param * dphi, &RSP_param);
+      if (y_param > 0) {
+        rd_type = "LSRL";
+      } else {
+        rd_type = "RSLR";
+      }
+      RSP_lengths[0] = x_param * RSP_param.v;
+      RSP_lengths[1] = x_param * RSP_param.u;
+      RSP_lengths[2] = -x_param * 0.5 * M_PI;
+      RSP_lengths[3] = x_param * RSP_param.t;
+    } else if (i < 42) {  // CCSC, LRLRp, backward
+      tmp_length = 4;
+      LRLRp(x_param * xb, y_param * yb, x_param * y_param * dphi, &RSP_param);
+      if (y_param > 0) {
+        rd_type = "RSRL";
+      } else {
+        rd_type = "LSLR";
+      }
+      RSP_lengths[0] = x_param * RSP_param.v;
+      RSP_lengths[1] = x_param * RSP_param.u;
+      RSP_lengths[2] = -x_param * M_PI * 0.5;
+      RSP_lengths[3] = x_param * RSP_param.t;
+    } else {  // CCSCC, LRSLR
+      tmp_length = 5;
+      LRSLR(x_param * x, y_param * y, x_param * y_param * dphi, &RSP_param);
+      if (y_param > 0.0) {
+        rd_type = "LRSLR";
+      } else {
+        rd_type = "RLSRL";
+      }
+      RSP_lengths[0] = x_param * RSP_param.t;
+      RSP_lengths[1] = -x_param * 0.5 * M_PI;
+      RSP_lengths[2] = x_param * RSP_param.u;
+      RSP_lengths[3] = -x_param * 0.5 * M_PI;
+      RSP_lengths[4] = x_param * RSP_param.v;
+    }
 
-//     if (tmp_length > 0) {
-//       if (RSP_param.flag &&
-//           !SetRSPPar(tmp_length, RSP_lengths, rd_type, all_possible_paths,
-//           i)) {
-//         AERROR ( "Fail at SetRSP, idx#: " << i);
-//         succ = false;
-//       }
-//     }
-//   }
+    if (tmp_length > 0) {
+      if (RSP_param.flag &&
+          !SetRSPPar(tmp_length, RSP_lengths, rd_type, all_possible_paths, i)) {
+        ADEBUG("Fail at SetRSP, idx#: " << i);
+        succ = false;
+      }
+    }
+  }
 
-//   if (!succ) {
-//     AERROR ( "RSP parallel fails");
-//     return false;
-//   }
-//   if (all_possible_paths->size() == 0) {
-//     AERROR ( "No path generated by certain two configurations");
-//     return false;
-//   }
-//   return true;
-// }
+  if (!succ) {
+    ADEBUG("RSP parallel fails");
+    return false;
+  }
+  if (all_possible_paths->size() == 0) {
+    ADEBUG("No path generated by certain two configurations");
+    return false;
+  }
+  return true;
+}
 
 }  // namespace planning
 }  // namespace autoagric

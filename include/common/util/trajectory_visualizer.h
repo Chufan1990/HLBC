@@ -3,12 +3,16 @@
 #include <geometry_msgs/Vector3.h>
 #include <ros/ros.h>
 #include <std_msgs/ColorRGBA.h>
+#include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
 #include <memory>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include "autoagric/common/vehicle_config.pb.h"
+#include "common/math/vec2d.h"
 
 namespace autoagric {
 namespace common {
@@ -32,9 +36,16 @@ class TrajectoryVisualizer {
       const std::vector<double>& x, const std::vector<double>& y,
       const std::vector<double>& theta);
 
-  visualization_msgs::MarkerArray LineStrip(const std::vector<double>& x,
-                                            const std::vector<double>& y,
-                                            const std::vector<double>& theta);
+  visualization_msgs::MarkerArray BoundingBoxs(const std::vector<double>& x,
+                                               const std::vector<double>& y,
+                                               const std::vector<double>& theta,
+                                               const double length,
+                                               const double width,
+                                               const size_t interval);
+
+  visualization_msgs::MarkerArray BoundingBoxs(
+      const std::vector<std::vector<common::math::Vec2d>>&
+          obstacles_vertices_vec);
 
   visualization_msgs::MarkerArray TextView(
       const std::vector<double>& x, const std::vector<double>& y,
@@ -46,9 +57,16 @@ class TrajectoryVisualizer {
           std::string, std::pair<std_msgs::ColorRGBA, geometry_msgs::Vector3>>&
           properties,
       const bool has_points_and_lines_ = true, const bool has_arrows = true,
-      const bool has_text = false);
+      const bool has_texts = false, const bool has_boundingboxs = false, const bool has_obstacles = false);
 
  private:
+  visualization_msgs::Marker EgoBox(const double x, const double y,
+                                    const double theta, const double length,
+                                    const double width);
+
+  visualization_msgs::Marker ObstacleBox(
+      const std::vector<common::math::Vec2d>& obstacle_vertices);
+
   ros::NodeHandle nh_;
 
   std::unordered_map<std::string, ros::Publisher> publisher_queue_;

@@ -53,7 +53,7 @@ class HybridAStar {
 
   std::shared_ptr<Node3d> Next_node_generator(
       std::shared_ptr<Node3d> current_node, size_t next_node_index);
-  double CalculateNodeCost(std::shared_ptr<Node3d> current_node,
+  void CalculateNodeCost(std::shared_ptr<Node3d> current_node,
                            std::shared_ptr<Node3d> next_node);
   double TrajCost(std::shared_ptr<Node3d> current_node,
                   std::shared_ptr<Node3d> next_node);
