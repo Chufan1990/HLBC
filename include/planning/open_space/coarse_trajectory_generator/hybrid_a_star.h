@@ -83,6 +83,7 @@ class HybridAStar {
   double heu_rs_backward_penalty_ = 0.0;
   double heu_rs_steer_penalty_ = 0.0;
   double heu_rs_steer_change_penalty_ = 0.0;
+  double node_radius_ = 0.0;
   std::vector<double> XYbounds_;
   std::shared_ptr<Node3d> start_node_;
   std::shared_ptr<Node3d> end_node_;

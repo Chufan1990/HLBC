@@ -146,8 +146,8 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   scale.y = 0.05;
   scale.z = 0.05;
   markers_properties["obstacles"] = std::make_pair(color, scale);
-
-  obstacle_visualizer_->Setup("obstacle", "/map", markers_properties, false,
+  markers_properties["points_and_lines"] = std::make_pair(color, scale);
+  obstacle_visualizer_->Setup("obstacle", "/map", markers_properties, true,
                               false, false, false, true);
 
   trajectory_marker_writer_ = std::make_unique<ros::Timer>(nh_.createTimer(
@@ -257,6 +257,19 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
                    thread_data.end_pose[1], thread_data.end_pose[2],
                    thread_data.cur_pose[0], thread_data.cur_pose[1],
                    thread_data.cur_pose[2], &thread_data.XYbounds);
+
+    std::vector<double> roi_x = {
+        thread_data.XYbounds[0], thread_data.XYbounds[0],
+        thread_data.XYbounds[1], thread_data.XYbounds[1],
+        thread_data.XYbounds[0]};
+    std::vector<double> roi_y = {
+        thread_data.XYbounds[2], thread_data.XYbounds[3],
+        thread_data.XYbounds[3], thread_data.XYbounds[2],
+        thread_data.XYbounds[2]};
+    std::vector<double> roi_theta(roi_x.size(), 0.0);
+
+    obstacle_markers_["points_and_lines"] =
+        obstacle_visualizer_->PointsAndLines(roi_x, roi_y, roi_theta);
 
     Status status = open_space_trajectory_generator_->Plan(
         thread_data.stitching_trajectory, thread_data.cur_pose,

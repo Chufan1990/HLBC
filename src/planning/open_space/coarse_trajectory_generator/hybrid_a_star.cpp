@@ -42,6 +42,7 @@ HybridAStar::HybridAStar(const PlannerOpenSpaceConfig& open_space_conf) {
       planner_open_space_config_.warm_start_config().traj_steer_penalty();
   traj_steer_change_penalty_ = planner_open_space_config_.warm_start_config()
                                    .traj_steer_change_penalty();
+  node_radius_ = open_space_conf.warm_start_config().node_radius();
 }
 
 bool HybridAStar::AnalyticExpansion(std::shared_ptr<Node3d> current_node) {
@@ -103,7 +104,7 @@ bool HybridAStar::ValidityCheck(std::shared_ptr<Node3d> node) {
     for (const auto& obstacle_linesegments : obstacles_linesegments_vec_) {
       for (const common::math::LineSegment2d& linesegment :
            obstacle_linesegments) {
-        if (bounding_box.HasOverlap(linesegment)) {
+        if (bounding_box.DistanceTo(linesegment) < node_radius_) {
           ADEBUG("collision start at x: " << linesegment.start().x());
           ADEBUG("collision start at y: " << linesegment.start().y());
           ADEBUG("collision end at x: " << linesegment.end().x());

@@ -477,7 +477,7 @@ DEFINE_bool(
     enable_smoother_failsafe, false,
     "whether to use warm start result as final output when smoother fails");
 
-DEFINE_bool(use_s_curve_speed_smooth, true,
+DEFINE_bool(use_s_curve_speed_smooth, false,
             "Whether use s-curve (piecewise_jerk) for smoothing Hybrid Astar "
             "speed/acceleration.");
 
