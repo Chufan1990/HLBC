@@ -36,12 +36,10 @@ class TrajectoryVisualizer {
       const std::vector<double>& x, const std::vector<double>& y,
       const std::vector<double>& theta);
 
-  visualization_msgs::MarkerArray BoundingBoxs(const std::vector<double>& x,
-                                               const std::vector<double>& y,
-                                               const std::vector<double>& theta,
-                                               const double length,
-                                               const double width,
-                                               const size_t interval);
+  visualization_msgs::MarkerArray BoundingBoxs(
+      const std::vector<double>& x, const std::vector<double>& y,
+      const std::vector<double>& theta,
+      const common::VehicleParam& vehicle_param, const size_t interval);
 
   visualization_msgs::MarkerArray BoundingBoxs(
       const std::vector<std::vector<common::math::Vec2d>>&
@@ -57,12 +55,13 @@ class TrajectoryVisualizer {
           std::string, std::pair<std_msgs::ColorRGBA, geometry_msgs::Vector3>>&
           properties,
       const bool has_points_and_lines_ = true, const bool has_arrows = true,
-      const bool has_texts = false, const bool has_boundingboxs = false, const bool has_obstacles = false);
+      const bool has_texts = false, const bool has_boundingboxs = false,
+      const bool has_obstacles = false);
 
  private:
   visualization_msgs::Marker EgoBox(const double x, const double y,
-                                    const double theta, const double length,
-                                    const double width);
+                                    const double theta,
+                                    const common::VehicleParam& vehicle_param);
 
   visualization_msgs::Marker ObstacleBox(
       const std::vector<common::math::Vec2d>& obstacle_vertices);

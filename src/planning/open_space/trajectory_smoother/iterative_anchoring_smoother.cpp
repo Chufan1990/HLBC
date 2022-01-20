@@ -173,7 +173,7 @@ bool IterativeAnchoringSmoother::Smooth(
       std::chrono::duration<double, std::milli>(end_timestamp - start_timestamp)
           .count();
   ADEBUG("iterative anchoring smoother total time: " << diff << " ms");
-  ADEBUG(" discretized_trajectory size: " << discretized_trajectory->size());
+  ADEBUG("discretized_trajectory size: " << discretized_trajectory->size());
   return true;
 }
 
@@ -338,7 +338,7 @@ bool IterativeAnchoringSmoother::CheckCollisionAvoidance(
 
     Box2d ego_box(
         {path_points[i].x() + center_shift_distance_ * std::cos(heading),
-         path_points[i].y() + center_shift_distance_},
+         path_points[i].y() + center_shift_distance_ * std::sin(heading)},
         heading, ego_length_, ego_width_);
 
     bool is_colliding = false;
@@ -492,18 +492,18 @@ bool IterativeAnchoringSmoother::SmoothSpeed(const double init_a,
   const double weight_dx = smoother_config.s_curve_config().acc_weight();
   const double weight_ddx = smoother_config.s_curve_config().jerk_weight();
 
-  ADEBUG("weight_x_ref: " << weight_x_ref);
-  ADEBUG("weight_dx: " << weight_dx);
-  ADEBUG("weight_ddx: " << weight_ddx);
+  // ADEBUG("weight_x_ref: " << weight_x_ref);
+  // ADEBUG("weight_dx: " << weight_dx);
+  // ADEBUG("weight_ddx: " << weight_ddx);
 
-  ADEBUG("upper_dx: " << upper_dx);
-  ADEBUG("max_a: " << max_a);
-  ADEBUG("max_acc_jerk: " << max_acc_jerk);
+  // ADEBUG("upper_dx: " << upper_dx);
+  // ADEBUG("max_a: " << max_a);
+  // ADEBUG("max_acc_jerk: " << max_acc_jerk);
 
-  ADEBUG("path_length: " << path_length);
-  ADEBUG("total_time: " << total_time);
-  ADEBUG("dt: " << dt);
-  ADEBUG("num_of_knots: " << num_of_knots);
+  // ADEBUG("path_length: " << path_length);
+  // ADEBUG("total_time: " << total_time);
+  // ADEBUG("dt: " << dt);
+  // ADEBUG("num_of_knots: " << num_of_knots);
 
   piecewise_jerk_problem.set_x_ref(weight_x_ref, std::move(x_ref));
   piecewise_jerk_problem.set_weight_ddx(weight_dx);
@@ -540,13 +540,13 @@ bool IterativeAnchoringSmoother::SmoothSpeed(const double init_a,
 
   for (size_t i = 1; i < num_of_knots; i++) {
     if (s[i - 1] - s[i] > sEpsilon) {
-      AERROR("unexpected decreasing s in speed acceleration at time "
+      AWARN("unexpected decreasing s in speed acceleration at time "
              << static_cast<double>(i) * dt << " with total time "
              << total_time);
-      ADEBUG("s: " << s[i - 1] << "\nt: " << static_cast<double>(i - 1) * dt
-                   << "\nv: " << ds[i - 1] << "\na: " << dds[i - 1]);
-      ADEBUG("s: " << s[i] << "\nt: " << static_cast<double>(i) * dt
-                   << "\nv: " << ds[i] << "\na: " << dds[i]);
+      // ADEBUG("s: " << s[i - 1] << "\nt: " << static_cast<double>(i - 1) * dt
+      //              << "\nv: " << ds[i - 1] << "\na: " << dds[i - 1]);
+      // ADEBUG("s: " << s[i] << "\nt: " << static_cast<double>(i) * dt
+      //              << "\nv: " << ds[i] << "\na: " << dds[i]);
       break;
     }
     smoothed_speeds->AppendSpeedPoint(s[i], dt * static_cast<double>(i), ds[i],

@@ -547,13 +547,13 @@ bool StaticPathGenerator::GenerateSCurveSpeedAcceleration(
 
   for (size_t i = 1; i < num_of_knots; i++) {
     if (s[i - 1] - s[i] > kEpsilon) {
-      AERROR("unexpected decreasing s in speed acceleration at time "
+      AWARN("unexpected decreasing s in speed acceleration at time "
              << static_cast<double>(i) * dt << " with total time "
              << total_time);
-      ADEBUG("s: " << s[i - 1] << "\nt: " << static_cast<double>(i - 1) * dt
-                   << "\nv: " << ds[i - 1] << "\na: " << dds[i - 1]);
-      ADEBUG("s: " << s[i] << "\nt: " << static_cast<double>(i) * dt
-                   << "\nv: " << ds[i] << "\na: " << dds[i]);
+      // ADEBUG("s: " << s[i - 1] << "\nt: " << static_cast<double>(i - 1) * dt
+      //              << "\nv: " << ds[i - 1] << "\na: " << dds[i - 1]);
+      // ADEBUG("s: " << s[i] << "\nt: " << static_cast<double>(i) * dt
+      //              << "\nv: " << ds[i] << "\na: " << dds[i]);
       break;
     }
     speed_data.AppendSpeedPoint(s[i], dt * static_cast<double>(i), ds[i],

@@ -8,9 +8,9 @@ open_space_trajectory_provider_config {
                 step_size: 0.25
                 traj_forward_penalty: 1.0
                 traj_backward_penalty: 1.0
-                traj_gear_switch_penalty: 10000.0
-                traj_steer_penalty: 100.0
-                traj_steer_change_penalty: 100.0
+                traj_gear_switch_penalty: 2.0
+                traj_steer_penalty: 10.0
+                traj_steer_change_penalty: 30.0
                 grid_a_star_xy_resolution: 0.25
                 node_radius: 0.5
                 max_forward_v: 2.0

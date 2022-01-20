@@ -77,11 +77,11 @@ Box2d Node3d::GetBoundingBox(const common::VehicleParam& vehicle_param,
   double ego_length = vehicle_param.length();
   double ego_width = vehicle_param.width();
 
-  double shift_distanec =
+  double shift_distance =
       ego_length / 2.0 - vehicle_param.back_edge_to_center();
 
   Box2d ego_box(
-      {x + shift_distanec * std::cos(phi), y + shift_distanec * std::sin(phi)},
+      {x + shift_distance * std::cos(phi), y + shift_distance * std::sin(phi)},
       phi, ego_length, ego_width);
   return ego_box;
 }

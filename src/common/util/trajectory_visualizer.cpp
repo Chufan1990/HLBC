@@ -219,12 +219,10 @@ bool TrajectoryVisualizer::Publish(
   return true;
 }
 
-MarkerArray TrajectoryVisualizer::BoundingBoxs(const std::vector<double>& x,
-                                               const std::vector<double>& y,
-                                               const std::vector<double>& theta,
-                                               const double length,
-                                               const double width,
-                                               const size_t interval) {
+MarkerArray TrajectoryVisualizer::BoundingBoxs(
+    const std::vector<double>& x, const std::vector<double>& y,
+    const std::vector<double>& theta, const common::VehicleParam& vehicle_param,
+    const size_t interval) {
   if (x.size() != y.size() || x.size() != theta.size()) {
     AERROR("States sizes not equal");
     return MarkerArray();
@@ -235,7 +233,7 @@ MarkerArray TrajectoryVisualizer::BoundingBoxs(const std::vector<double>& x,
   const size_t horizon = x.size();
 
   for (size_t i = 0; i < horizon; i += interval) {
-    auto bbox = EgoBox(x[i], y[i], theta[i], length, width);
+    auto bbox = EgoBox(x[i], y[i], theta[i], vehicle_param);
     bbox.id = i;
     boundingboxs.markers.emplace_back(std::move(bbox));
   }
@@ -244,9 +242,17 @@ MarkerArray TrajectoryVisualizer::BoundingBoxs(const std::vector<double>& x,
 }
 
 Marker TrajectoryVisualizer::EgoBox(const double x, const double y,
-                                    const double theta, const double length,
-                                    const double width) {
-  Box2d ego_box(Vec2d(x, y), theta, length, width);
+                                    const double theta,
+                                    const common::VehicleParam& vehicle_param) {
+  const double ego_length = vehicle_param.length();
+  const double ego_width = vehicle_param.width();
+
+  const double shift_distance =
+      ego_length / 2.0 - vehicle_param.back_edge_to_center();
+
+  Box2d ego_box({x + shift_distance * std::cos(theta),
+                 y + shift_distance * std::sin(theta)},
+                theta, ego_length, ego_width);
 
   std::vector<Vec2d> ego_box_corners = ego_box.GetAllCorners();
 

@@ -209,6 +209,7 @@ void OpenSpaceTrajectoryWrapper::OnDestination(
         msg->pose.orientation.w, msg->pose.orientation.x,
         msg->pose.orientation.y, msg->pose.orientation.z));
     destination_ready_.store(true);
+    trajectory_updated_.store(false);
   }
 }
 
@@ -225,11 +226,11 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
       data_ready_.store(true);
     }
     if (!data_ready_.load()) {
-      AWARN("Input data not ready");
+      AWARN_EVERY(10, "....");
       loop_rate.sleep();
       continue;
     }
-    AINFO("Input data received");
+    AINFO("Input received");
 
     {
       std::lock(obstacles_copy_done_, localization_copy_done_,
@@ -284,9 +285,6 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
     const auto& vehicle_param =
         common::VehicleConfigHelper::GetConfig().vehicle_param();
 
-    const double length = vehicle_param.length();
-    const double width = vehicle_param.width();
-
     std::vector<double> visual_x(horizon, 0.0);
     std::vector<double> visual_y(horizon, 0.0);
     std::vector<double> visual_phi(horizon, 0.0);
@@ -306,7 +304,7 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
                                                          visual_phi);
     optimized_trajectory_markers_["boundingboxs"] =
         optimized_trajectory_visualizer_->BoundingBoxs(
-            visual_x, visual_y, visual_phi, length, width, 5);
+            visual_x, visual_y, visual_phi, vehicle_param, 5);
 
     HybridAStarResult warm_start;
 
@@ -318,7 +316,7 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
         warm_start_visualizer_->PointsAndLines(warm_start.x, warm_start.y,
                                                warm_start.phi);
     warm_start_markers_["boundingboxs"] = warm_start_visualizer_->BoundingBoxs(
-        warm_start.x, warm_start.y, warm_start.phi, length, width, 5);
+        warm_start.x, warm_start.y, warm_start.phi, vehicle_param, 5);
 
     trajectory_updated_.store(true);
     loop_rate.sleep();
