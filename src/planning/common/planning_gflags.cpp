@@ -136,7 +136,7 @@ DEFINE_string(smoother_config_filename,
 
 DEFINE_string(discrete_points_smoother_config_filename,
               std::string(std::getenv("HOME")) +
-                  "/autoware.ai/src/autoware/common/hlbc/conf/"
+                  "/autoware.ai/src/autoware/common/HLBC/conf/"
                   "discrete_points_smoother_config.pb.txt",
               "The configuration file for qp_spline smoother");
 

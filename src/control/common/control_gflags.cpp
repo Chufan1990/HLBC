@@ -25,37 +25,37 @@
 DEFINE_string(control_conf_file,
               absl::StrCat(std::string(std::getenv("HOME")),
                            "/autoware.ai/src/autoware/common/"
-                           "hlbc/conf/control_conf.pb.txt"),
+                           "HLBC/conf/control_conf.pb.txt"),
               "default control conf data file");
 
 DEFINE_string(control_common_conf_file,
               absl::StrCat(std::string(std::getenv("HOME")),
                            "/autoware.ai/src/autoware/common/"
-                           "hlbc/conf/control_common_conf.pb.txt"),
+                           "HLBC/conf/control_common_conf.pb.txt"),
               "common control conf data file");
 
 DEFINE_string(mpc_controller_conf_file,
               absl::StrCat(std::string(std::getenv("HOME")),
                            "/autoware.ai/src/autoware/common/"
-                           "hlbc/conf/mpc_controller_conf.pb.txt"),
+                           "HLBC/conf/mpc_controller_conf.pb.txt"),
               "mpc controller conf data file");
 
 DEFINE_string(lateral_controller_conf_file,
               absl::StrCat(std::string(std::getenv("HOME")),
                            "/autoware.ai/src/autoware/common/"
-                           "hlbc/conf/lateral_controller_conf.pb.txt"),
+                           "HLBC/conf/lateral_controller_conf.pb.txt"),
               "lateral controller conf data file");
 
 DEFINE_string(longitudinal_controller_conf_file,
               absl::StrCat(std::string(std::getenv("HOME")),
                            "/autoware.ai/src/autoware/common/"
-                           "hlbc/conf/longitudinal_controller_conf.pb.txt"),
+                           "HLBC/conf/longitudinal_controller_conf.pb.txt"),
               "longitudinal controller conf data file");
 
 DEFINE_string(calibration_table_file,
               absl::StrCat(std::string(std::getenv("HOME")),
                            "/autoware.ai/src/autoware/common/"
-                           "hlbc/conf/calibration_table.pb.txt"),
+                           "HLBC/conf/calibration_table.pb.txt"),
               "calibration table file");
 
 DEFINE_bool(enable_csv_debug, false, "True to write out csv debug file.");

@@ -44,7 +44,7 @@ DEFINE_string(speed_control_filename, "speed_control.pb.txt",
 DEFINE_string(vehicle_config_path,
               std::string(std::getenv("HOME")) +
                   "/autoware.ai/src/autoware/common/"
-                  "hlbc/data/vehicle_param.pb.txt",
+                  "HLBC/data/vehicle_param.pb.txt",
               "the file path of vehicle config file");
 
 DEFINE_string(

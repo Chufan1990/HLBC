@@ -146,9 +146,14 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   scale.y = 0.05;
   scale.z = 0.05;
   markers_properties["obstacles"] = std::make_pair(color, scale);
-  markers_properties["points_and_lines"] = std::make_pair(color, scale);
+
+  color.a = 1.0;
+  color.r = 1.0;
+  color.g = 0.1;
+  color.b = 1.0;
+  markers_properties["boundingboxs"] = std::make_pair(color, scale);
   obstacle_visualizer_->Setup("obstacle", "/map", markers_properties, true,
-                              false, false, false, true);
+                              false, false, true, true);
 
   trajectory_marker_writer_ = std::make_unique<ros::Timer>(nh_.createTimer(
       ros::Duration(1), &OpenSpaceTrajectoryWrapper::Visualize, this));
@@ -219,6 +224,9 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
 
   OpenSpaceTrajectoryThreadData thread_data;
 
+  const auto& vehicle_param =
+      common::VehicleConfigHelper::GetConfig().vehicle_param();
+
   AINFO("waiting for data");
   while (ros::ok()) {
     if (localization_ready_.load() && obstacles_ready_.load() &&
@@ -250,8 +258,22 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
       data_ready_.store(false);
     }
 
+    thread_data.obstacles_vertices_vec.clear();
+
+    if (!GetVirtualParkingLot(thread_data.cur_pose[0], thread_data.cur_pose[1],
+                              thread_data.cur_pose[2], 6.0, 10.0, 0.0,
+                              &thread_data.obstacles_vertices_vec,
+                              &thread_data.end_pose)) {
+      AERROR("Generete virtual parking lot failed");
+      return false;
+    }
+
     obstacle_markers_["obstacles"] =
         obstacle_visualizer_->BoundingBoxs(thread_data.obstacles_vertices_vec);
+
+    obstacle_markers_["boundingboxs"] = obstacle_visualizer_->BoundingBoxs(
+        {thread_data.end_pose[0]}, {thread_data.end_pose[1]},
+        {thread_data.end_pose[2]}, vehicle_param);
 
     GetRoiBoundary(thread_data.cur_pose[0], thread_data.cur_pose[1],
                    thread_data.cur_pose[2], thread_data.end_pose[0],
@@ -282,9 +304,6 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
 
     const size_t horizon = optimized_trajectory_.size();
 
-    const auto& vehicle_param =
-        common::VehicleConfigHelper::GetConfig().vehicle_param();
-
     std::vector<double> visual_x(horizon, 0.0);
     std::vector<double> visual_y(horizon, 0.0);
     std::vector<double> visual_phi(horizon, 0.0);
@@ -304,7 +323,7 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
                                                          visual_phi);
     optimized_trajectory_markers_["boundingboxs"] =
         optimized_trajectory_visualizer_->BoundingBoxs(
-            visual_x, visual_y, visual_phi, vehicle_param, 5);
+            visual_x, visual_y, visual_phi, vehicle_param, 10U);
 
     HybridAStarResult warm_start;
 
@@ -316,7 +335,7 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
         warm_start_visualizer_->PointsAndLines(warm_start.x, warm_start.y,
                                                warm_start.phi);
     warm_start_markers_["boundingboxs"] = warm_start_visualizer_->BoundingBoxs(
-        warm_start.x, warm_start.y, warm_start.phi, vehicle_param, 5);
+        warm_start.x, warm_start.y, warm_start.phi, vehicle_param, 10U);
 
     trajectory_updated_.store(true);
     loop_rate.sleep();
@@ -378,6 +397,127 @@ void OpenSpaceTrajectoryWrapper::GetRoiBoundary(
                                    yminmax.first->y(), yminmax.second->y()});
 }
 
+bool OpenSpaceTrajectoryWrapper::GetVirtualParkingLot(
+    const double sx, const double sy, const double stheta, const double vx,
+    const double vy, const double vtheta,
+    std::vector<std::vector<Vec2d>>* obstacles_vertices_vec,
+    std::vector<double>* end_pose) {
+  /**
+   *    y
+   *    ^
+   *    |------------------------------------------------
+   *    |                                               |
+   *    |                  OBSTACLE_4                   |
+   *    |                                               |
+   *    |------------------------------------------------
+   *    |
+   *    |
+   *    |       VEHICLE(vx, vy)
+   *    |
+   *    |-----------------              -----------------
+   *    |                | PARKING SPOT |               |
+   *    |   OBSTACLE_1   |--------------|  OBSTACLE_3   |
+   *    |                |  OBSTACLE_2  |               |
+   * (0, 0) ----------------------------------------------->x
+   */
+
+  auto vehicle_param = common::VehicleConfigHelper::GetConfig().vehicle_param();
+  const double length = vehicle_param.length();
+  const double witdh = vehicle_param.width();
+
+  const double back_edge_to_center = vehicle_param.back_edge_to_center();
+
+  /**
+   * @todo move to conf
+   */
+  const double virtual_obstacle_1_length = 15.0;
+  const double virtual_obstacle_2_length = 7.5;
+  const double virtual_obstacle_3_length = 15.0;
+  const double virtual_obstacle_4_length = 35.0;
+
+  const double road_width = 15.0;
+  const double virtual_obstacle_1_width = 3.5;
+  const double virtual_obstacle_2_width = 1.5;
+  const double virtual_obstacle_3_width = 3.5;
+  const double virtual_obstacle_4_width = 3.5;
+  ADEBUG("Virtual parking lot boundaries:"
+         << "\nx: " << (length / 2.0) << " to "
+         << (virtual_obstacle_4_length - length / 2.0)
+         << "\ny: " << (virtual_obstacle_1_width + witdh / 2.0) << " to "
+         << (virtual_obstacle_1_width + road_width - witdh / 2.0));
+
+  if (vy <= (virtual_obstacle_1_width + witdh / 2.0) ||
+      vy >= (virtual_obstacle_1_width + road_width - witdh / 2.0) ||
+      vx <= (length / 2.0) ||
+      vx >= (virtual_obstacle_4_length - length / 2.0)) {
+    AERROR("Vehicle relative position outside parking lot");
+    return false;
+  }
+
+  Vec2d obstacle_1_center(virtual_obstacle_1_length / 2.0,
+                          virtual_obstacle_1_width / 2.0);
+  Vec2d obstacle_2_center(
+      virtual_obstacle_1_length + virtual_obstacle_2_length / 2.0,
+      virtual_obstacle_2_width / 2.0);
+  Vec2d obstacle_3_center(virtual_obstacle_1_length +
+                              virtual_obstacle_2_length +
+                              virtual_obstacle_3_length / 2.0,
+                          virtual_obstacle_3_width / 2.0);
+  Vec2d obstacle_4_center(virtual_obstacle_4_length / 2.0,
+                          road_width + virtual_obstacle_4_width / 2.0);
+
+  Vec2d end_pose_center(
+      virtual_obstacle_1_length + virtual_obstacle_2_length / 2.0 -
+          length / 2.0 + back_edge_to_center,
+      (virtual_obstacle_1_width + virtual_obstacle_2_width) / 2.0);
+
+  double rotate_angle = common::math::NormalizeAngle(stheta - vtheta);
+  auto vehicle_position = Vec2d(sx, sy);
+  vehicle_position.SelfRotate(-rotate_angle);
+  Vec2d translate_vec = vehicle_position - Vec2d(vx, vy);
+
+  obstacle_1_center += translate_vec;
+  obstacle_1_center.SelfRotate(rotate_angle);
+  obstacle_2_center += translate_vec;
+  obstacle_2_center.SelfRotate(rotate_angle);
+  obstacle_3_center += translate_vec;
+  obstacle_3_center.SelfRotate(rotate_angle);
+  obstacle_4_center += translate_vec;
+  obstacle_4_center.SelfRotate(rotate_angle);
+  end_pose_center += translate_vec;
+  end_pose_center.SelfRotate(rotate_angle);
+
+  *end_pose = {end_pose_center.x(), end_pose_center.y(), rotate_angle};
+
+  obstacles_vertices_vec->emplace_back(CenterToRectangle(
+      obstacle_1_center.x(), obstacle_1_center.y(), rotate_angle,
+      virtual_obstacle_1_width / 2.0, virtual_obstacle_1_width / 2.0,
+      virtual_obstacle_1_length / 2.0, virtual_obstacle_1_length / 2.0));
+  obstacles_vertices_vec->emplace_back(CenterToRectangle(
+      obstacle_2_center.x(), obstacle_2_center.y(), rotate_angle,
+      virtual_obstacle_2_width / 2.0, virtual_obstacle_2_width / 2.0,
+      virtual_obstacle_2_length / 2.0, virtual_obstacle_2_length / 2.0));
+  obstacles_vertices_vec->emplace_back(CenterToRectangle(
+      obstacle_3_center.x(), obstacle_3_center.y(), rotate_angle,
+      virtual_obstacle_3_width / 2.0, virtual_obstacle_3_width / 2.0,
+      virtual_obstacle_3_length / 2.0, virtual_obstacle_3_length / 2.0));
+  obstacles_vertices_vec->emplace_back(CenterToRectangle(
+      obstacle_4_center.x(), obstacle_4_center.y(), rotate_angle,
+      virtual_obstacle_4_width / 2.0, virtual_obstacle_4_width / 2.0,
+      virtual_obstacle_4_length / 2.0, virtual_obstacle_4_length / 2.0));
+
+  // std::copy(obstacle_1_vec.begin(), obstacle_1_vec.end(),
+  //           std::back_inserter(*obstacles_vertices_vec));
+  // std::copy(obstacle_2_vec.begin(), obstacle_2_vec.end(),
+  //           std::back_inserter(*obstacles_vertices_vec));
+  // std::copy(obstacle_3_vec.begin(), obstacle_3_vec.end(),
+  //           std::back_inserter(*obstacles_vertices_vec));cat
+  // std::copy(obstacle_4_vec.begin(), obstacle_4_vec.end(),
+  //           std::back_inserter(*obstacles_vertices_vec));
+
+  return true;
+}
+
 std::vector<Vec2d> OpenSpaceTrajectoryWrapper::CenterToRectangle(
     const double cx, const double cy, const double cphi, const double left,
     const double right, const double front, const double rear) {
@@ -401,7 +541,7 @@ std::vector<Vec2d> OpenSpaceTrajectoryWrapper::CenterToRectangle(
   Vec2d rear_left = rear_center + left_to_center;
   Vec2d rear_right = rear_center + right_to_center;
 
-  return std::vector<Vec2d>({front_left, front_right, rear_left, rear_right});
+  return std::vector<Vec2d>({front_left, front_right, rear_right, rear_left});
 }
 
 }  // namespace planning

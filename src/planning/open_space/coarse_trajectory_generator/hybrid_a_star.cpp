@@ -776,9 +776,9 @@ bool HybridAStar::Plan(
     }
     if (Vec2d(current_node->GetX() - end_node_->GetX(),
               current_node->GetY() - end_node_->GetY())
-                .LengthSquare() < (xy_grid_resolution_ * xy_grid_resolution_) &&
+                .LengthSquare() < 1e-2 &&
         std::abs(current_node->GetPhi() - end_node_->GetPhi()) <
-            (M_PI_4 / 5.0)) {
+            (M_PI / 180.0)) {
       final_node_ = current_node;
       break;
     }

@@ -52,6 +52,12 @@ class OpenSpaceTrajectoryWrapper {
                       const double vx, const double vy, const double vphi,
                       std::vector<double>* XYbounds);
 
+  bool GetVirtualParkingLot(
+      const double sx, const double sy, const double stheta, const double vx,
+      const double vy, const double vtheta,
+      std::vector<std::vector<common::math::Vec2d>>* obstacles_vertices_vec,
+      std::vector<double>* end_pose);
+
   std::vector<common::math::Vec2d> CenterToRectangle(
       const double cx, const double cy, const double cphi, const double left,
       const double right, const double front, const double rear);

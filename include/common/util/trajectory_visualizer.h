@@ -39,7 +39,7 @@ class TrajectoryVisualizer {
   visualization_msgs::MarkerArray BoundingBoxs(
       const std::vector<double>& x, const std::vector<double>& y,
       const std::vector<double>& theta,
-      const common::VehicleParam& vehicle_param, const size_t interval);
+      const common::VehicleParam& vehicle_param, const size_t interval = 1);
 
   visualization_msgs::MarkerArray BoundingBoxs(
       const std::vector<std::vector<common::math::Vec2d>>&
