@@ -4,6 +4,7 @@
 #include <chrono>
 #include <limits>
 
+#include "common/macro.h"
 #include "common/math/box2d.h"
 #include "common/math/math_utils.h"
 #include "common/math/vec2d.h"
@@ -42,7 +43,6 @@ HybridAStar::HybridAStar(const PlannerOpenSpaceConfig& open_space_conf) {
       planner_open_space_config_.warm_start_config().traj_steer_penalty();
   traj_steer_change_penalty_ = planner_open_space_config_.warm_start_config()
                                    .traj_steer_change_penalty();
-  node_radius_ = open_space_conf.warm_start_config().node_radius();
 }
 
 bool HybridAStar::AnalyticExpansion(std::shared_ptr<Node3d> current_node) {
@@ -53,6 +53,8 @@ bool HybridAStar::AnalyticExpansion(std::shared_ptr<Node3d> current_node) {
     ADEBUG("ShortestRSP failed");
     return false;
   }
+
+  ADEBUG("Potenteial RSP founded. Checking ...");
 
   if (!RSPCheck(reeds_shepp_to_check)) {
     return false;
@@ -101,14 +103,23 @@ bool HybridAStar::ValidityCheck(std::shared_ptr<Node3d> node) {
     }
     Box2d bounding_box = Node3d::GetBoundingBox(
         vehicle_param_, traversed_x[i], traversed_y[i], traversed_phi[i]);
+
+    /**
+     * @todo move to conf
+     */
+    const double longitudinal_safety_margin = 0.3;
+    const double lateral_safety_margin = 0.1;
+
+    bounding_box.LateralExtend(lateral_safety_margin);
+    bounding_box.LongitudinalExtend(longitudinal_safety_margin);
+
     for (const auto& obstacle_linesegments : obstacles_linesegments_vec_) {
       for (const common::math::LineSegment2d& linesegment :
            obstacle_linesegments) {
-        if (bounding_box.DistanceTo(linesegment) < node_radius_) {
-          // ADEBUG("collision start at x: " << linesegment.start().x());
-          // ADEBUG("collision start at y: " << linesegment.start().y());
-          // ADEBUG("collision end at x: " << linesegment.end().x());
-          // ADEBUG("collision end at y: " << linesegment.end().y());
+        if (bounding_box.HasOverlap(linesegment)) {
+          ADEBUG("collision point at (" << traversed_x[i] << ", "
+                                        << traversed_y[i] << ", "
+                                        << traversed_phi[i] << ")");
           return false;
         }
       }
@@ -120,71 +131,82 @@ bool HybridAStar::ValidityCheck(std::shared_ptr<Node3d> node) {
 std::shared_ptr<Node3d> HybridAStar::LoadRSPinCS(
     const std::shared_ptr<ReedsSheppPath> reeds_shepp_to_end,
     std::shared_ptr<Node3d> current_node) {
-  double prev_x = current_node->GetX();
-  double prev_y = current_node->GetY();
-  double prev_phi = current_node->GetPhi();
-  auto parent_node = current_node;
-  size_t horizon = reeds_shepp_to_end->x.size();
-
-  double traveled_distance = reeds_shepp_to_end->total_length;
-
-  for (size_t i = 1; i < horizon; i++) {
-    const double curr_x = reeds_shepp_to_end->x[i];
-    const double curr_y = reeds_shepp_to_end->y[i];
-    const double curr_phi = reeds_shepp_to_end->phi[i];
-    std::shared_ptr<Node3d> intermediate_node = std::shared_ptr<Node3d>(
-        new Node3d({prev_x, curr_x}, {prev_y, curr_y}, {prev_phi, curr_phi},
-                   XYbounds_, planner_open_space_config_));
-
-    const Vec2d tracking_vec(curr_x - prev_x, curr_y - prev_y);
-
-    const double tracking_dist =
-        Vec2d(curr_x - prev_x, curr_y - prev_y).Length();
-
-    const double steer =
-        std::atan2(curr_phi - prev_phi * vehicle_param_.wheel_base(),
-                   tracking_vec.Length());
-
-    const bool direction = common::math::NormalizeAngle(
-                               Vec2d(curr_x - prev_x, curr_y - prev_x).Angle() -
-                               curr_phi) < M_PI_2;
-
-    intermediate_node->SetDirec(direction);
-    intermediate_node->SetSteer(steer);
-    intermediate_node->SetPre(parent_node);
-
-    double piecewise_cost = current_node->GetCost();
-
-    if (parent_node->GetDirec() != intermediate_node->GetDirec()) {
-      piecewise_cost += traj_gear_switch_penalty_;
-    }
-    piecewise_cost +=
-        traj_steer_penalty_ * std::abs(intermediate_node->GetSteer());
-    piecewise_cost +=
-        traj_steer_change_penalty_ *
-        std::abs(intermediate_node->GetSteer() - parent_node->GetSteer());
-
-    piecewise_cost += traveled_distance;
-
-    intermediate_node->SetTrajCost(piecewise_cost);
-
-    open_set_.emplace(intermediate_node->GetIndex(), intermediate_node);
-    open_pq_.emplace(intermediate_node->GetIndex(),
-                     intermediate_node->GetCost());
-
-    prev_x = curr_x;
-    prev_y = curr_y;
-    prev_phi = curr_phi;
-    parent_node = intermediate_node;
-  }
-
   std::shared_ptr<Node3d> end_node = std::shared_ptr<Node3d>(new Node3d(
       reeds_shepp_to_end->x, reeds_shepp_to_end->y, reeds_shepp_to_end->phi,
       XYbounds_, planner_open_space_config_));
   end_node->SetPre(current_node);
-
+  close_set_.emplace(end_node->GetIndex(), end_node);
   return end_node;
 }
+
+// std::shared_ptr<Node3d> HybridAStar::LoadRSPinCS(
+//     const std::shared_ptr<ReedsSheppPath> reeds_shepp_to_end,
+//     std::shared_ptr<Node3d> current_node) {
+//   double prev_x = current_node->GetX();
+//   double prev_y = current_node->GetY();
+//   double prev_phi = current_node->GetPhi();
+//   auto parent_node = current_node;
+//   size_t horizon = reeds_shepp_to_end->x.size();
+
+//   double traveled_distance = reeds_shepp_to_end->total_length;
+//   parent_node->SetHeuCost(traveled_distance * traj_forward_penalty_);
+
+//   for (size_t i = 1; i < horizon; i++) {
+//     const double curr_x = reeds_shepp_to_end->x[i];
+//     const double curr_y = reeds_shepp_to_end->y[i];
+//     const double curr_phi = reeds_shepp_to_end->phi[i];
+//     std::shared_ptr<Node3d> intermediate_node = std::shared_ptr<Node3d>(
+//         new Node3d({prev_x, curr_x}, {prev_y, curr_y}, {prev_phi, curr_phi},
+//                    XYbounds_, planner_open_space_config_));
+
+//     const Vec2d tracking_vec(curr_x - prev_x, curr_y - prev_y);
+
+//     const double tracking_dist =
+//         Vec2d(curr_x - prev_x, curr_y - prev_y).Length();
+
+//     const double steer =
+//         std::atan2(curr_phi - prev_phi * vehicle_param_.wheel_base(),
+//                    tracking_vec.Length());
+
+//     const bool direction = common::math::NormalizeAngle(
+//                                Vec2d(curr_x - prev_x, curr_y -
+//                                prev_x).Angle() - curr_phi) < M_PI_2;
+
+//     intermediate_node->SetDirec(direction);
+//     intermediate_node->SetSteer(steer);
+//     intermediate_node->SetPre(parent_node);
+
+//     intermediate_node->SetHeuCost(parent_node->GetHeuCost());
+//     double piecewise_cost = parent_node->GetTrajCost();
+
+//     if (parent_node->GetDirec() != intermediate_node->GetDirec()) {
+//       piecewise_cost += traj_gear_switch_penalty_;
+//     }
+//     piecewise_cost +=
+//         traj_steer_penalty_ * std::abs(intermediate_node->GetSteer());
+//     piecewise_cost +=
+//         traj_steer_change_penalty_ *
+//         std::abs(intermediate_node->GetSteer() - parent_node->GetSteer());
+
+//     intermediate_node->SetTrajCost(piecewise_cost);
+
+//     open_set_.emplace(intermediate_node->GetIndex(), intermediate_node);
+//     open_pq_.emplace(intermediate_node->GetIndex(),
+//                      intermediate_node->GetCost());
+
+//     prev_x = curr_x;
+//     prev_y = curr_y;
+//     prev_phi = curr_phi;
+//     parent_node = intermediate_node;
+//   }
+
+//   std::shared_ptr<Node3d> end_node = std::shared_ptr<Node3d>(new Node3d(
+//       reeds_shepp_to_end->x, reeds_shepp_to_end->y, reeds_shepp_to_end->phi,
+//       XYbounds_, planner_open_space_config_));
+//   end_node->SetPre(current_node);
+
+//   return end_node;
+// }
 
 std::shared_ptr<Node3d> HybridAStar::Next_node_generator(
     std::shared_ptr<Node3d> current_node, size_t next_node_index) {
@@ -766,23 +788,10 @@ bool HybridAStar::Plan(
     // configuration to the end configuration without collision. if so, search
     // ends.
     const auto rs_start_time = std::chrono::system_clock::now();
-    if (counter == 100) {
-      if (AnalyticExpansion(current_node)) {
-        ADEBUG("Available Reeds Shepp Path found");
-      }
-      counter = 0;
-    } else {
-      counter++;
-    }
-    if (Vec2d(current_node->GetX() - end_node_->GetX(),
-              current_node->GetY() - end_node_->GetY())
-                .LengthSquare() < 1e-2 &&
-        std::abs(current_node->GetPhi() - end_node_->GetPhi()) <
-            (M_PI / 180.0)) {
-      final_node_ = current_node;
+    if (AnalyticExpansion(current_node)) {
+      ADEBUG("Available Reeds Shepp Path found");
       break;
     }
-
     const auto rs_end_time = std::chrono::system_clock::now();
     rs_time +=
         std::chrono::duration<double, std::milli>(rs_end_time - rs_start_time)

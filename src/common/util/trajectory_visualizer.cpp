@@ -49,10 +49,10 @@ MarkerArray TrajectoryVisualizer::Arrows(const std::vector<double>& x,
   }
 
   MarkerArray arrows;
-  size_t horizon = x.size();
-  arrows.markers.resize(horizon);
+  const size_t horizon = x.size();
+  arrows.markers.resize(2 * horizon);
   for (size_t i = 0; i < horizon; i++) {
-    Marker& arrow = arrows.markers[i];
+    Marker& arrow = arrows.markers[2 * i];
     arrow.type = Marker::ARROW;
     arrow.pose = ToGeometryPose(x[i], y[i], theta[i]);
     arrow.header.frame_id = frame_id_;
@@ -60,8 +60,16 @@ MarkerArray TrajectoryVisualizer::Arrows(const std::vector<double>& x,
     arrow.id = i;
     arrow.color = properties_["arrows"].first;
     arrow.scale = properties_["arrows"].second;
+    Marker& text = arrows.markers[2 * i + 1];
+    text.type = Marker::TEXT_VIEW_FACING;
+    text.pose = ToGeometryPose(x[i], y[i], theta[i]);
+    text.header.frame_id = frame_id_;
+    text.ns = "Texts";
+    text.color = properties_["arrows"].first;
+    text.scale = properties_["arrows"].second;
+    text.id = i;
+    text.text = absl::StrCat(x[i], " ", y[i], " ", theta[i]);
   }
-
   return arrows;
 }
 
@@ -123,18 +131,26 @@ MarkerArray TrajectoryVisualizer::TextView(
   size_t horizon = x.size();
   texts.markers.resize(horizon);
   for (size_t i = 0; i < horizon; i++) {
-    Marker& text = texts.markers[i];
-    text.type = Marker::TEXT_VIEW_FACING;
-    text.pose = ToGeometryPose(x[i], y[i], theta[i]);
-    text.header.frame_id = frame_id_;
-    text.ns = "Texts";
-    text.id = i;
-    text.text = text_view[i];
-    text.color = properties_["texts"].first;
-    text.scale = properties_["texts"].second;
+    Marker* text = &texts.markers[i];
+    *text = Text(x[i], y[i], theta[i], text_view[i]);
+    text->id = i;
   }
 
   return texts;
+}
+
+Marker TrajectoryVisualizer::Text(const double x, const double y,
+                                  const double theta,
+                                  const std::string& text_str) {
+  Marker text;
+  text.type = Marker::TEXT_VIEW_FACING;
+  text.pose = ToGeometryPose(x, y, theta);
+  text.header.frame_id = frame_id_;
+  text.ns = "Texts";
+  text.text = std::move(text_str);
+  text.color = properties_["texts"].first;
+  text.scale = properties_["texts"].second;
+  return text;
 }
 
 bool TrajectoryVisualizer::Setup(
@@ -236,6 +252,16 @@ MarkerArray TrajectoryVisualizer::BoundingBoxs(
     auto bbox = EgoBox(x[i], y[i], theta[i], vehicle_param);
     bbox.id = i;
     boundingboxs.markers.emplace_back(std::move(bbox));
+    Marker text;
+    text.type = Marker::TEXT_VIEW_FACING;
+    text.pose = ToGeometryPose(x[i], y[i], theta[i]);
+    text.header.frame_id = frame_id_;
+    text.ns = "Texts";
+    text.color = properties_["boundingboxs"].first;
+    text.scale = properties_["boundingboxs"].second;
+    text.id = i;
+    text.text = absl::StrCat(x[i], " ", y[i], " ", theta[i]);
+    boundingboxs.markers.emplace_back(std::move(text));
   }
 
   return boundingboxs;
@@ -289,10 +315,24 @@ MarkerArray TrajectoryVisualizer::BoundingBoxs(
 
   const size_t num_of_obstacles = obstacles_vertices_vec.size();
 
+  int text_id = 0;
   for (size_t i = 0; i < num_of_obstacles; i++) {
     auto obox = ObstacleBox(obstacles_vertices_vec[i]);
     obox.id = i;
     boundingboxs.markers.emplace_back(std::move(obox));
+    for (size_t j = 0; j < obstacles_vertices_vec[i].size() - 1; j++) {
+      const auto& vertice = obstacles_vertices_vec[i][j];
+      Marker text;
+      text.type = Marker::TEXT_VIEW_FACING;
+      text.pose = ToGeometryPose(vertice.x(), vertice.y(), 0.0);
+      text.header.frame_id = frame_id_;
+      text.ns = "Texts";
+      text.color = properties_["obstacles"].first;
+      text.scale = properties_["obstacles"].second;
+      text.id = text_id++;
+      text.text = absl::StrCat("(", vertice.x(), ",", vertice.y(), ")");
+      boundingboxs.markers.emplace_back(std::move(text));
+    }
   }
 
   return boundingboxs;
@@ -313,10 +353,6 @@ Marker TrajectoryVisualizer::ObstacleBox(
       auto point = ToGeometryPose(vertice.x(), vertice.y(), 0.0).position;
       obstacle_box.points.emplace_back(point);
     }
-    obstacle_box.points.emplace_back(
-        ToGeometryPose(obstacle_vertices.front().x(),
-                       obstacle_vertices.front().y(), 0.0)
-            .position);
   }
   return obstacle_box;
 }

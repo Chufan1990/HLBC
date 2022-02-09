@@ -345,7 +345,10 @@ bool IterativeAnchoringSmoother::CheckCollisionAvoidance(
 
     for (const auto& obstacle_linesegments : obstacles_linesegments_vec_) {
       for (const auto& linesegment : obstacle_linesegments) {
-        if (ego_box.HasOverlap(linesegment)) {
+        /**
+         * @todo move to conf
+         */
+        if (ego_box.DistanceTo(linesegment) < 0.1) {
           colliding_point_index->push_back(i);
           ADEBUG("point at " << i << " collided with LineSegment "
                              << linesegment.DebugString());
@@ -541,8 +544,8 @@ bool IterativeAnchoringSmoother::SmoothSpeed(const double init_a,
   for (size_t i = 1; i < num_of_knots; i++) {
     if (s[i - 1] - s[i] > sEpsilon) {
       AWARN("unexpected decreasing s in speed acceleration at time "
-             << static_cast<double>(i) * dt << " with total time "
-             << total_time);
+            << static_cast<double>(i) * dt << " with total time "
+            << total_time);
       // ADEBUG("s: " << s[i - 1] << "\nt: " << static_cast<double>(i - 1) * dt
       //              << "\nv: " << ds[i - 1] << "\na: " << dds[i - 1]);
       // ADEBUG("s: " << s[i] << "\nt: " << static_cast<double>(i) * dt

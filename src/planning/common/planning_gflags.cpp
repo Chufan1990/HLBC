@@ -514,7 +514,7 @@ DEFINE_double(smoother_stop_distance, 10.0,
               "(unit: meter) for ADC stop, if it is close to the stop point "
               "within this threshold, current planning will be smoothed.");
 
-DEFINE_bool(enable_parallel_hybrid_a, false,
+DEFINE_bool(enable_parallel_hybrid_a, true,
             "True to enable hybrid a* parallel implementation.");
 
 DEFINE_double(open_space_standstill_acceleration, 0.0,

@@ -124,6 +124,12 @@ class OpenSpaceTrajectoryWrapper {
   std::unique_ptr<ros::Timer> trajectory_marker_writer_;
 
   OpenSpaceTrajectoryTaskConfig config_;
+
+  double start_point_x_ = 10.0;
+
+  double start_point_y_ = 10.0;
+
+  double start_point_phi_ = 0.0;
 };
 
 }  // namespace planning

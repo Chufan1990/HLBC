@@ -68,6 +68,22 @@ bool OpenSpaceTrajectoryWrapper::Init() {
     return false;
   }
 
+  if (!nh_.getParam("x", start_point_x_)) {
+    AWARN(
+        "Unable to retrived starting point x-axis value. Using default value");
+  }
+
+  if (!nh_.getParam("y", start_point_y_)) {
+    AWARN(
+        "Unable to retrived starting point y-axis value. Using default value");
+  }
+
+  if (!nh_.getParam("phi", start_point_phi_)) {
+    AWARN(
+        "Unable to retrived starting point heading angle value. Using default "
+        "value");
+  }
+
   spinner_ = std::make_unique<ros::AsyncSpinner>(0);
 
   obstacle_reader_ = std::make_unique<ros::Subscriber>(nh_.subscribe(
@@ -106,16 +122,13 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   color.r = 0.9;
   color.g = 0.9;
   color.b = 0.1;
-  scale.x = 0.2;
-  scale.y = 0.2;
-  scale.z = 0.2;
-  markers_properties["arrows"] = std::make_pair(color, scale);
-  markers_properties["points_and_lines"] = std::make_pair(color, scale);
-
   scale.x = 0.05;
   scale.y = 0.05;
   scale.z = 0.05;
+  markers_properties["arrows"] = std::make_pair(color, scale);
+  markers_properties["points_and_lines"] = std::make_pair(color, scale);
   markers_properties["boundingboxs"] = std::make_pair(color, scale);
+  markers_properties["texts"] = std::make_pair(color, scale);
 
   warm_start_visualizer_->Setup("warm_start", "/map", markers_properties, true,
                                 true, false, true, false);
@@ -124,16 +137,13 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   color.r = 0.1;
   color.g = 1.0;
   color.b = 0.1;
-  scale.x = 0.2;
-  scale.y = 0.2;
-  scale.z = 0.2;
-  markers_properties["arrows"] = std::make_pair(color, scale);
-  markers_properties["points_and_lines"] = std::make_pair(color, scale);
-
   scale.x = 0.05;
   scale.y = 0.05;
   scale.z = 0.05;
+  markers_properties["arrows"] = std::make_pair(color, scale);
+  markers_properties["points_and_lines"] = std::make_pair(color, scale);
   markers_properties["boundingboxs"] = std::make_pair(color, scale);
+  markers_properties["texts"] = std::make_pair(color, scale);
 
   optimized_trajectory_visualizer_->Setup(
       "optimized", "/map", markers_properties, true, true, false, true, false);
@@ -261,7 +271,8 @@ bool OpenSpaceTrajectoryWrapper::Proc() {
     thread_data.obstacles_vertices_vec.clear();
 
     if (!GetVirtualParkingLot(thread_data.cur_pose[0], thread_data.cur_pose[1],
-                              thread_data.cur_pose[2], 6.0, 10.0, 0.0,
+                              thread_data.cur_pose[2], start_point_x_,
+                              start_point_y_, start_point_phi_,
                               &thread_data.obstacles_vertices_vec,
                               &thread_data.end_pose)) {
       AERROR("Generete virtual parking lot failed");
@@ -430,15 +441,17 @@ bool OpenSpaceTrajectoryWrapper::GetVirtualParkingLot(
   /**
    * @todo move to conf
    */
-  const double virtual_obstacle_1_length = 15.0;
-  const double virtual_obstacle_2_length = 7.5;
+  const double virtual_obstacle_1_length = 15.5;
+  const double virtual_obstacle_2_length = 3.0;
   const double virtual_obstacle_3_length = 15.0;
-  const double virtual_obstacle_4_length = 35.0;
+  const double virtual_obstacle_4_length = virtual_obstacle_1_length +
+                                           virtual_obstacle_2_length +
+                                           virtual_obstacle_3_length;
 
   const double road_width = 15.0;
-  const double virtual_obstacle_1_width = 3.5;
-  const double virtual_obstacle_2_width = 1.5;
-  const double virtual_obstacle_3_width = 3.5;
+  const double virtual_obstacle_1_width = 6.5;
+  const double virtual_obstacle_2_width = 1.0;
+  const double virtual_obstacle_3_width = 6.5;
   const double virtual_obstacle_4_width = 3.5;
   ADEBUG("Virtual parking lot boundaries:"
          << "\nx: " << (length / 2.0) << " to "
@@ -467,8 +480,7 @@ bool OpenSpaceTrajectoryWrapper::GetVirtualParkingLot(
                           road_width + virtual_obstacle_4_width / 2.0);
 
   Vec2d end_pose_center(
-      virtual_obstacle_1_length + virtual_obstacle_2_length / 2.0 -
-          length / 2.0 + back_edge_to_center,
+      virtual_obstacle_1_length + virtual_obstacle_2_length / 2.0,
       (virtual_obstacle_1_width + virtual_obstacle_2_width) / 2.0);
 
   double rotate_angle = common::math::NormalizeAngle(stheta - vtheta);
@@ -487,7 +499,7 @@ bool OpenSpaceTrajectoryWrapper::GetVirtualParkingLot(
   end_pose_center += translate_vec;
   end_pose_center.SelfRotate(rotate_angle);
 
-  *end_pose = {end_pose_center.x(), end_pose_center.y(), rotate_angle};
+  *end_pose = {end_pose_center.x(), end_pose_center.y(), rotate_angle + M_PI_2};
 
   obstacles_vertices_vec->emplace_back(CenterToRectangle(
       obstacle_1_center.x(), obstacle_1_center.y(), rotate_angle,
@@ -541,7 +553,8 @@ std::vector<Vec2d> OpenSpaceTrajectoryWrapper::CenterToRectangle(
   Vec2d rear_left = rear_center + left_to_center;
   Vec2d rear_right = rear_center + right_to_center;
 
-  return std::vector<Vec2d>({front_left, front_right, rear_right, rear_left});
+  return std::vector<Vec2d>(
+      {front_left, front_right, rear_right, rear_left, front_left});
 }
 
 }  // namespace planning

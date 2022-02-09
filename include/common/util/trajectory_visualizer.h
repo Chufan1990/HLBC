@@ -63,6 +63,10 @@ class TrajectoryVisualizer {
                                     const double theta,
                                     const common::VehicleParam& vehicle_param);
 
+  visualization_msgs::Marker Text(const double x, const double y,
+                                  const double theta,
+                                  const std::string& text_str);
+
   visualization_msgs::Marker ObstacleBox(
       const std::vector<common::math::Vec2d>& obstacle_vertices);
 
