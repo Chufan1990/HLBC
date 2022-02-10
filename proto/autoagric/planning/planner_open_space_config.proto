@@ -77,6 +77,8 @@ message WarmStartConfig {
   double max_forward_acc = 23;
   double max_reverse_acc = 24;
   double max_acc_jerk = 25;
+  double longitudinal_safety_margin = 26;
+  double lateral_safety_margin = 27;
 }
 
 // message DualVariableWarmStartConfig {
@@ -175,6 +177,8 @@ message IterativeAnchoringConfig {
   double max_forward_acc = 19;
   double max_reverse_acc = 20;
   double max_acc_jerk = 21;
+  double longitudinal_safety_margin = 22;
+  double lateral_safety_margin = 23;
 }
 
 // message TrajectoryPartitionConfig {

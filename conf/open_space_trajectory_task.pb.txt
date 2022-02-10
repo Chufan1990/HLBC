@@ -2,25 +2,25 @@ open_space_trajectory_provider_config {
     open_space_trajectory_optimizer_config {
         planner_open_space_config {
             warm_start_config {
-                xy_grid_resolution: 0.3
+                xy_grid_resolution: 0.5
                 phi_grid_resolution: 0.1
                 next_node_num: 10
                 step_size: 0.25
                 traj_forward_penalty: 1.0
                 traj_backward_penalty: 1.0
                 traj_gear_switch_penalty: 20.0
-                traj_steer_penalty: 5.0
+                traj_steer_penalty: 2.0
                 traj_steer_change_penalty: 5.0
                 grid_a_star_xy_resolution: 0.25
-                node_radius: 0.2
+                node_radius: 0.25
                 max_forward_v: 2.0
                 max_reverse_v: 2.0
                 max_forward_acc: 1.0
                 max_reverse_acc: 1.0
                 max_acc_jerk: 5.0
-                delta_t: 0.2
-                time_slack_ratio: 1.5
-                dense_time_resolution: 0.5
+                delta_t: 0.5
+                time_slack_ratio: 1.2
+                dense_time_resolution: 1.0
                 s_curve_config {
                     acc_weight: 1.0
                     jerk_weight: 1.0
@@ -29,6 +29,8 @@ open_space_trajectory_provider_config {
                     ref_v_weight: 0.0
                     max_num_of_iterations: 10000
                 }
+                longitudinal_safety_margin: 0.3
+                lateral_safety_margin: 0.25
             }
             iterative_anchoring_smoother_config {
                 interpolated_delta_s: 0.1
@@ -51,14 +53,14 @@ open_space_trajectory_provider_config {
                 }
                 fem_pos_deviation_smoother_config {
                     weight_fem_pos_deviation: 1e7
-                    weight_path_length: 0.0
-                    weight_ref_deviation: 1e3
-                    apply_curvature_constraint: true
+                    weight_path_length: 1.0
+                    weight_ref_deviation: 1e-3
+                    apply_curvature_constraint: false
                     weight_curvature_constraint_slack_var: 1e8
                     curvature_constraint: 0.18
                     max_iter: 500
                     time_limit: 0.0
-                    verbose: false
+                    verbose: true
                     scaled_termination: true
                     warm_start: true
                 }
@@ -77,9 +79,11 @@ open_space_trajectory_provider_config {
                 max_reverse_acc: 1.0
                 max_acc_jerk: 5.0
                 delta_t: 0.2
-                time_slack_ratio: 1.5
+                time_slack_ratio: 1.2
                 dense_time_resolution: 0.1
-                max_iteration_num: 4
+                max_iteration_num: 10
+                longitudinal_safety_margin: 0.3
+                lateral_safety_margin: 0.15
             }
             delta_t: 0.5
             is_near_destination_threshold: 1

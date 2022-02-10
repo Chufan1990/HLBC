@@ -75,6 +75,8 @@ class IterativeAnchoringSmoother {
   double ego_length_ = 0.0;
   double ego_width_ = 0.0;
   double center_shift_distance_ = 0.0;
+  double longitudinal_safety_margin_ = 0.0;
+  double lateral_safety_margin_ = 0.0;
 
   std::vector<std::vector<common::math::LineSegment2d>>
       obstacles_linesegments_vec_;

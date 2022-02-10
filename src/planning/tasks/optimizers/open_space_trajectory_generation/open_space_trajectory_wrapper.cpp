@@ -122,10 +122,11 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   color.r = 0.9;
   color.g = 0.9;
   color.b = 0.1;
-  scale.x = 0.05;
+  scale.x = 0.1;
   scale.y = 0.05;
   scale.z = 0.05;
   markers_properties["arrows"] = std::make_pair(color, scale);
+  scale.x = 0.05;
   markers_properties["points_and_lines"] = std::make_pair(color, scale);
   markers_properties["boundingboxs"] = std::make_pair(color, scale);
   markers_properties["texts"] = std::make_pair(color, scale);
@@ -137,10 +138,11 @@ bool OpenSpaceTrajectoryWrapper::Init() {
   color.r = 0.1;
   color.g = 1.0;
   color.b = 0.1;
-  scale.x = 0.05;
+  scale.x = 0.1;
   scale.y = 0.05;
   scale.z = 0.05;
   markers_properties["arrows"] = std::make_pair(color, scale);
+  scale.x = 0.05;
   markers_properties["points_and_lines"] = std::make_pair(color, scale);
   markers_properties["boundingboxs"] = std::make_pair(color, scale);
   markers_properties["texts"] = std::make_pair(color, scale);

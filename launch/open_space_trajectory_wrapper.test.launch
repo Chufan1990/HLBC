@@ -7,8 +7,8 @@
 		<param name="localization_message" value="/current_pose"/>
 		<param name="destination_message" value="/move_base_simple/goal"/>
 		<param name="trajectory_message" value="/planning/trajectory"/>
-		<param name="x" value="10.0"/>
+		<param name="x" value="5.0"/>
 		<param name="y" value="10.0"/>
-		<param name="phi" value="0.0"/>
+		<param name="phi" value="-1.57"/>
 	</node>
 </launch>

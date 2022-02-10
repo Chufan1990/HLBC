@@ -10,6 +10,7 @@
 #include "common/math/math_utils.h"
 #include "planning/math/discrete_points_math.h"
 #include "planning/math/discretized_points_smoothing/cos_theta_smoother.h"
+#include "planning/math/discretized_points_smoothing/fem_pos_deviation_smoother.h"
 #include "planning/math/piecewise_jerk/piecewise_jerk_speed_problem.h"
 
 namespace autoagric {
@@ -30,6 +31,12 @@ IterativeAnchoringSmoother::IterativeAnchoringSmoother(
   center_shift_distance_ =
       ego_length_ / 2.0 - vehicle_param.back_edge_to_center();
   planner_open_space_config_ = planner_open_space_config;
+  longitudinal_safety_margin_ =
+      planner_open_space_config_.iterative_anchoring_smoother_config()
+          .longitudinal_safety_margin();
+  lateral_safety_margin_ =
+      planner_open_space_config_.iterative_anchoring_smoother_config()
+          .lateral_safety_margin();
 }
 
 bool IterativeAnchoringSmoother::Smooth(
@@ -195,12 +202,6 @@ void IterativeAnchoringSmoother::AdjustStartEndHeading(
   CHECK_GT(xWS.cols(), 1);
   CHECK_GT(point2d->size(), 3U);
 
-  /**
-   * @note hard-codingly change the positions of the second and the second last
-   * points according to the first and last points' heading angle.
-   * @todo (chufan) refactor after stablized
-   */
-
   // set initial heading and bounds
   const double initial_heading = xWS(2, 0);
   const double end_heading = xWS(2, xWS.cols() - 1);
@@ -341,14 +342,14 @@ bool IterativeAnchoringSmoother::CheckCollisionAvoidance(
          path_points[i].y() + center_shift_distance_ * std::sin(heading)},
         heading, ego_length_, ego_width_);
 
+    ego_box.LongitudinalExtend(longitudinal_safety_margin_);
+    ego_box.LateralExtend(lateral_safety_margin_);
+
     bool is_colliding = false;
 
     for (const auto& obstacle_linesegments : obstacles_linesegments_vec_) {
       for (const auto& linesegment : obstacle_linesegments) {
-        /**
-         * @todo move to conf
-         */
-        if (ego_box.DistanceTo(linesegment) < 0.1) {
+        if (ego_box.HasOverlap(linesegment)) {
           colliding_point_index->push_back(i);
           ADEBUG("point at " << i << " collided with LineSegment "
                              << linesegment.DebugString());
@@ -386,9 +387,13 @@ bool IterativeAnchoringSmoother::SmoothPath(
   }
   flexible_bounds = bounds;
 
-  CosThetaSmoother cos_theta_smoother(
+  // CosThetaSmoother smoother(
+  //     planner_open_space_config_.iterative_anchoring_smoother_config()
+  //         .cos_theta_smoother_config());
+
+  FemPosDeviationSmoother smoother(
       planner_open_space_config_.iterative_anchoring_smoother_config()
-          .cos_theta_smoother_config());
+          .fem_pos_deviation_smoother_config());
 
   const size_t max_iteration_num =
       planner_open_space_config_.iterative_anchoring_smoother_config()
@@ -409,14 +414,13 @@ bool IterativeAnchoringSmoother::SmoothPath(
 
     std::vector<double> opt_x;
     std::vector<double> opt_y;
-    if (!cos_theta_smoother.Solve(raw_point2d, flexible_bounds, &opt_x,
-                                  &opt_y)) {
+    if (!smoother.Solve(raw_point2d, flexible_bounds, &opt_x, &opt_y)) {
       AERROR("Smoothing path failed");
       return false;
     }
 
     if (opt_x.size() < 2 || opt_y.size() < 2) {
-      AERROR("Result of cos_theta_smoother is wrong. Size less than 2");
+      AERROR("Result of smoother is wrong. Size less than 2");
       return false;
     }
 
@@ -466,7 +470,6 @@ bool IterativeAnchoringSmoother::SmoothSpeed(const double init_a,
           : loosen_ratio *
                 (max_reverse_v * max_reverse_v + path_length * max_reverse_a) /
                 (max_reverse_a * max_reverse_v);
-  ADEBUG("total time is " << total_time);
 
   const size_t num_of_knots = static_cast<size_t>(total_time / dt) + 1;
 

@@ -54,7 +54,7 @@ class HybridAStar {
   std::shared_ptr<Node3d> Next_node_generator(
       std::shared_ptr<Node3d> current_node, size_t next_node_index);
   void CalculateNodeCost(std::shared_ptr<Node3d> current_node,
-                           std::shared_ptr<Node3d> next_node);
+                         std::shared_ptr<Node3d> next_node);
   double TrajCost(std::shared_ptr<Node3d> current_node,
                   std::shared_ptr<Node3d> next_node);
 
@@ -83,7 +83,8 @@ class HybridAStar {
   double heu_rs_backward_penalty_ = 0.0;
   double heu_rs_steer_penalty_ = 0.0;
   double heu_rs_steer_change_penalty_ = 0.0;
-  double node_radius_ = 0.0;
+  double longitudinal_safety_margin_ = 0.0;
+  double lateral_safety_margin_ = 0.0;
   std::vector<double> XYbounds_;
   std::shared_ptr<Node3d> start_node_;
   std::shared_ptr<Node3d> end_node_;

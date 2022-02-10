@@ -43,6 +43,9 @@ HybridAStar::HybridAStar(const PlannerOpenSpaceConfig& open_space_conf) {
       planner_open_space_config_.warm_start_config().traj_steer_penalty();
   traj_steer_change_penalty_ = planner_open_space_config_.warm_start_config()
                                    .traj_steer_change_penalty();
+
+  longitudinal_safety_margin_ = planner_open_space_config_.warm_start_config().longitudinal_safety_margin();
+  lateral_safety_margin_ = planner_open_space_config_.warm_start_config().lateral_safety_margin();
 }
 
 bool HybridAStar::AnalyticExpansion(std::shared_ptr<Node3d> current_node) {
@@ -104,14 +107,8 @@ bool HybridAStar::ValidityCheck(std::shared_ptr<Node3d> node) {
     Box2d bounding_box = Node3d::GetBoundingBox(
         vehicle_param_, traversed_x[i], traversed_y[i], traversed_phi[i]);
 
-    /**
-     * @todo move to conf
-     */
-    const double longitudinal_safety_margin = 0.3;
-    const double lateral_safety_margin = 0.1;
-
-    bounding_box.LateralExtend(lateral_safety_margin);
-    bounding_box.LongitudinalExtend(longitudinal_safety_margin);
+    bounding_box.LateralExtend(lateral_safety_margin_);
+    bounding_box.LongitudinalExtend(longitudinal_safety_margin_);
 
     for (const auto& obstacle_linesegments : obstacles_linesegments_vec_) {
       for (const common::math::LineSegment2d& linesegment :

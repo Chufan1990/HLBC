@@ -82,17 +82,70 @@ Status OpenSpaceTrajectoryGenerator::Plan(
                   "Fail to solve warm start problem");
   }
 
+  std::vector<HybridAStarResult> paritioned_trajectories;
+  if (!warm_start_->TrajectoryPartition(warm_start_result_,
+                                        &paritioned_trajectories)) {
+    return Status(ErrorCode::PLANNING_ERROR, "Hybrid Astar partition failed");
+  }
+
   Eigen::MatrixXd xWS;
   Eigen::MatrixXd uWS;
   Eigen::MatrixXd state_result_ds;
   Eigen::MatrixXd control_result_ds;
   Eigen::MatrixXd time_result_ds;
 
-  std::vector<HybridAStarResult> paritioned_trajectories;
-  if (!warm_start_->TrajectoryPartition(warm_start_result_,
-                                        &paritioned_trajectories)) {
-    return Status(ErrorCode::PLANNING_ERROR, "Hybrid Astar partition failed");
-  }
+  // size_t size = paritioned_trajectories.size();
+
+  // HybridAStarResult stitched_result;
+  // for (const auto& result : paritioned_trajectories) {
+  //   std::copy(result.x.begin(), result.x.end(),
+  //             std::back_inserter(stitched_result.x));
+  //   std::copy(result.y.begin(), result.y.end(),
+  //             std::back_inserter(stitched_result.y));
+  //   std::copy(result.phi.begin(), result.phi.end(),
+  //             std::back_inserter(stitched_result.phi));
+  //   std::copy(result.v.begin(), result.v.end(),
+  //             std::back_inserter(stitched_result.v));
+  //   std::copy(result.a.begin(), result.a.end(),
+  //             std::back_inserter(stitched_result.a));
+  //   std::copy(result.steer.begin(), result.steer.end(),
+  //             std::back_inserter(stitched_result.steer));
+  // }
+  // stitched_result.x.push_back(paritioned_trajectories.back().x.back());
+  // stitched_result.y.push_back(paritioned_trajectories.back().y.back());
+  // stitched_result.phi.push_back(paritioned_trajectories.back().phi.back());
+  // stitched_result.v.push_back(paritioned_trajectories.back().v.back());
+
+  // LoadHybridAstarResultInEigen(&stitched_result, &xWS, &uWS);
+
+  // DiscretizedTrajectory smoothed_trajectory;
+
+  // const auto smoother_start_timestamp = std::chrono::system_clock::now();
+
+  // if (!GenerateDecoupledTraj(xWS, init_a, init_v, obstacles_vertices_vec,
+  //                            &state_result_ds, &control_result_ds,
+  //                            &time_result_ds)) {
+  //   ADEBUG("Smoother failed");
+  //   return Status(ErrorCode::PLANNING_ERROR,
+  //                 "Fail to solve iterative anchoring smoothing problem");
+  // }
+
+  // const auto smoother_end_timestamp = std::chrono::system_clock::now();
+
+  // const auto smoother_diff =
+  //     std::chrono::duration<double, std::milli>(smoother_end_timestamp -
+  //                                               smoother_start_timestamp)
+  //         .count();
+
+  // ADEBUG("Open space trajectory smoothing total time: " << smoother_diff
+  //                                                       << " ms");
+
+  // std::vector<HybridAStarResult> paritioned_trajectories;
+  // if (!warm_start_->TrajectoryPartition(warm_start_result_,
+  //                                       &paritioned_trajectories)) {
+  //   return Status(ErrorCode::PLANNING_ERROR, "Hybrid Astar partition
+  //   failed");
+  // }
 
   size_t size = paritioned_trajectories.size();
   std::vector<Eigen::MatrixXd> xWS_vec;
@@ -114,7 +167,8 @@ Status OpenSpaceTrajectoryGenerator::Plan(
     DiscretizedTrajectory smoothed_trajectory;
     const auto smoother_start_timestamp = std::chrono::system_clock::now();
     if (!GenerateDecoupledTraj(xWS_vec[i], init_a, init_v,
-                               obstacles_vertices_vec, &state_result_ds_vec[i],
+                               obstacles_vertices_vec,
+                               &state_result_ds_vec[i],
                                &control_result_ds_vec[i],
                                &time_result_ds_vec[i])) {
       ADEBUG("Smoother fail at " << i << "th trajectory");
