@@ -207,7 +207,7 @@ Status OpenSpaceTrajectoryGenerator::Plan(
       std::chrono::duration<double, std::milli>(end_timestamp - start_timestamp)
           .count();
 
-  ADEBUG("Open space trajectory smoother total time: " << diff << " ms");
+  AINFO("Open space trajectory smoother total time: " << diff << " ms");
   return Status::OK();
 }
 

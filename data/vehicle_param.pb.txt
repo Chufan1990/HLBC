@@ -3,12 +3,12 @@ vehicle_param {
   vehicle_id {
       other_unique_id: "h_08"
   }
-  front_edge_to_center: 2.847
-  back_edge_to_center: 1.043
-  left_edge_to_center: 1.055
-  right_edge_to_center: 1.055
+  front_edge_to_center: 2.5
+  back_edge_to_center: 1.0
+  left_edge_to_center: 0.9
+  right_edge_to_center: 0.9
 
-  length: 3.95
+  length: 3.5
   width: 1.8
   height: 2.00
   min_turn_radius: 5.5

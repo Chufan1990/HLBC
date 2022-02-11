@@ -50,3 +50,17 @@ message OpenSpaceTrajectoryTaskConfig {
   double default_lateral_range = 4;
   double default_longitudinal_range = 5;
 }
+
+message IterativeAnchoringSmoothingWrapperConfig {
+  PlannerOpenSpaceConfig planner_open_space_config = 1;
+
+  // Virtual Parking lot
+  repeated double virtual_parkinglot_obstacles_width = 2;
+  repeated double virtual_parkinglot_obstacles_length = 3;
+  double road_width = 4;
+
+  // Search range
+  ParkingSpotConfig parking_spot_config = 5;
+  double default_lateral_range = 6;
+  double default_longitudinal_range = 7;
+}

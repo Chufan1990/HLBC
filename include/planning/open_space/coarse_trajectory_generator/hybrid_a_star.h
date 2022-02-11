@@ -40,6 +40,11 @@ class HybridAStar {
   bool TrajectoryPartition(const HybridAStarResult& result,
                            std::vector<HybridAStarResult>* partitioned_result);
 
+  const std::unordered_map<std::string, std::shared_ptr<Node2d>>& DpMap()
+      const {
+    return dp_map_;
+  }
+
  private:
   bool AnalyticExpansion(std::shared_ptr<Node3d> current_node);
 
@@ -107,6 +112,8 @@ class HybridAStar {
   std::unordered_map<std::string, std::shared_ptr<Node3d>> close_set_;
   std::unique_ptr<ReedsShepp> reeds_shepp_generator_;
   std::unique_ptr<GridSearch> grid_a_star_heuristic_generator_;
+
+  std::unordered_map<std::string, std::shared_ptr<Node2d>> dp_map_;
 };
 
 }  // namespace planning

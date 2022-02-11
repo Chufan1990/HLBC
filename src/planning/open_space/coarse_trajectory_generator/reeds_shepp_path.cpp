@@ -58,22 +58,12 @@ bool ReedsShepp::ShortestRSP(const std::shared_ptr<Node3d> start_node,
   size_t optimal_path_index = 0;
   size_t paths_size = all_possible_paths.size();
   for (size_t i = 0; i < paths_size; ++i) {
-    // std::string path_type;
-    // for (size_t j = 0; j < all_possible_paths[i].segs_types.size(); j++) {
-    //      absl::StrAppend(&path_type, std::string(1,
-    //      all_possible_paths[i].segs_types[j]));
-    // }
-
-    // ADEBUG("Index " << i << " Type " << path_type << " Size "
-    //                << all_possible_paths[i].total_length);
     if (all_possible_paths.at(i).total_length > 0 &&
         all_possible_paths.at(i).total_length < optimal_path_length) {
       optimal_path_index = i;
       optimal_path_length = all_possible_paths.at(i).total_length;
     }
   }
-
-  // ADEBUG("Optimal index " << optimal_path_index);
 
   if (!GenerateLocalConfigurations(start_node, end_node,
                                    &(all_possible_paths[optimal_path_index]))) {

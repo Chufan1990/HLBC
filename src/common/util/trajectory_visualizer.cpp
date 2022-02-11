@@ -222,7 +222,8 @@ bool TrajectoryVisualizer::Publish(
     return false;
   }
   if (markers.size() != publisher_queue_.size()) {
-    AERROR("Numbers of markers and publishers not equal");
+    AERROR("Numbers of markers and publishers not equal\t"
+           << nh_.getNamespace());
     return false;
   }
   for (auto& marker_pair : markers) {

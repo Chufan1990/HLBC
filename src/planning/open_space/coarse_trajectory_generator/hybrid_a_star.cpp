@@ -44,8 +44,10 @@ HybridAStar::HybridAStar(const PlannerOpenSpaceConfig& open_space_conf) {
   traj_steer_change_penalty_ = planner_open_space_config_.warm_start_config()
                                    .traj_steer_change_penalty();
 
-  longitudinal_safety_margin_ = planner_open_space_config_.warm_start_config().longitudinal_safety_margin();
-  lateral_safety_margin_ = planner_open_space_config_.warm_start_config().lateral_safety_margin();
+  longitudinal_safety_margin_ = planner_open_space_config_.warm_start_config()
+                                    .longitudinal_safety_margin();
+  lateral_safety_margin_ =
+      planner_open_space_config_.warm_start_config().lateral_safety_margin();
 }
 
 bool HybridAStar::AnalyticExpansion(std::shared_ptr<Node3d> current_node) {
@@ -57,7 +59,7 @@ bool HybridAStar::AnalyticExpansion(std::shared_ptr<Node3d> current_node) {
     return false;
   }
 
-  ADEBUG("Potenteial RSP founded. Checking ...");
+  ADEBUG_EVERY(1000, "Potenteial RSP founded. Checking ...");
 
   if (!RSPCheck(reeds_shepp_to_check)) {
     return false;
@@ -114,9 +116,9 @@ bool HybridAStar::ValidityCheck(std::shared_ptr<Node3d> node) {
       for (const common::math::LineSegment2d& linesegment :
            obstacle_linesegments) {
         if (bounding_box.HasOverlap(linesegment)) {
-          ADEBUG("collision point at (" << traversed_x[i] << ", "
-                                        << traversed_y[i] << ", "
-                                        << traversed_phi[i] << ")");
+          ADEBUG_EVERY(1000, "collision point at (" << traversed_x[i] << ", "
+                                                    << traversed_y[i] << ", "
+                                                    << traversed_phi[i] << ")");
           return false;
         }
       }
@@ -760,6 +762,8 @@ bool HybridAStar::Plan(
   const auto map_starttime = std::chrono::system_clock::now();
   grid_a_star_heuristic_generator_->GenerateDpMap(ex, ey, XYbounds_,
                                                   obstacles_linesegments_vec_);
+
+  dp_map_ = grid_a_star_heuristic_generator_->DpMap();
   const auto map_endtime = std::chrono::system_clock::now();
   const auto map_diff =
       std::chrono::duration<double, std::milli>(map_endtime - map_starttime)

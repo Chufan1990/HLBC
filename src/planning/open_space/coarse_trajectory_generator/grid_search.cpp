@@ -32,8 +32,9 @@ bool GridSearch::CheckConstraints(std::shared_ptr<Node2d> node) {
   for (const auto& obstacle_linesegments : obstacles_linesegments_vec_) {
     for (const common::math::LineSegment2d& linesegment :
          obstacle_linesegments) {
-      if (linesegment.DistanceTo({node->GetGridX(), node->GetGridY()}) <
-          node_radius_) {
+      double real_x = node->GetGridX() * xy_grid_resolution_ + XYbounds_[0];
+      double real_y = node->GetGridY() * xy_grid_resolution_ + XYbounds_[2];
+      if (linesegment.DistanceTo({real_x, real_y}) < node_radius_) {
         return false;
       }
     }

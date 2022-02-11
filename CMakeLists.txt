@@ -49,7 +49,7 @@ find_package(osqp REQUIRED PATHS ${OSQP_DIR})
 
 # list(APPEND CMAKE_PREFIX_PATH "${Protobuf_DIR}")
 
-# message(WARNING "Protobuf_DIR: ${Protobuf_DIR}")
+message(WARNING "osqp_INCLUDE_DIRS: ${osqp_INCLUDE_DIRS}")
 
 # find_package(Protobuf 3.19.0 EXACT MODULE REQUIRED) message(WARNING
 # "THIRDPARTY_DIR: ${THIRDPARTY_DIR}")
@@ -390,16 +390,16 @@ target_link_libraries(
   glog::glog)
 
 # ##############################################################################
-# open_space_trajectory_wrapper_test ##
+# iterative_anchoring_smoothing_wrapper_test ##
 # ##############################################################################
-add_executable(open_space_trajectory_wrapper_test
-               src/nodes/open_space_trajectory_wrapper_test.cpp)
+add_executable(iterative_anchoring_smoothing_wrapper_test
+               src/nodes/iterative_anchoring_smoothing_wrapper_test.cpp)
 
-add_dependencies(open_space_trajectory_wrapper_test ${catkin_EXPORTED_TARGETS}
+add_dependencies(iterative_anchoring_smoothing_wrapper_test ${catkin_EXPORTED_TARGETS}
                  ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 target_link_libraries(
-  open_space_trajectory_wrapper_test
+  iterative_anchoring_smoothing_wrapper_test
   ${PROJECT_NAME}
   ${Protobuf_LIBRARIES}
   ${catkin_LIBRARIES}

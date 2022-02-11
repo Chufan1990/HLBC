@@ -1,14 +1,15 @@
 <launch>
 	<env name="ROSCONSOLE_CONFIG_FILE" value="$(find hlbc)/conf/custom_rosconsole.conf"/>
-	<param name="/use_sim_time" value="true"/>
-	<node pkg="hlbc" type="open_space_trajectory_wrapper_test" name="open_space_trajectory_wrapper" output="screen">
-		<param name="config" value="/autoware.ai/src/autoware/common/HLBC/conf/open_space_trajectory_task.pb.txt"/>
+	<param name="/use_sim_time" value="false"/>
+	<node pkg="hlbc" type="iterative_anchoring_smoothing_wrapper_test" name="iterative_anchoring_smoothing_wrapper_test" output="screen">
+		<param name="config" value="/autoware.ai/src/autoware/common/HLBC/conf/iterative_anchoring_smoothing_wrapper_config.pb.txt"/>
 		<param name="obstacle_message" value="/detection/lidar_detector/objects"/>
 		<param name="localization_message" value="/current_pose"/>
 		<param name="destination_message" value="/move_base_simple/goal"/>
 		<param name="trajectory_message" value="/planning/trajectory"/>
 		<param name="x" value="5.0"/>
 		<param name="y" value="10.0"/>
-		<param name="phi" value="-1.57"/>
+		<param name="phi" value="0.375"/>
+		<param name="parallel_parking" value="false"/>
 	</node>
 </launch>

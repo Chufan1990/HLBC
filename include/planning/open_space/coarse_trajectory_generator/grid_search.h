@@ -13,7 +13,6 @@
 namespace autoagric {
 namespace planning {
 
-
 class Node2d {
  public:
   Node2d(const double x, const double y, const double xy_resolution,
@@ -94,6 +93,11 @@ class GridSearch {
       const std::vector<std::vector<common::math::LineSegment2d>>&
           obstacles_linesegments_vec);
   double CheckDpMap(const double sx, const double sy);
+
+  const std::unordered_map<std::string, std::shared_ptr<Node2d>>& DpMap()
+      const {
+    return dp_map_;
+  }
 
  private:
   double EuclidDistance(const double x1, const double y1, const double x2,
